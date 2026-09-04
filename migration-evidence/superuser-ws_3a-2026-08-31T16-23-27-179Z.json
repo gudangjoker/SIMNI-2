@@ -1,0 +1,2575 @@
+{
+  "format": "simni-live-workspace-migration-backup",
+  "version": 1,
+  "capturedAt": "2026-08-31T16:23:27.176Z",
+  "subject": {
+    "uid": "aKyL89bhK0VPsZr6xmmEwzZFCZZ2",
+    "email": "unggaran.sditbm@gmail.com",
+    "role": "superuser",
+    "workspaceIdBeforeMigration": "ws_superuser"
+  },
+  "sourceWorkspaceId": "ws_3a",
+  "targetWorkspaceId": "ws_superuser",
+  "sourceHash": "1a2d8f7a7fe85d399a39b822c953f5575c71177f784581b3295bcbce6c4b7aa3",
+  "targetHashBeforeMigration": "1a2d8f7a7fe85d399a39b822c953f5575c71177f784581b3295bcbce6c4b7aa3",
+  "source": {
+    "academicYears": {
+      "2026-2027": {
+        "attendance": {
+          "1": {
+            "NISN": "3181051348",
+            "keterangan": "Input Kelas",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "2": {
+            "NISN": "3178779180",
+            "keterangan": "Input Kelas",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "3": {
+            "NISN": "3183385359",
+            "keterangan": "Input Kelas",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "4": {
+            "NISN": "3170781669",
+            "keterangan": "Input Kelas",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "5": {
+            "NISN": "3173384532",
+            "keterangan": "Input Kelas",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "6": {
+            "NISN": "3177614360",
+            "keterangan": "Input Kelas",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "7": {
+            "NISN": "3176926601",
+            "keterangan": "Input Kelas",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "8": {
+            "NISN": "",
+            "keterangan": "Input Kelas",
+            "nama": "Khumaira Assyfa",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "9": {
+            "NISN": "3174589500",
+            "keterangan": "Input Kelas",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "10": {
+            "NISN": "3176466168",
+            "keterangan": "Input Kelas",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "11": {
+            "NISN": "3182075080",
+            "keterangan": "Input Kelas",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "12": {
+            "NISN": "3157512370",
+            "keterangan": "Input Kelas",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "13": {
+            "NISN": "3189000563",
+            "keterangan": "Input Kelas",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "14": {
+            "NISN": "3187573748",
+            "keterangan": "Input Kelas",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "15": {
+            "NISN": "3187641857",
+            "keterangan": "Input Kelas",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "16": {
+            "NISN": "3176921559",
+            "keterangan": "Input Kelas",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "17": {
+            "NISN": "3184732034",
+            "keterangan": "Input Kelas",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "18": {
+            "NISN": "3183326992",
+            "keterangan": "Input Kelas",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "19": {
+            "NISN": "3182731037",
+            "keterangan": "Input Kelas",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "20": {
+            "NISN": "3175372790",
+            "keterangan": "Input Kelas",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "21": {
+            "NISN": "3183467167",
+            "keterangan": "Input Kelas",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "22": {
+            "NISN": "3181051348",
+            "keterangan": "Input Kelas",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "23": {
+            "NISN": "3178779180",
+            "keterangan": "Input Kelas",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "24": {
+            "NISN": "3183385359",
+            "keterangan": "Input Kelas",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "25": {
+            "NISN": "3170781669",
+            "keterangan": "Input Kelas",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "26": {
+            "NISN": "3173384532",
+            "keterangan": "Input Kelas",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "27": {
+            "NISN": "3177614360",
+            "keterangan": "Input Kelas",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "28": {
+            "NISN": "3176926601",
+            "keterangan": "Input Kelas",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "29": {
+            "NISN": "",
+            "keterangan": "Input Kelas",
+            "nama": "Khumaira Assyfa",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "30": {
+            "NISN": "3174589500",
+            "keterangan": "Input Kelas",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "31": {
+            "NISN": "3176466168",
+            "keterangan": "Input Kelas",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "32": {
+            "NISN": "3182075080",
+            "keterangan": "Input Kelas",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "33": {
+            "NISN": "3157512370",
+            "keterangan": "Input Kelas",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "34": {
+            "NISN": "3189000563",
+            "keterangan": "Input Kelas",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "35": {
+            "NISN": "3187573748",
+            "keterangan": "Input Kelas",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "36": {
+            "NISN": "3187641857",
+            "keterangan": "Input Kelas",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "37": {
+            "NISN": "3176921559",
+            "keterangan": "Input Kelas",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "38": {
+            "NISN": "3184732034",
+            "keterangan": "Input Kelas",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "39": {
+            "NISN": "3183326992",
+            "keterangan": "Input Kelas",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "40": {
+            "NISN": "3182731037",
+            "keterangan": "Input Kelas",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "41": {
+            "NISN": "3175372790",
+            "keterangan": "Input Kelas",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "42": {
+            "NISN": "3183467167",
+            "keterangan": "Input Kelas",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "43": {
+            "NISN": "3181051348",
+            "keterangan": "",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "44": {
+            "NISN": "3178779180",
+            "keterangan": "",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "45": {
+            "NISN": "3183385359",
+            "keterangan": "",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "46": {
+            "NISN": "3170781669",
+            "keterangan": "",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "47": {
+            "NISN": "3173384532",
+            "keterangan": "",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "48": {
+            "NISN": "3177614360",
+            "keterangan": "",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "49": {
+            "NISN": "3176926601",
+            "keterangan": "",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "50": {
+            "NISN": "3177483315",
+            "keterangan": "",
+            "nama": "Khumaira Assyfa Zahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "51": {
+            "NISN": "3174589500",
+            "keterangan": "",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "52": {
+            "NISN": "3176466168",
+            "keterangan": "",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "53": {
+            "NISN": "3182075080",
+            "keterangan": "",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "54": {
+            "NISN": "3157512370",
+            "keterangan": "",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "55": {
+            "NISN": "3189000563",
+            "keterangan": "",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "56": {
+            "NISN": "3187573748",
+            "keterangan": "",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "57": {
+            "NISN": "3187641857",
+            "keterangan": "",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "58": {
+            "NISN": "3176921559",
+            "keterangan": "",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "59": {
+            "NISN": "3184732034",
+            "keterangan": "",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "60": {
+            "NISN": "3183326992",
+            "keterangan": "",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "61": {
+            "NISN": "3182731037",
+            "keterangan": "",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "62": {
+            "NISN": "3175372790",
+            "keterangan": "",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "63": {
+            "NISN": "3183467167",
+            "keterangan": "",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "64": {
+            "NISN": "3181051348",
+            "keterangan": "",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "65": {
+            "NISN": "3178779180",
+            "keterangan": "",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "66": {
+            "NISN": "3183385359",
+            "keterangan": "",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "67": {
+            "NISN": "3170781669",
+            "keterangan": "",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "68": {
+            "NISN": "3173384532",
+            "keterangan": "",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "69": {
+            "NISN": "3177614360",
+            "keterangan": "",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "70": {
+            "NISN": "3176926601",
+            "keterangan": "",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "71": {
+            "NISN": "3177483315",
+            "keterangan": "",
+            "nama": "Khumaira Assyfa Zahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "72": {
+            "NISN": "3174589500",
+            "keterangan": "",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "73": {
+            "NISN": "3176466168",
+            "keterangan": "",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "74": {
+            "NISN": "3182075080",
+            "keterangan": "",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "75": {
+            "NISN": "3157512370",
+            "keterangan": "",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "76": {
+            "NISN": "3189000563",
+            "keterangan": "",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "77": {
+            "NISN": "3187573748",
+            "keterangan": "",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "78": {
+            "NISN": "3187641857",
+            "keterangan": "",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "79": {
+            "NISN": "3176921559",
+            "keterangan": "",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "80": {
+            "NISN": "3184732034",
+            "keterangan": "",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "81": {
+            "NISN": "3183326992",
+            "keterangan": "",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "82": {
+            "NISN": "3182731037",
+            "keterangan": "",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "83": {
+            "NISN": "3175372790",
+            "keterangan": "",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "84": {
+            "NISN": "3183467167",
+            "keterangan": "",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "2026-08-31_3157512370": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3157512370",
+            "Nama": "Nadzira Thafana Qurbah",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3170781669": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3170781669",
+            "Nama": "Ayken Rayhan Razzad",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3173384532": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3173384532",
+            "Nama": "Danu Sena Adji",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3174589500": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3174589500",
+            "Nama": "Lubna Nusaybah Keinara",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3175372790": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3175372790",
+            "Nama": "Syafiq Achmad Syauqi",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3176466168": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3176466168",
+            "Nama": "Mouri Glazy Atreya",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3176921559": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3176921559",
+            "Nama": "Rindu Fatiha Anaking",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3176926601": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3176926601",
+            "Nama": "Khalil Gibran Ramadhan",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3177483315": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3177483315",
+            "Nama": "Khumaira Assyfa Zahra",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3177614360": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3177614360",
+            "Nama": "Hakam Irhab Munib",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3178779180": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3178779180",
+            "Nama": "Arfadhia Fachry Hamdani",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3181051348": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3181051348",
+            "Nama": "Abizard Malik Ahmad",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3182075080": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3182075080",
+            "Nama": "Muhammad Ghazi Al Fatih",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3182731037": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3182731037",
+            "Nama": "Shofiyyah Humaira Azzahra",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3183326992": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3183326992",
+            "Nama": "Shaziya Mikayla Rochmansyah",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3183385359": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3183385359",
+            "Nama": "Athallah Hafiz Ramdani",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3183467167": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3183467167",
+            "Nama": "Syamil Mumtaz Alfatih",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3184732034": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3184732034",
+            "Nama": "Shakila Karaputri Prabowo",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3187573748": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3187573748",
+            "Nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3187641857": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3187641857",
+            "Nama": "Riany Mysha Naladhipa",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3189000563": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3189000563",
+            "Nama": "Qaddafa Mauza Alfarizi",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "undefined_": {
+            "Kelas": "3A"
+          },
+          "undefined_3157512370": {
+            "Kelas": "3A"
+          },
+          "undefined_3170781669": {
+            "Kelas": "3A"
+          },
+          "undefined_3173384532": {
+            "Kelas": "3A"
+          },
+          "undefined_3174589500": {
+            "Kelas": "3A"
+          },
+          "undefined_3175372790": {
+            "Kelas": "3A"
+          },
+          "undefined_3176466168": {
+            "Kelas": "3A"
+          },
+          "undefined_3176921559": {
+            "Kelas": "3A"
+          },
+          "undefined_3176926601": {
+            "Kelas": "3A"
+          },
+          "undefined_3177483315": {
+            "Kelas": "3A"
+          },
+          "undefined_3177614360": {
+            "Kelas": "3A"
+          },
+          "undefined_3178779180": {
+            "Kelas": "3A"
+          },
+          "undefined_3181051348": {
+            "Kelas": "3A"
+          },
+          "undefined_3182075080": {
+            "Kelas": "3A"
+          },
+          "undefined_3182731037": {
+            "Kelas": "3A"
+          },
+          "undefined_3183326992": {
+            "Kelas": "3A"
+          },
+          "undefined_3183385359": {
+            "Kelas": "3A"
+          },
+          "undefined_3183467167": {
+            "Kelas": "3A"
+          },
+          "undefined_3184732034": {
+            "Kelas": "3A"
+          },
+          "undefined_3187573748": {
+            "Kelas": "3A"
+          },
+          "undefined_3187641857": {
+            "Kelas": "3A"
+          },
+          "undefined_3189000563": {
+            "Kelas": "3A"
+          }
+        },
+        "documents": {
+          "106": {
+            "Id_doc": "DOC_1785160100549",
+            "file_id_drive": "1fcgbkW6qVbEzhH9c3cO8tdfvYqfXLH1d",
+            "kategori": "LKPD",
+            "nama_file": "Presentasi Mengenal Panca Indra dalam Gaya Ilustrasi Cokelat_20260721_212603_0000.pptx",
+            "tanggal": "2026-07-26T17:00:00.000Z",
+            "url_file": "https://drive.google.com/uc?export=view&id=1fcgbkW6qVbEzhH9c3cO8tdfvYqfXLH1d"
+          }
+        },
+        "grades": {
+          "85": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3181051348",
+            "nama": "Abizard Malik Ahmad",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "86": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3178779180",
+            "nama": "Arfadhia Fachry Hamdani",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "87": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3183385359",
+            "nama": "Athallah Hafiz Ramdani",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "88": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3170781669",
+            "nama": "Ayken Rayhan Razzad",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "89": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3173384532",
+            "nama": "Danu Sena Adji",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "90": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3177614360",
+            "nama": "Hakam Irhab Munib",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "91": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3176926601",
+            "nama": "Khalil Gibran Ramadhan",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "92": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3177483315",
+            "nama": "Khumaira Assyfa Zahra",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "93": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3174589500",
+            "nama": "Lubna Nusaybah Keinara",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "94": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3176466168",
+            "nama": "Mouri Glazy Atreya",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "95": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3182075080",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "96": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3157512370",
+            "nama": "Nadzira Thafana Qurbah",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "97": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3189000563",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "98": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3187573748",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "99": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3187641857",
+            "nama": "Riany Mysha Naladhipa",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "100": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3176921559",
+            "nama": "Rindu Fatiha Anaking",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "101": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3184732034",
+            "nama": "Shakila Karaputri Prabowo",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "102": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3183326992",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "103": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3182731037",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "104": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3175372790",
+            "nama": "Syafiq Achmad Syauqi",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "105": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3183467167",
+            "nama": "Syamil Mumtaz Alfatih",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "undefined": {
+            "Kelas": "3A"
+          }
+        },
+        "learningObjectives": {
+          "Ind_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "mengidentifikasi informasi dalam teks nonsastra yang dibaca dengan baik",
+            "kode_tp": "Ind.1",
+            "mapel": "Bahasa Indonesia",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Ind_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menyimpulkan pesan dari teks sastra lisan berupa dongeng dengan benar",
+            "kode_tp": "Ind.2",
+            "mapel": "Bahasa Indonesia",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Ipas_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Dengan membaca teks dan melakukan kegiatan, murid dapat mengidentifikasi bagian tubuh manusia dan menjelaskan fungsinya dengan tepat.",
+            "kode_tp": "Ipas.1",
+            "mapel": "IPAS",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Ipas_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Dengan membaca teks dan melakukan tugas, murid dapat menjelaskan bentuk dan fungsi pancaindra dengan benar.",
+            "kode_tp": "Ipas.2",
+            "mapel": "IPAS",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Mtk_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Membaca dan menulis bilangan cacah sampai 1.000",
+            "kode_tp": "Mtk.1",
+            "mapel": "Matematika",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Mtk_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Mengidentifikasi nilai tempat pada suatu bilangan tertentu dengan mandiri",
+            "kode_tp": "Mtk.2",
+            "mapel": "Matematika",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Mtk_3": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Membandingkan dan mengurutkan bilangan",
+            "kode_tp": "Mtk.3",
+            "mapel": "Matematika",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Panc_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "mengidentifikasi perilaku bekerja sama dalam berbagai bentuk keberagaman suku bangsa, sosial, dan budaya di Indonesia yang terikat persatuan dan kesatuan di lingkungan sekitar",
+            "kode_tp": "Panc.1",
+            "mapel": "Pendidikan Pancasila",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Panc_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menunjukkan sikap bangga menjadi anak Indonesia yang memiliki bahasa Indonesia sebagai bahasa persatuan di Lingkungan sekitar",
+            "kode_tp": "Panc.2",
+            "mapel": "Pendidikan Pancasila",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "SR_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "mengenal unsur rupa (titik, garis, bidang, bentuk, warna) dan menemukan unsur rupa di lingkungan sekitar.",
+            "kode_tp": "SR.1",
+            "mapel": "Seni Rupa",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "SR_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menggambar menggunakan unsur rupa (titik, garis, bidang, bentuk, dan warna) untuk menghasilkan karya gambar sederhana.",
+            "kode_tp": "SR.2",
+            "mapel": "Seni Rupa",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Sun_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menemukan dan mengelompokkan gambar benda berdasarkan namanya",
+            "kode_tp": "Sun.1",
+            "mapel": "Bahasa Sunda",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Sun_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menggunakan huruf kapital dan tanda baca",
+            "kode_tp": "Sun.2",
+            "mapel": "Bahasa Sunda",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          }
+        },
+        "meta": {
+          "name": "Tahun Ajaran 2026/2027",
+          "status": "active"
+        },
+        "students": {
+          "3157512370": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3157512370",
+            "Nama Lengkap": "Nadzira Thafana Qurbah",
+            "Nama Panggilan": "Nadzira",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Nadzira%20Thafana%20Qurbah"
+          },
+          "3170781669": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3170781669",
+            "Nama Lengkap": "Ayken Rayhan Razzad",
+            "Nama Panggilan": "Ayken",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Ayken%20Rayhan%20Razzad"
+          },
+          "3173384532": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3173384532",
+            "Nama Lengkap": "Danu Sena Adji",
+            "Nama Panggilan": "Adji",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Danu%20Sena%20Adji"
+          },
+          "3174589500": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3174589500",
+            "Nama Lengkap": "Lubna Nusaybah Keinara",
+            "Nama Panggilan": "Lubna",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Lubna%20Nusaybah%20Keinara"
+          },
+          "3175372790": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3175372790",
+            "Nama Lengkap": "Syafiq Achmad Syauqi",
+            "Nama Panggilan": "Syafiq",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Syafiq%20Achmad%20Syauqi"
+          },
+          "3176466168": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3176466168",
+            "Nama Lengkap": "Mouri Glazy Atreya",
+            "Nama Panggilan": "Mouri",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Mouri%20Glazy%20Atreya"
+          },
+          "3176921559": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3176921559",
+            "Nama Lengkap": "Rindu Fatiha Anaking",
+            "Nama Panggilan": "Rindu",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Rindu%20Fatiha%20Anaking"
+          },
+          "3176926601": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3176926601",
+            "Nama Lengkap": "Khalil Gibran Ramadhan",
+            "Nama Panggilan": "Khalil",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Khalil%20Gibran%20Ramadhan"
+          },
+          "3177483315": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3177483315",
+            "Nama Lengkap": "Khumaira Assyfa Zahra",
+            "Nama Panggilan": "Assyfa",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Khumaira%20Assyfa%20Zahra"
+          },
+          "3177614360": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3177614360",
+            "Nama Lengkap": "Hakam Irhab Munib",
+            "Nama Panggilan": "Hakam",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Hakam%20Irhab%20Munib"
+          },
+          "3178779180": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3178779180",
+            "Nama Lengkap": "Arfadhia Fachry Hamdani",
+            "Nama Panggilan": "Arfadhia",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Arfadhia%20Fachry%20Hamdani"
+          },
+          "3181051348": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3181051348",
+            "Nama Lengkap": "Abizard Malik Ahmad",
+            "Nama Panggilan": "Abizard",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Abizard%20Malik%20Ahmad"
+          },
+          "3182075080": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3182075080",
+            "Nama Lengkap": "Muhammad Ghazi Al Fatih",
+            "Nama Panggilan": "Ghazi",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Muhammad%20Ghazi%20Al%20Fatih"
+          },
+          "3182731037": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3182731037",
+            "Nama Lengkap": "Shofiyyah Humaira Azzahra",
+            "Nama Panggilan": "Shofiyyah",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Shofiyyah%20Humaira%20Azzahra"
+          },
+          "3183326992": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3183326992",
+            "Nama Lengkap": "Shaziya Mikayla Rochmansyah",
+            "Nama Panggilan": "Shaziya",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Shaziya%20Mikayla%20Rochmansyah"
+          },
+          "3183385359": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3183385359",
+            "Nama Lengkap": "Athallah Hafiz Ramdani",
+            "Nama Panggilan": "Athallah",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Athallah%20Hafiz%20Ramdani"
+          },
+          "3183467167": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3183467167",
+            "Nama Lengkap": "Syamil Mumtaz Alfatih",
+            "Nama Panggilan": "Syamil",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Syamil%20Mumtaz%20Alfatih"
+          },
+          "3184732034": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3184732034",
+            "Nama Lengkap": "Shakila Karaputri Prabowo",
+            "Nama Panggilan": "Shakila",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Shakila%20Karaputri%20Prabowo"
+          },
+          "3187573748": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3187573748",
+            "Nama Lengkap": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "Nama Panggilan": "Anaking",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Raden%20Anaking%20Muhammad%20Jaluna%20Firmansyah"
+          },
+          "3187641857": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3187641857",
+            "Nama Lengkap": "Riany Mysha Naladhipa",
+            "Nama Panggilan": "Riany",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Riany%20Mysha%20Naladhipa"
+          },
+          "3189000563": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3189000563",
+            "Nama Lengkap": "Qaddafa Mauza Alfarizi",
+            "Nama Panggilan": "Qaddafa",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Qaddafa%20Mauza%20Alfarizi"
+          }
+        }
+      }
+    },
+    "meta": {
+      "activeAcademicYearId": "2026-2027",
+      "classId": "3A",
+      "ownerUid": "aKyL89bhK0VPsZr6xmmEwzZFCZZ2",
+      "role": "superuser",
+      "status": "active",
+      "workspaceId": "ws_3a"
+    }
+  },
+  "targetBeforeMigration": {
+    "academicYears": {
+      "2026-2027": {
+        "attendance": {
+          "1": {
+            "NISN": "3181051348",
+            "keterangan": "Input Kelas",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "2": {
+            "NISN": "3178779180",
+            "keterangan": "Input Kelas",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "3": {
+            "NISN": "3183385359",
+            "keterangan": "Input Kelas",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "4": {
+            "NISN": "3170781669",
+            "keterangan": "Input Kelas",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "5": {
+            "NISN": "3173384532",
+            "keterangan": "Input Kelas",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "6": {
+            "NISN": "3177614360",
+            "keterangan": "Input Kelas",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "7": {
+            "NISN": "3176926601",
+            "keterangan": "Input Kelas",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "8": {
+            "NISN": "",
+            "keterangan": "Input Kelas",
+            "nama": "Khumaira Assyfa",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "9": {
+            "NISN": "3174589500",
+            "keterangan": "Input Kelas",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "10": {
+            "NISN": "3176466168",
+            "keterangan": "Input Kelas",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "11": {
+            "NISN": "3182075080",
+            "keterangan": "Input Kelas",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "12": {
+            "NISN": "3157512370",
+            "keterangan": "Input Kelas",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "13": {
+            "NISN": "3189000563",
+            "keterangan": "Input Kelas",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "14": {
+            "NISN": "3187573748",
+            "keterangan": "Input Kelas",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "15": {
+            "NISN": "3187641857",
+            "keterangan": "Input Kelas",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "16": {
+            "NISN": "3176921559",
+            "keterangan": "Input Kelas",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "17": {
+            "NISN": "3184732034",
+            "keterangan": "Input Kelas",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "18": {
+            "NISN": "3183326992",
+            "keterangan": "Input Kelas",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "19": {
+            "NISN": "3182731037",
+            "keterangan": "Input Kelas",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "20": {
+            "NISN": "3175372790",
+            "keterangan": "Input Kelas",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "21": {
+            "NISN": "3183467167",
+            "keterangan": "Input Kelas",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-26T17:00:00.000Z"
+          },
+          "22": {
+            "NISN": "3181051348",
+            "keterangan": "Input Kelas",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "23": {
+            "NISN": "3178779180",
+            "keterangan": "Input Kelas",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "24": {
+            "NISN": "3183385359",
+            "keterangan": "Input Kelas",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "25": {
+            "NISN": "3170781669",
+            "keterangan": "Input Kelas",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "26": {
+            "NISN": "3173384532",
+            "keterangan": "Input Kelas",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "27": {
+            "NISN": "3177614360",
+            "keterangan": "Input Kelas",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "28": {
+            "NISN": "3176926601",
+            "keterangan": "Input Kelas",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "29": {
+            "NISN": "",
+            "keterangan": "Input Kelas",
+            "nama": "Khumaira Assyfa",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "30": {
+            "NISN": "3174589500",
+            "keterangan": "Input Kelas",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "31": {
+            "NISN": "3176466168",
+            "keterangan": "Input Kelas",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "32": {
+            "NISN": "3182075080",
+            "keterangan": "Input Kelas",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "33": {
+            "NISN": "3157512370",
+            "keterangan": "Input Kelas",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "34": {
+            "NISN": "3189000563",
+            "keterangan": "Input Kelas",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "35": {
+            "NISN": "3187573748",
+            "keterangan": "Input Kelas",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "36": {
+            "NISN": "3187641857",
+            "keterangan": "Input Kelas",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "37": {
+            "NISN": "3176921559",
+            "keterangan": "Input Kelas",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "38": {
+            "NISN": "3184732034",
+            "keterangan": "Input Kelas",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "39": {
+            "NISN": "3183326992",
+            "keterangan": "Input Kelas",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "40": {
+            "NISN": "3182731037",
+            "keterangan": "Input Kelas",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "41": {
+            "NISN": "3175372790",
+            "keterangan": "Input Kelas",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "42": {
+            "NISN": "3183467167",
+            "keterangan": "Input Kelas",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-27T17:00:00.000Z"
+          },
+          "43": {
+            "NISN": "3181051348",
+            "keterangan": "",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "44": {
+            "NISN": "3178779180",
+            "keterangan": "",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "45": {
+            "NISN": "3183385359",
+            "keterangan": "",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "46": {
+            "NISN": "3170781669",
+            "keterangan": "",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "47": {
+            "NISN": "3173384532",
+            "keterangan": "",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "48": {
+            "NISN": "3177614360",
+            "keterangan": "",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "49": {
+            "NISN": "3176926601",
+            "keterangan": "",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "50": {
+            "NISN": "3177483315",
+            "keterangan": "",
+            "nama": "Khumaira Assyfa Zahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "51": {
+            "NISN": "3174589500",
+            "keterangan": "",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "52": {
+            "NISN": "3176466168",
+            "keterangan": "",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "53": {
+            "NISN": "3182075080",
+            "keterangan": "",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "54": {
+            "NISN": "3157512370",
+            "keterangan": "",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "55": {
+            "NISN": "3189000563",
+            "keterangan": "",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "56": {
+            "NISN": "3187573748",
+            "keterangan": "",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "57": {
+            "NISN": "3187641857",
+            "keterangan": "",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "58": {
+            "NISN": "3176921559",
+            "keterangan": "",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "59": {
+            "NISN": "3184732034",
+            "keterangan": "",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "60": {
+            "NISN": "3183326992",
+            "keterangan": "",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "61": {
+            "NISN": "3182731037",
+            "keterangan": "",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "62": {
+            "NISN": "3175372790",
+            "keterangan": "",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "63": {
+            "NISN": "3183467167",
+            "keterangan": "",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "64": {
+            "NISN": "3181051348",
+            "keterangan": "",
+            "nama": "Abizard Malik Ahmad",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "65": {
+            "NISN": "3178779180",
+            "keterangan": "",
+            "nama": "Arfadhia Fachry Hamdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "66": {
+            "NISN": "3183385359",
+            "keterangan": "",
+            "nama": "Athallah Hafiz Ramdani",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "67": {
+            "NISN": "3170781669",
+            "keterangan": "",
+            "nama": "Ayken Rayhan Razzad",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "68": {
+            "NISN": "3173384532",
+            "keterangan": "",
+            "nama": "Danu Sena Adji",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "69": {
+            "NISN": "3177614360",
+            "keterangan": "",
+            "nama": "Hakam Irhab Munib",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "70": {
+            "NISN": "3176926601",
+            "keterangan": "",
+            "nama": "Khalil Gibran Ramadhan",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "71": {
+            "NISN": "3177483315",
+            "keterangan": "",
+            "nama": "Khumaira Assyfa Zahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "72": {
+            "NISN": "3174589500",
+            "keterangan": "",
+            "nama": "Lubna Nusaybah Keinara",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "73": {
+            "NISN": "3176466168",
+            "keterangan": "",
+            "nama": "Mouri Glazy Atreya",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "74": {
+            "NISN": "3182075080",
+            "keterangan": "",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "75": {
+            "NISN": "3157512370",
+            "keterangan": "",
+            "nama": "Nadzira Thafana Qurbah",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "76": {
+            "NISN": "3189000563",
+            "keterangan": "",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "77": {
+            "NISN": "3187573748",
+            "keterangan": "",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "78": {
+            "NISN": "3187641857",
+            "keterangan": "",
+            "nama": "Riany Mysha Naladhipa",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "79": {
+            "NISN": "3176921559",
+            "keterangan": "",
+            "nama": "Rindu Fatiha Anaking",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "80": {
+            "NISN": "3184732034",
+            "keterangan": "",
+            "nama": "Shakila Karaputri Prabowo",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "81": {
+            "NISN": "3183326992",
+            "keterangan": "",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "82": {
+            "NISN": "3182731037",
+            "keterangan": "",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "83": {
+            "NISN": "3175372790",
+            "keterangan": "",
+            "nama": "Syafiq Achmad Syauqi",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "84": {
+            "NISN": "3183467167",
+            "keterangan": "",
+            "nama": "Syamil Mumtaz Alfatih",
+            "status": "Hadir",
+            "tanggal": "2026-07-23T17:00:00.000Z"
+          },
+          "2026-08-31_3157512370": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3157512370",
+            "Nama": "Nadzira Thafana Qurbah",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3170781669": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3170781669",
+            "Nama": "Ayken Rayhan Razzad",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3173384532": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3173384532",
+            "Nama": "Danu Sena Adji",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3174589500": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3174589500",
+            "Nama": "Lubna Nusaybah Keinara",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3175372790": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3175372790",
+            "Nama": "Syafiq Achmad Syauqi",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3176466168": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3176466168",
+            "Nama": "Mouri Glazy Atreya",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3176921559": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3176921559",
+            "Nama": "Rindu Fatiha Anaking",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3176926601": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3176926601",
+            "Nama": "Khalil Gibran Ramadhan",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3177483315": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3177483315",
+            "Nama": "Khumaira Assyfa Zahra",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3177614360": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3177614360",
+            "Nama": "Hakam Irhab Munib",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3178779180": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3178779180",
+            "Nama": "Arfadhia Fachry Hamdani",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3181051348": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3181051348",
+            "Nama": "Abizard Malik Ahmad",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3182075080": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3182075080",
+            "Nama": "Muhammad Ghazi Al Fatih",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3182731037": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3182731037",
+            "Nama": "Shofiyyah Humaira Azzahra",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3183326992": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3183326992",
+            "Nama": "Shaziya Mikayla Rochmansyah",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3183385359": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3183385359",
+            "Nama": "Athallah Hafiz Ramdani",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3183467167": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3183467167",
+            "Nama": "Syamil Mumtaz Alfatih",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3184732034": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3184732034",
+            "Nama": "Shakila Karaputri Prabowo",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3187573748": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3187573748",
+            "Nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3187641857": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3187641857",
+            "Nama": "Riany Mysha Naladhipa",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "2026-08-31_3189000563": {
+            "Kelas": "3A",
+            "Keterangan": "",
+            "NISN": "3189000563",
+            "Nama": "Qaddafa Mauza Alfarizi",
+            "Status": "Hadir",
+            "Tanggal": "2026-08-31"
+          },
+          "undefined_": {
+            "Kelas": "3A"
+          },
+          "undefined_3157512370": {
+            "Kelas": "3A"
+          },
+          "undefined_3170781669": {
+            "Kelas": "3A"
+          },
+          "undefined_3173384532": {
+            "Kelas": "3A"
+          },
+          "undefined_3174589500": {
+            "Kelas": "3A"
+          },
+          "undefined_3175372790": {
+            "Kelas": "3A"
+          },
+          "undefined_3176466168": {
+            "Kelas": "3A"
+          },
+          "undefined_3176921559": {
+            "Kelas": "3A"
+          },
+          "undefined_3176926601": {
+            "Kelas": "3A"
+          },
+          "undefined_3177483315": {
+            "Kelas": "3A"
+          },
+          "undefined_3177614360": {
+            "Kelas": "3A"
+          },
+          "undefined_3178779180": {
+            "Kelas": "3A"
+          },
+          "undefined_3181051348": {
+            "Kelas": "3A"
+          },
+          "undefined_3182075080": {
+            "Kelas": "3A"
+          },
+          "undefined_3182731037": {
+            "Kelas": "3A"
+          },
+          "undefined_3183326992": {
+            "Kelas": "3A"
+          },
+          "undefined_3183385359": {
+            "Kelas": "3A"
+          },
+          "undefined_3183467167": {
+            "Kelas": "3A"
+          },
+          "undefined_3184732034": {
+            "Kelas": "3A"
+          },
+          "undefined_3187573748": {
+            "Kelas": "3A"
+          },
+          "undefined_3187641857": {
+            "Kelas": "3A"
+          },
+          "undefined_3189000563": {
+            "Kelas": "3A"
+          }
+        },
+        "documents": {
+          "106": {
+            "Id_doc": "DOC_1785160100549",
+            "file_id_drive": "1fcgbkW6qVbEzhH9c3cO8tdfvYqfXLH1d",
+            "kategori": "LKPD",
+            "nama_file": "Presentasi Mengenal Panca Indra dalam Gaya Ilustrasi Cokelat_20260721_212603_0000.pptx",
+            "tanggal": "2026-07-26T17:00:00.000Z",
+            "url_file": "https://drive.google.com/uc?export=view&id=1fcgbkW6qVbEzhH9c3cO8tdfvYqfXLH1d"
+          }
+        },
+        "grades": {
+          "85": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3181051348",
+            "nama": "Abizard Malik Ahmad",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "86": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3178779180",
+            "nama": "Arfadhia Fachry Hamdani",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "87": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3183385359",
+            "nama": "Athallah Hafiz Ramdani",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "88": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3170781669",
+            "nama": "Ayken Rayhan Razzad",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "89": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3173384532",
+            "nama": "Danu Sena Adji",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "90": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3177614360",
+            "nama": "Hakam Irhab Munib",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "91": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3176926601",
+            "nama": "Khalil Gibran Ramadhan",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "92": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3177483315",
+            "nama": "Khumaira Assyfa Zahra",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "93": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3174589500",
+            "nama": "Lubna Nusaybah Keinara",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "94": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3176466168",
+            "nama": "Mouri Glazy Atreya",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "95": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3182075080",
+            "nama": "Muhammad Ghazi Al Fatih",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "96": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3157512370",
+            "nama": "Nadzira Thafana Qurbah",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "97": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3189000563",
+            "nama": "Qaddafa Mauza Alfarizi",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "98": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3187573748",
+            "nama": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "nilai": 70,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "99": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3187641857",
+            "nama": "Riany Mysha Naladhipa",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "100": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3176921559",
+            "nama": "Rindu Fatiha Anaking",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "101": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3184732034",
+            "nama": "Shakila Karaputri Prabowo",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "102": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3183326992",
+            "nama": "Shaziya Mikayla Rochmansyah",
+            "nilai": 80,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "103": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3182731037",
+            "nama": "Shofiyyah Humaira Azzahra",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "104": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3175372790",
+            "nama": "Syafiq Achmad Syauqi",
+            "nilai": 75,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "105": {
+            "Deskripsi_TP": "Mtk.1",
+            "NISN": "3183467167",
+            "nama": "Syamil Mumtaz Alfatih",
+            "nilai": 85,
+            "tanggal": "2026-07-28T17:00:00.000Z"
+          },
+          "undefined": {
+            "Kelas": "3A"
+          }
+        },
+        "learningObjectives": {
+          "Ind_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "mengidentifikasi informasi dalam teks nonsastra yang dibaca dengan baik",
+            "kode_tp": "Ind.1",
+            "mapel": "Bahasa Indonesia",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Ind_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menyimpulkan pesan dari teks sastra lisan berupa dongeng dengan benar",
+            "kode_tp": "Ind.2",
+            "mapel": "Bahasa Indonesia",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Ipas_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Dengan membaca teks dan melakukan kegiatan, murid dapat mengidentifikasi bagian tubuh manusia dan menjelaskan fungsinya dengan tepat.",
+            "kode_tp": "Ipas.1",
+            "mapel": "IPAS",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Ipas_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Dengan membaca teks dan melakukan tugas, murid dapat menjelaskan bentuk dan fungsi pancaindra dengan benar.",
+            "kode_tp": "Ipas.2",
+            "mapel": "IPAS",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Mtk_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Membaca dan menulis bilangan cacah sampai 1.000",
+            "kode_tp": "Mtk.1",
+            "mapel": "Matematika",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Mtk_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Mengidentifikasi nilai tempat pada suatu bilangan tertentu dengan mandiri",
+            "kode_tp": "Mtk.2",
+            "mapel": "Matematika",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Mtk_3": {
+            "ID_mapel": "",
+            "deskripsi_tp": "Membandingkan dan mengurutkan bilangan",
+            "kode_tp": "Mtk.3",
+            "mapel": "Matematika",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Panc_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "mengidentifikasi perilaku bekerja sama dalam berbagai bentuk keberagaman suku bangsa, sosial, dan budaya di Indonesia yang terikat persatuan dan kesatuan di lingkungan sekitar",
+            "kode_tp": "Panc.1",
+            "mapel": "Pendidikan Pancasila",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Panc_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menunjukkan sikap bangga menjadi anak Indonesia yang memiliki bahasa Indonesia sebagai bahasa persatuan di Lingkungan sekitar",
+            "kode_tp": "Panc.2",
+            "mapel": "Pendidikan Pancasila",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "SR_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "mengenal unsur rupa (titik, garis, bidang, bentuk, warna) dan menemukan unsur rupa di lingkungan sekitar.",
+            "kode_tp": "SR.1",
+            "mapel": "Seni Rupa",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "SR_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menggambar menggunakan unsur rupa (titik, garis, bidang, bentuk, dan warna) untuk menghasilkan karya gambar sederhana.",
+            "kode_tp": "SR.2",
+            "mapel": "Seni Rupa",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Sun_1": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menemukan dan mengelompokkan gambar benda berdasarkan namanya",
+            "kode_tp": "Sun.1",
+            "mapel": "Bahasa Sunda",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          },
+          "Sun_2": {
+            "ID_mapel": "",
+            "deskripsi_tp": "menggunakan huruf kapital dan tanda baca",
+            "kode_tp": "Sun.2",
+            "mapel": "Bahasa Sunda",
+            "pembuat": "Guru Kelas",
+            "semester": 1
+          }
+        },
+        "meta": {
+          "name": "Tahun Ajaran 2026/2027",
+          "status": "active"
+        },
+        "students": {
+          "3157512370": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3157512370",
+            "Nama Lengkap": "Nadzira Thafana Qurbah",
+            "Nama Panggilan": "Nadzira",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Nadzira%20Thafana%20Qurbah"
+          },
+          "3170781669": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3170781669",
+            "Nama Lengkap": "Ayken Rayhan Razzad",
+            "Nama Panggilan": "Ayken",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Ayken%20Rayhan%20Razzad"
+          },
+          "3173384532": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3173384532",
+            "Nama Lengkap": "Danu Sena Adji",
+            "Nama Panggilan": "Adji",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Danu%20Sena%20Adji"
+          },
+          "3174589500": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3174589500",
+            "Nama Lengkap": "Lubna Nusaybah Keinara",
+            "Nama Panggilan": "Lubna",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Lubna%20Nusaybah%20Keinara"
+          },
+          "3175372790": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3175372790",
+            "Nama Lengkap": "Syafiq Achmad Syauqi",
+            "Nama Panggilan": "Syafiq",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Syafiq%20Achmad%20Syauqi"
+          },
+          "3176466168": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3176466168",
+            "Nama Lengkap": "Mouri Glazy Atreya",
+            "Nama Panggilan": "Mouri",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Mouri%20Glazy%20Atreya"
+          },
+          "3176921559": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3176921559",
+            "Nama Lengkap": "Rindu Fatiha Anaking",
+            "Nama Panggilan": "Rindu",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Rindu%20Fatiha%20Anaking"
+          },
+          "3176926601": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3176926601",
+            "Nama Lengkap": "Khalil Gibran Ramadhan",
+            "Nama Panggilan": "Khalil",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Khalil%20Gibran%20Ramadhan"
+          },
+          "3177483315": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3177483315",
+            "Nama Lengkap": "Khumaira Assyfa Zahra",
+            "Nama Panggilan": "Assyfa",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Khumaira%20Assyfa%20Zahra"
+          },
+          "3177614360": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3177614360",
+            "Nama Lengkap": "Hakam Irhab Munib",
+            "Nama Panggilan": "Hakam",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Hakam%20Irhab%20Munib"
+          },
+          "3178779180": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3178779180",
+            "Nama Lengkap": "Arfadhia Fachry Hamdani",
+            "Nama Panggilan": "Arfadhia",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Arfadhia%20Fachry%20Hamdani"
+          },
+          "3181051348": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3181051348",
+            "Nama Lengkap": "Abizard Malik Ahmad",
+            "Nama Panggilan": "Abizard",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Abizard%20Malik%20Ahmad"
+          },
+          "3182075080": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3182075080",
+            "Nama Lengkap": "Muhammad Ghazi Al Fatih",
+            "Nama Panggilan": "Ghazi",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Muhammad%20Ghazi%20Al%20Fatih"
+          },
+          "3182731037": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3182731037",
+            "Nama Lengkap": "Shofiyyah Humaira Azzahra",
+            "Nama Panggilan": "Shofiyyah",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Shofiyyah%20Humaira%20Azzahra"
+          },
+          "3183326992": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3183326992",
+            "Nama Lengkap": "Shaziya Mikayla Rochmansyah",
+            "Nama Panggilan": "Shaziya",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Shaziya%20Mikayla%20Rochmansyah"
+          },
+          "3183385359": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3183385359",
+            "Nama Lengkap": "Athallah Hafiz Ramdani",
+            "Nama Panggilan": "Athallah",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Athallah%20Hafiz%20Ramdani"
+          },
+          "3183467167": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3183467167",
+            "Nama Lengkap": "Syamil Mumtaz Alfatih",
+            "Nama Panggilan": "Syamil",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Syamil%20Mumtaz%20Alfatih"
+          },
+          "3184732034": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3184732034",
+            "Nama Lengkap": "Shakila Karaputri Prabowo",
+            "Nama Panggilan": "Shakila",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Shakila%20Karaputri%20Prabowo"
+          },
+          "3187573748": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3187573748",
+            "Nama Lengkap": "Raden Anaking Muhammad Jaluna Firmansyah",
+            "Nama Panggilan": "Anaking",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Raden%20Anaking%20Muhammad%20Jaluna%20Firmansyah"
+          },
+          "3187641857": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3187641857",
+            "Nama Lengkap": "Riany Mysha Naladhipa",
+            "Nama Panggilan": "Riany",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Riany%20Mysha%20Naladhipa"
+          },
+          "3189000563": {
+            "Foto URL": "",
+            "Kelas": "3A",
+            "NISN": "3189000563",
+            "Nama Lengkap": "Qaddafa Mauza Alfarizi",
+            "Nama Panggilan": "Qaddafa",
+            "QR Code URL": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Qaddafa%20Mauza%20Alfarizi"
+          }
+        }
+      }
+    },
+    "meta": {
+      "activeAcademicYearId": "2026-2027",
+      "classId": "3A",
+      "ownerUid": "aKyL89bhK0VPsZr6xmmEwzZFCZZ2",
+      "role": "superuser",
+      "status": "active",
+      "workspaceId": "ws_3a"
+    }
+  }
+}

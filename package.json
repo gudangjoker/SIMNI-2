@@ -1,0 +1,34 @@
+{
+  "name": "simni-pwa-reconstructed",
+  "version": "4.6.4",
+  "private": true,
+  "description": "SIMNI PWA production source",
+  "scripts": {
+    "build": "npm run build:hosting",
+    "build:hosting": "node scripts/build-hosting.mjs",
+    "test:runtime": "node qa/runtime-sandbox-test.js",
+    "test:chat": "node qa/chat-query-regression.mjs",
+    "test:audio": "node qa/chat-audio-regression.mjs",
+    "test:security": "node qa/security-contract-regression.mjs",
+    "test:static": "node qa/static-contract-regression.mjs",
+    "test:gadm": "node qa/gadm-engine-regression.mjs",
+    "test:gadm-mobile": "node qa/gadm-mobile-workflow-test.mjs",
+    "test:lps": "node qa/lps-contract-regression.mjs && node qa/excel-template-regression.mjs",
+    "test:e2e": "node qa/e2e-ui-test.mjs",
+    "verify:dependencies": "npm ls --all --omit=dev",
+    "verify": "npm run test:runtime && npm run test:chat && npm run test:audio && npm run test:security && npm run test:gadm && npm run test:lps && npm run test:static && npm run test:e2e && npm run test:gadm-mobile"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "6.4.0",
+    "exceljs": "4.4.0",
+    "firebase": "12.17.1",
+    "html2pdf.js": "0.14.0",
+    "html5-qrcode": "2.3.8",
+    "qrcodejs": "1.0.0",
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "lighthouse": "13.4.1",
+    "puppeteer": "25.9.0"
+  }
+}

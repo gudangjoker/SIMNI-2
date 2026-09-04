@@ -1,0 +1,144 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "meta": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "system": {
+      "academicYear": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active'",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+      }
+    },
+    "assignments": {
+      "$yearId": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid == $uid || (root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && auth.token.email == 'unggaran.sditbm@gmail.com'))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+          ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','academicYearId']) && newData.child('uid').val() == $uid && newData.child('academicYearId').val() == $yearId && ((newData.child('role').val() == 'superuser' && newData.child('email').val() == 'unggaran.sditbm@gmail.com' && newData.child('workspaceId').val() == 'ws_superuser' && newData.child('classId').val().matches(/^[1-6][A-Z]$/)) || (newData.child('role').val() == 'vip' && newData.child('email').val() == 'anur.auliya01@gmail.com' && newData.child('workspaceId').val() == 'ws_pjok' && newData.child('classId').val() == 'PJOK'))"
+        }
+      }
+    },
+    "rollovers": {
+      "$yearId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active'",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+        "readiness": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid && root.child('users').child(auth.uid).child('status').val() == 'active'",
+            ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','academicYearId','archiveHash','verified','verifiedAt']) && newData.child('uid').val() == $uid && newData.child('email').val() == auth.token.email && newData.child('academicYearId').val() == $yearId && newData.child('archiveHash').val().matches(/^[a-f0-9]{64}$/) && newData.child('verified').val() == true && newData.child('workspaceId').val() == root.child('users').child(auth.uid).child('workspaceId').val() && newData.child('role').val() == root.child('users').child(auth.uid).child('role').val()"
+          }
+        }
+      }
+    },
+    "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && auth.token.email == 'unggaran.sditbm@gmail.com'))",
+        ".write": "auth != null && (auth.uid == $uid || (root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'))",
+        ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','activeAcademicYearId','status']) && newData.child('uid').val() == $uid && newData.child('status').val() == 'active' && (auth.uid != $uid || newData.child('email').val() == auth.token.email) && ((newData.child('email').val() == 'unggaran.sditbm@gmail.com' && newData.child('role').val() == 'superuser' && newData.child('workspaceId').val() == 'ws_superuser' && newData.child('classId').val().matches(/^[1-6][A-Z]$/)) || (newData.child('email').val() == 'anur.auliya01@gmail.com' && newData.child('role').val() == 'vip' && newData.child('workspaceId').val() == 'ws_pjok' && newData.child('classId').val() == 'PJOK')) && newData.child('activeAcademicYearId').val().matches(/^[0-9]{4}-[0-9]{4}$/)"
+      }
+    },
+    "workspaces": {
+      "$workspaceId": {
+        "meta": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+        },
+        "settings": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('rollovers').child(root.child('users').child(auth.uid).child('activeAcademicYearId').val()).child('state').val() == 'ready'",
+          "identity": {
+            ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+            ".validate": "newData.hasChildren(['nama_aplikasi','nama_kelas','tahun_pelajaran']) && newData.child('nama_aplikasi').isString() && newData.child('nama_aplikasi').val().length <= 160 && newData.child('nama_kelas').isString() && newData.child('tahun_pelajaran').val().matches(/^[0-9]{4}-[0-9]{4}$/)"
+          },
+          "lpsV2": {
+            ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+          }
+        },
+        "academicYears": {
+          "$yearId": {
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('rollovers').child(root.child('users').child(auth.uid).child('activeAcademicYearId').val()).child('state').val() == 'ready'",
+            "meta": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+            },
+            "students": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".indexOn": ["NISN", "Kelas"],
+              "$studentId": {
+                ".validate": "newData.hasChildren(['ID_Siswa','NISN','Nama Lengkap']) && newData.child('ID_Siswa').isString() && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('Nama Lengkap').isString() && newData.child('Nama Lengkap').val().length > 0 && newData.child('Nama Lengkap').val().length <= 160"
+              }
+            },
+            "attendance": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".indexOn": ["Tanggal", "NISN", "Kelas"],
+              "$attendanceId": {
+                ".validate": "newData.hasChildren(['Tanggal','NISN','Nama','Status']) && newData.child('Tanggal').val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('Nama').isString() && (newData.child('Status').val() == 'Hadir' || newData.child('Status').val() == 'Sakit' || newData.child('Status').val() == 'Izin' || newData.child('Status').val() == 'Alpa')"
+              }
+            },
+            "learningObjectives": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".indexOn": ["mapel", "semester"],
+              "$objectiveId": {
+                ".validate": "newData.hasChildren(['ID_mapel','mapel','semester','kode_tp','deskripsi_tp']) && newData.child('ID_mapel').val() == $objectiveId && newData.child('mapel').isString() && (root.child('users').child(auth.uid).child('role').val() != 'vip' || newData.child('mapel').val() == 'PJOK') && newData.child('kode_tp').isString() && newData.child('deskripsi_tp').isString() && (newData.child('semester').val() == '1' || newData.child('semester').val() == '2' || newData.child('semester').val() == 1 || newData.child('semester').val() == 2)"
+              }
+            },
+            "grades": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".indexOn": ["NISN", "learningObjectiveId", "mapel", "Kelas"],
+              "$gradeId": {
+                ".validate": "newData.hasChildren(['ID_Nilai','ID_Siswa','NISN','learningObjectiveId','mapel','semester','kode_tp','nilai']) && newData.child('ID_Nilai').val() == $gradeId && newData.child('ID_Siswa').isString() && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('learningObjectiveId').isString() && newData.child('mapel').isString() && (root.child('users').child(auth.uid).child('role').val() != 'vip' || newData.child('mapel').val() == 'PJOK') && newData.child('kode_tp').isString() && newData.child('nilai').isNumber() && newData.child('nilai').val() >= 0 && newData.child('nilai').val() <= 100"
+              }
+            },
+            "notes": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId"
+            },
+            "journals": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))"
+            },
+            "schedule": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))"
+            },
+            "documents": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId"
+            },
+            "legacyLps": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+            },
+            "lps": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+              ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+            }
+          }
+        },
+        "archives": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'"
+        }
+      }
+    },
+    "auditLogs": {
+      "$workspaceId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ($workspaceId == 'ws_superuser' || $workspaceId == 'ws_pjok')",
+        ".write": false
+      }
+    },
+    "invites": { ".read": false, ".write": false },
+    "inviteLocks": { ".read": false, ".write": false },
+    "operations": { ".read": false, ".write": false },
+    "reconciliation": { ".read": false, ".write": false }
+  }
+}

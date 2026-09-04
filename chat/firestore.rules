@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberDoc(uid) {
+      return get(/databases/$(database)/documents/chatMembers/$(uid));
+    }
+
+    function isActiveMember() {
+      return signedIn()
+        && memberDoc(request.auth.uid).data.active == true
+        && (memberDoc(request.auth.uid).data.role == 'superuser'
+            || memberDoc(request.auth.uid).data.role == 'vip');
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validPublicKey(uid) {
+      return request.resource.data.keys().hasOnly(['uid', 'version', 'publicJwk', 'fingerprint', 'createdAt', 'updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.version == 1
+        && request.resource.data.fingerprint is string
+        && request.resource.data.fingerprint.size() <= 128
+        && request.resource.data.publicJwk is map;
+    }
+
+    function validKeyBackup(uid) {
+      return request.resource.data.keys().hasOnly(['uid', 'version', 'fingerprint', 'backup', 'updatedAt', 'autoRecovery'])
+        && request.resource.data.uid == uid
+        && request.resource.data.version == 1
+        && request.resource.data.fingerprint is string
+        && request.resource.data.backup is map
+        && request.resource.data.autoRecovery == null;
+    }
+
+    function validMessage() {
+      return request.resource.data.keys().hasOnly([
+          'schemaVersion', 'type', 'senderUid', 'recipientUid', 'cryptoVersion',
+          'iv', 'ciphertext', 'aad', 'objectKey', 'expiresAt', 'mediaIv',
+          'encryptedMediaMeta', 'senderFingerprint', 'recipientFingerprint',
+          'senderPublicJwk', 'recipientPublicJwk', 'createdAt'
+        ])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.recipientUid != request.auth.uid
+        && memberDoc(request.resource.data.recipientUid).data.active == true
+        && (memberDoc(request.resource.data.recipientUid).data.role == 'superuser'
+            || memberDoc(request.resource.data.recipientUid).data.role == 'vip')
+        && (request.resource.data.type == 'text'
+            || request.resource.data.type == 'image'
+            || request.resource.data.type == 'audio'
+            || request.resource.data.type == 'file'
+            || request.resource.data.type == 'video')
+        && request.resource.data.cryptoVersion == 1
+        && request.resource.data.senderFingerprint is string
+        && request.resource.data.senderFingerprint.size() <= 128
+        && (
+          !request.resource.data.keys().hasAny([
+            'recipientFingerprint', 'senderPublicJwk', 'recipientPublicJwk'
+          ])
+          || (
+            request.resource.data.keys().hasAll([
+              'recipientFingerprint', 'senderPublicJwk', 'recipientPublicJwk'
+            ])
+            && request.resource.data.recipientFingerprint is string
+            && request.resource.data.recipientFingerprint.size() <= 128
+            && request.resource.data.senderPublicJwk is map
+            && request.resource.data.recipientPublicJwk is map
+          )
+        )
+        && request.resource.data.createdAt == request.time;
+    }
+
+    match /chatMembers/{uid} {
+      allow read: if isActiveMember();
+      allow write: if false;
+    }
+
+    match /chatPublicKeys/{uid} {
+      allow read: if isActiveMember();
+      allow create: if isActiveMember() && isSelf(uid) && validPublicKey(uid);
+      allow update: if isActiveMember()
+        && isSelf(uid)
+        && validPublicKey(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.fingerprint == resource.data.fingerprint
+        && request.resource.data.publicJwk == resource.data.publicJwk;
+      allow delete: if false;
+    }
+
+    match /chatKeyBackups/{uid} {
+      allow read: if isActiveMember() && isSelf(uid);
+      allow create, update: if isActiveMember() && isSelf(uid) && validKeyBackup(uid);
+      allow delete: if isActiveMember() && isSelf(uid);
+    }
+
+    match /chatConversations/{conversationId}/messages/{messageId} {
+      allow read: if conversationId == 'main'
+        && isActiveMember()
+        && (resource.data.senderUid == request.auth.uid
+            || resource.data.recipientUid == request.auth.uid);
+      allow create: if conversationId == 'main' && isActiveMember() && validMessage();
+      allow update, delete: if false;
+    }
+
+    match /chatPushTokens/{uid}/tokens/{tokenId} {
+      allow read: if isActiveMember() && isSelf(uid);
+      allow create, update: if isActiveMember()
+        && isSelf(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'token', 'tokenHash', 'platform', 'active', 'updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 20
+        && request.resource.data.token.size() < 4096
+        && request.resource.data.tokenHash == tokenId
+        && request.resource.data.active == true;
+      allow delete: if isActiveMember() && isSelf(uid);
+    }
+
+    match /chatReadStates/{uid} {
+      allow read: if isActiveMember() && isSelf(uid);
+      allow create, update: if isActiveMember()
+        && isSelf(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'conversationId', 'lastReadMessageId', 'lastReadAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.conversationId == 'main'
+        && request.resource.data.lastReadMessageId is string
+        && request.resource.data.lastReadMessageId.size() > 0
+        && request.resource.data.lastReadMessageId.size() <= 128
+        && request.resource.data.lastReadAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

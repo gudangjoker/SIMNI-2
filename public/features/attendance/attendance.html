@@ -1,0 +1,75 @@
+<!-- SIMNI PWA modular fragment: attendance -->
+
+<template data-simni-view>
+<div id="view-presensi" class="view-section hidden" hidden>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+                    <div><h2 class="text-2xl font-bold text-slate-800 dark:text-white">Data Kehadiran</h2><p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Scan QR, Input Manual, dan Rekapitulasi.</p></div>
+                    <div class="flex border-b border-slate-200 dark:border-slate-800">
+                        <button data-simni-action="setPresensiTab" data-simni-trigger="click" data-simni-args='["input"]' id="tab-presensi-input" class="px-4 py-2 border-b-2 border-primary text-primary font-bold text-sm">Pencatatan</button>
+                        <button data-simni-action="setPresensiTab" data-simni-trigger="click" data-simni-args='["rekap"]' id="tab-presensi-rekap" class="px-4 py-2 border-b-2 border-transparent text-slate-500 dark:text-slate-400 font-medium text-sm transition-colors">Rekapitulasi</button>
+                    </div>
+                </div>
+
+                <div id="presensi-tab-input">
+                    <div class="flex flex-wrap gap-2 w-full justify-between items-center mb-4">
+                        <input type="date" id="presensi-date" data-simni-action="renderPresensiManual" data-simni-trigger="change" class="px-3 py-2 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <button data-simni-action="openQRScanner" data-simni-trigger="click" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 dark:border dark:border-slate-700 text-white rounded-xl text-sm font-bold shadow-md flex items-center gap-2"><i class="fas fa-camera text-lg"></i> Scanner</button>
+                    </div>
+                    <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+                        <div id="presensi-entry-table" class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 dark:bg-[#000000] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider"><th class="p-4 font-bold">Nama Siswa</th><th class="p-4 font-bold text-center text-emerald-600">Hadir</th><th class="p-4 font-bold text-center text-amber-500">Sakit</th><th class="p-4 font-bold text-center text-blue-500">Izin</th><th class="p-4 font-bold text-center text-red-500">Alpa</th><th class="p-4 font-bold">Keterangan</th></tr></thead><tbody id="presensi-table-body" class="text-sm divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
+                        <div id="presensi-completed-state" class="hidden p-10 text-center text-emerald-700 dark:text-emerald-400"><i class="fas fa-check-circle text-5xl mb-3" aria-hidden="true"></i><p class="font-bold text-lg">Presensi sudah dilakukan</p><p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Data kehadiran pada tanggal ini telah tersimpan lengkap.</p></div>
+                        <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#000000] flex justify-end"><button id="presensi-primary-action" data-simni-action="savePresensiManual" data-simni-trigger="click" class="px-6 py-2 bg-primary hover:bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"><i class="fas fa-save"></i><span>Simpan Kehadiran</span></button></div>
+                    </div>
+                </div>
+
+                <!-- PEMBARUAN FILTER TANGGAL SPESIFIK & TOMBOL UNDUH -->
+                <div id="presensi-tab-rekap" class="hidden">
+                    <div class="bg-white dark:bg-[#111111] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-4 flex flex-col md:flex-row gap-4 flex-wrap">
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Penyaring Waktu</label>
+                            <select id="filter-presensi-waktu" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
+                                <option value="hari">Hari / Tanggal Tertentu</option>
+                                <option value="bulan">Bulan Ini</option>
+                                <option value="semester">Semester Ini</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[150px]" id="container-filter-tanggal">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Pilih Tanggal</label>
+                            <input type="date" id="filter-presensi-tanggal" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
+                        </div>
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Penyaring Siswa</label>
+                            <select id="filter-presensi-siswa" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
+                                <option value="">Semua Siswa</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-auto flex items-end">
+                            <button data-simni-action="cetakRekapPresensiPDF" data-simni-trigger="click" class="w-full md:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-sm font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
+                                <i class="fas fa-file-pdf"></i> Unduh Rekap
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-4 mb-4">
+                        <div class="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/50 text-center"><h4 class="text-[10px] font-bold uppercase tracking-widest mb-1">Hadir</h4><p id="rekap-hadir" class="text-3xl font-bold">0</p></div>
+                        <div class="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 p-4 rounded-xl border border-amber-100 dark:border-amber-800/50 text-center"><h4 class="text-[10px] font-bold uppercase tracking-widest mb-1">Sakit</h4><p id="rekap-sakit" class="text-3xl font-bold">0</p></div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 text-center"><h4 class="text-[10px] font-bold uppercase tracking-widest mb-1">Izin</h4><p id="rekap-izin" class="text-3xl font-bold">0</p></div>
+                        <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-xl border border-red-100 dark:border-red-800/50 text-center"><h4 class="text-[10px] font-bold uppercase tracking-widest mb-1">Alpa</h4><p id="rekap-alpa" class="text-3xl font-bold">0</p></div>
+                    </div>
+                    <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden"><div class="overflow-x-auto max-h-[400px]"><table class="w-full text-left border-collapse relative"><thead class="sticky top-0 bg-slate-50 dark:bg-[#000000] shadow-sm border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider"><tr><th class="p-4 font-bold">Tanggal</th><th class="p-4 font-bold">Siswa</th><th class="p-4 font-bold text-center">Status</th><th class="p-4 font-bold">Keterangan</th></tr></thead><tbody id="rekap-presensi-body" class="text-sm divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300"></tbody></table></div></div>
+                </div>
+            </div>
+</template>
+
+<template data-simni-modal>
+<div id="modal-scanner" class="fixed inset-0 bg-black/90 z-[10000] hidden flex-col items-center justify-center no-print opacity-0 transition-opacity">
+        <div class="w-full max-w-md p-4 relative">
+            <button data-simni-action="closeQRScanner" data-simni-trigger="click" class="absolute -top-12 right-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white z-10 transition-colors"><i class="fas fa-times"></i></button>
+            <div class="bg-white rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-700">
+                <div class="p-4 bg-slate-800 text-center"><h3 class="font-bold text-white">Scanner QR Presensi</h3><p class="text-xs text-slate-300" id="scan-date-label">Hari ini</p></div>
+                <div id="reader" class="w-full aspect-square bg-black"></div>
+                <div class="p-4 bg-slate-50 text-center text-sm font-bold text-slate-600" id="scan-result-text">Arahkan kamera ke QR Siswa</div>
+            </div>
+        </div>
+    </div>
+</template>

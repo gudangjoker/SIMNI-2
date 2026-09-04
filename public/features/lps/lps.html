@@ -1,0 +1,624 @@
+<!-- ==========================================
+FILE: features/lps/lps.html
+FUNGSI:
+Fragment modular Screen/Form Mode, Template Builder,
+dan A4 Preview untuk LPS/BLP.
+========================================== -->
+
+<template id="simni-lps-view-template">
+    <div
+        class="lps-module"
+        data-lps-module="view"
+    >
+        <div class="lps-screen-header">
+            <div>
+                <h2>
+                    LPS &amp; BLP
+                </h2>
+
+                <p>
+                    Form responsif dan cetak A4 dari satu model data yang sama.
+                </p>
+            </div>
+
+            <div class="lps-screen-actions">
+                <span
+                    id="lps-template-version-badge"
+                    class="lps-status-badge"
+                    role="status"
+                    aria-live="polite"
+                >
+                    Template belum dipilih
+                </span>
+
+                <button
+                    type="button"
+                    class="lps-button lps-button-soft"
+                    data-simni-action="openModalPengaturanLPS" data-simni-trigger="click"
+                    data-lps-action="open-template-builder"
+                >
+                    <i
+                        class="fas fa-cogs"
+                        aria-hidden="true"
+                    ></i>
+
+                    Atur Template
+                </button>
+            </div>
+        </div>
+
+        <div
+            class="lps-filter-card"
+            aria-label="Filter dan identitas laporan"
+        >
+            <div class="lps-field">
+                <label for="lps-filter-kelompok">
+                    Kelompok BTQ
+                </label>
+
+                <select
+                    id="lps-filter-kelompok"
+                    data-simni-action="populateLPSFilter" data-simni-trigger="change"
+                    data-lps-change="filter-group"
+                >
+                    <option value="Semua">
+                        Semua Siswa
+                    </option>
+
+                    <option value="Kelompok 1">
+                        Kelompok 1
+                    </option>
+
+                    <option value="Kelompok 2">
+                        Kelompok 2
+                    </option>
+
+                    <option value="Kelompok 3">
+                        Kelompok 3
+                    </option>
+                </select>
+            </div>
+
+            <div class="lps-field">
+                <label for="lps-select-siswa">
+                    Siswa
+                </label>
+
+                <select
+                    id="lps-select-siswa"
+                    data-simni-action="loadSiswaLPS" data-simni-trigger="change"
+                    data-lps-change="student"
+                    autocomplete="off"
+                >
+                    <option value="">
+                        -- Pilih Siswa --
+                    </option>
+                </select>
+            </div>
+
+            <div class="lps-field">
+                <label for="lps-select-periode">
+                    Jenis Laporan
+                </label>
+
+                <select
+                    id="lps-select-periode"
+                    data-simni-action="loadSiswaLPS" data-simni-trigger="change"
+                    data-lps-change="period"
+                >
+                    <option value="lps_mid_s1">
+                        LPS Tengah Semester Ganjil
+                    </option>
+
+                    <option value="blp_final_s1">
+                        BLP Semester Ganjil
+                    </option>
+
+                    <option value="lps_mid_s2">
+                        LPS Tengah Semester Genap
+                    </option>
+
+                    <option value="blp_final_s2">
+                        BLP Semester Genap
+                    </option>
+                </select>
+            </div>
+
+            <div class="lps-field">
+                <label for="lps-report-date">
+                    Tanggal Laporan
+                </label>
+
+                <input
+                    type="date"
+                    id="lps-report-date"
+                    data-simni-action="updateLPSHijriDate" data-simni-trigger="change"
+                    data-lps-change="report-date"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="lps-field">
+                <label for="lps-hijri-date">
+                    Tanggal Hijriah Otomatis
+                </label>
+
+                <input
+                    type="text"
+                    id="lps-hijri-date"
+                    readonly
+                    aria-readonly="true"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="lps-field">
+                <label for="lps-hijri-offset">
+                    Koreksi Kalender Resmi
+                </label>
+
+                <select
+                    id="lps-hijri-offset"
+                    data-simni-action="updateLPSHijriDate" data-simni-trigger="change"
+                    data-lps-change="hijri-offset"
+                >
+                    <option value="-2">
+                        -2 hari
+                    </option>
+
+                    <option value="-1">
+                        -1 hari
+                    </option>
+
+                    <option
+                        value="0"
+                        selected
+                    >
+                        Tanpa koreksi
+                    </option>
+
+                    <option value="1">
+                        +1 hari
+                    </option>
+
+                    <option value="2">
+                        +2 hari
+                    </option>
+                </select>
+            </div>
+
+            <div class="lps-field">
+                <label for="lps-class-period-display">
+                    Kelas / Semester
+                </label>
+
+                <input
+                    type="text"
+                    id="lps-class-period-display"
+                    readonly
+                    aria-readonly="true"
+                    value="-"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="lps-field">
+                <span class="lps-field-label">
+                    Status Laporan
+                </span>
+
+                <div>
+                    <span
+                        id="lps-report-status"
+                        class="lps-status-badge"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Belum dibuat
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div
+            id="lps-empty-state"
+            class="lps-empty-state"
+            role="status"
+        >
+            <i
+                class="fas fa-file-signature lps-empty-state-icon"
+                aria-hidden="true"
+            ></i>
+
+            <p>
+                <strong>
+                    Pilih siswa dan jenis laporan.
+                </strong>
+            </p>
+
+            <p>
+                Template akan diterapkan berdasarkan tahun pelajaran,
+                kelas, jenis laporan, dan semester.
+            </p>
+        </div>
+
+        <div
+            id="lps-form-area"
+            class="lps-form-card"
+            hidden
+        >
+            <div class="lps-form-head">
+                <div>
+                    <h3 id="lps-form-title">
+                        Form Penilaian
+                    </h3>
+
+                    <p id="lps-form-meta">
+                        -
+                    </p>
+                </div>
+
+                <div class="lps-screen-actions">
+                    <button
+                        type="button"
+                        class="lps-button lps-button-soft"
+                        data-simni-action="previewLPS" data-simni-trigger="click"
+                        data-lps-action="preview"
+                    >
+                        <i
+                            class="fas fa-eye"
+                            aria-hidden="true"
+                        ></i>
+
+                        Preview A4
+                    </button>
+
+                    <button
+                        type="button"
+                        class="lps-button lps-button-dark"
+                        data-simni-action="cetakLPS" data-simni-trigger="click"
+                        data-lps-action="print"
+                    >
+                        <i
+                            class="fas fa-print"
+                            aria-hidden="true"
+                        ></i>
+
+                        Cetak / Simpan PDF
+                    </button>
+                    <button
+                        type="button"
+                        class="lps-button lps-button-primary"
+                        style="background-color: #10b981; border-color: #059669;"
+                        data-simni-action="exportExcelLPS" data-simni-trigger="click"
+                    >
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        Ekspor Excel
+                    </button>
+                </div>
+            </div>
+
+            <div
+                id="lps-latest-template-alert"
+                class="lps-latest-template-alert"
+                role="status"
+                aria-live="polite"
+                hidden
+            >
+                <span>
+                    Template yang lebih baru tersedia.
+                    Laporan final tetap memakai snapshot lama.
+                </span>
+
+                <button
+                    type="button"
+                    class="lps-button lps-button-soft"
+                    data-simni-action="gunakanTemplateLPSAktif" data-simni-trigger="click"
+                    data-lps-action="use-latest-template"
+                >
+                    Gunakan Template Terbaru
+                </button>
+            </div>
+
+            <form
+                id="lps-main-form"
+                data-simni-action="preventDefault" data-simni-trigger="submit"
+                autocomplete="off"
+            >
+                <div
+                    id="lps-dynamic-form-container"
+                    aria-live="polite"
+                ></div>
+
+                <div
+                    id="lps-blp-notes"
+                    class="lps-general-notes"
+                    hidden
+                >
+                    <div class="lps-field">
+                        <label for="lps-teacher-note">
+                            Catatan Wali Kelas
+                        </label>
+
+                        <textarea
+                            id="lps-teacher-note"
+                            rows="5"
+                            maxlength="4000"
+                            autocomplete="off"
+                            placeholder="Catatan akhir semester dari wali kelas"
+                        ></textarea>
+                    </div>
+
+                    <div class="lps-field">
+                        <label for="lps-parent-note">
+                            Catatan Orang Tua
+                        </label>
+
+                        <textarea
+                            id="lps-parent-note"
+                            rows="5"
+                            maxlength="4000"
+                            autocomplete="off"
+                            placeholder="Dapat dikosongkan saat dicetak untuk ditulis orang tua"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div class="lps-form-footer">
+                    <button
+                        type="button"
+                        id="lps-save-draft-button"
+                        class="lps-button lps-button-primary"
+                        data-simni-action="saveLPSData" data-simni-trigger="click"
+                        data-lps-action="save-draft"
+                    >
+                        <i
+                            class="fas fa-save"
+                            aria-hidden="true"
+                        ></i>
+
+                        Simpan Draft
+                    </button>
+
+                    <button
+                        type="button"
+                        id="lps-finalize-button"
+                        class="lps-button lps-button-success"
+                        data-simni-action="finalisasiLPS" data-simni-trigger="click"
+                        data-lps-action="finalize"
+                    >
+                        <i
+                            class="fas fa-lock"
+                            aria-hidden="true"
+                        ></i>
+
+                        Finalkan &amp; Kunci
+                    </button>
+
+                    <button
+                        type="button"
+                        id="lps-revise-button"
+                        class="lps-button lps-button-danger"
+                        data-simni-action="bukaRevisiLPS" data-simni-trigger="click"
+                        data-lps-action="open-revision"
+                        hidden
+                    >
+                        <i
+                            class="fas fa-unlock-alt"
+                            aria-hidden="true"
+                        ></i>
+
+                        Buka Revisi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>
+
+
+<template id="simni-lps-builder-template">
+    <div
+        class="bg-white dark:bg-[#111111] rounded-2xl w-full max-w-5xl overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col max-h-[94vh] shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lps-builder-title"
+        data-lps-module="builder"
+    >
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]">
+            <div>
+                <h3
+                    id="lps-builder-title"
+                    class="font-bold text-lg text-slate-800 dark:text-white"
+                >
+                    Template LPS / BLP
+                </h3>
+
+                <p
+                    id="lps-builder-scope-label"
+                    class="text-xs text-slate-500"
+                >
+                    -
+                </p>
+            </div>
+
+            <button
+                type="button"
+                data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-pengaturan-lps"]'
+                data-lps-action="close-template-builder"
+                class="w-8 h-8 rounded-full bg-slate-200 dark:bg-[#222222] hover:bg-slate-300 flex items-center justify-center"
+                aria-label="Tutup pengaturan template LPS dan BLP"
+            >
+                <i
+                    class="fas fa-times"
+                    aria-hidden="true"
+                ></i>
+            </button>
+        </div>
+
+        <form
+            id="lps-builder-form"
+            data-simni-action="simpanPengaturanLPS" data-simni-trigger="submit" data-simni-argument="event"
+            class="p-5 overflow-y-auto flex-1 text-sm hide-scrollbar"
+            autocomplete="off"
+        >
+            <div class="lps-builder-toolbar">
+                <div class="lps-field">
+                    <label for="lps-template-source">
+                        Salin dari template yang sudah ada
+                    </label>
+
+                    <select
+                        id="lps-template-source"
+                        autocomplete="off"
+                    >
+                        <option value="">
+                            -- Pilih template sumber --
+                        </option>
+                    </select>
+                </div>
+
+                <button
+                    type="button"
+                    class="lps-button lps-button-soft"
+                    data-simni-action="salinTemplateLPS" data-simni-trigger="click"
+                    data-lps-action="copy-template"
+                >
+                    <i
+                        class="fas fa-copy"
+                        aria-hidden="true"
+                    ></i>
+
+                    Salin
+                </button>
+
+                <button
+                    type="button"
+                    class="lps-button lps-button-dark"
+                    data-simni-action="resetTemplateLPSKeAcuan" data-simni-trigger="click"
+                    data-lps-action="reset-template-reference"
+                >
+                    <i
+                        class="fas fa-file-excel"
+                        aria-hidden="true"
+                    ></i>
+
+                    Acuan Excel
+                </button>
+            </div>
+
+            <p class="mt-3 text-xs text-slate-500">
+                Nama aspek, butir, jumlah kriteria, dan label kriteria
+                dapat diubah. Setiap penyimpanan membuat versi template
+                baru agar laporan lama tidak ikut berubah.
+            </p>
+
+            <div
+                id="lps-builder-container"
+                aria-live="polite"
+            ></div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+                <button
+                    type="button"
+                    class="lps-button lps-button-soft"
+                    data-simni-action="addLPSBuilderSection" data-simni-trigger="click"
+                    data-lps-action="add-builder-section"
+                >
+                    <i
+                        class="fas fa-plus"
+                        aria-hidden="true"
+                    ></i>
+
+                    Tambah Bagian
+                </button>
+
+                <button
+                    type="submit"
+                    id="lps-save-template-button"
+                    class="lps-button lps-button-primary"
+                    data-lps-action="save-template"
+                >
+                    <i
+                        class="fas fa-save"
+                        aria-hidden="true"
+                    ></i>
+
+                    Simpan Versi Template
+                </button>
+            </div>
+        </form>
+    </div>
+</template>
+
+
+<template id="simni-lps-preview-template">
+    <div
+        id="lps-preview-modal"
+        class="lps-preview-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lps-preview-title"
+        aria-hidden="true"
+        data-lps-module="preview"
+    >
+        <div class="lps-preview-toolbar">
+            <strong id="lps-preview-title">
+                Preview A4 LPS / BLP
+            </strong>
+
+            <div class="lps-screen-actions">
+                <button
+                    type="button"
+                    class="lps-button lps-button-primary"
+                    data-simni-action="cetakLPS" data-simni-trigger="click"
+                    data-lps-action="print"
+                >
+                    <i
+                        class="fas fa-print"
+                        aria-hidden="true"
+                    ></i>
+
+                    Cetak / Simpan PDF
+                </button>
+                <button
+                    type="button"
+                    class="lps-button lps-button-primary"
+                    style="background-color: #10b981; border-color: #059669;"
+                    data-simni-action="exportExcelLPS" data-simni-trigger="click"
+                >
+                    <i class="fas fa-file-excel" aria-hidden="true"></i>
+                    Ekspor Excel
+                </button>
+
+                <button
+                    type="button"
+                    class="lps-button lps-button-danger"
+                    data-simni-action="closeLPSPreview" data-simni-trigger="click"
+                    data-lps-action="close-preview"
+                >
+                    <i
+                        class="fas fa-times"
+                        aria-hidden="true"
+                    ></i>
+
+                    Tutup
+                </button>
+            </div>
+        </div>
+
+        <div
+            class="lps-preview-scroll"
+            role="region"
+            aria-label="Pratinjau laporan A4"
+            tabindex="0"
+        >
+            <div
+                id="lps-preview-content"
+                class="lps-preview-page"
+                role="document"
+                aria-live="polite"
+            ></div>
+        </div>
+    </div>
+</template>
