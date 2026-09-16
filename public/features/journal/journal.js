@@ -179,52 +179,138 @@ function renderRekapJurnal() {
     const month = monthInput.value || getJakartaMonthString();
     monthInput.value = month;
     const currentKelas = normalizeClassLabel(state?.activeKelas);
-    const filtered = state.jurnal.filter((item) => {
+    const filtered = (state.jurnal || []).filter((item) => {
         if (!currentKelas || academicRecordClass(item) !== currentKelas) return false;
         return normalizeDate(item.Tanggal).startsWith(month);
     }).sort((a, b) => String(a.Tanggal).localeCompare(String(b.Tanggal)) || Number(a.Jam_Ke) - Number(b.Jam_Ke));
+
     if (!filtered.length) {
-        body.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400 text-xs">Jurnal kosong pada bulan ini.</td></tr>';
+        body.innerHTML = '<div class="p-8 text-center bg-white dark:bg-[#111111] rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-400 text-sm font-medium">Jurnal kosong pada bulan ini.</div>';
         return;
     }
+
     body.replaceChildren();
     filtered.forEach((item) => {
-        const row = document.createElement('tr'); row.className = 'hover:bg-slate-50 dark:hover:bg-[#111111] transition-colors';
-        const values = [normalizeDate(item.Tanggal), item.Jam_Ke, item.Mapel, item.Materi, item.Keterangan || '-'];
-        values.forEach((value, index) => {
-            const cell = document.createElement('td');
-            cell.className = index === 1
-                ? 'p-4 text-center font-bold text-primary whitespace-nowrap'
-                : index === 4
-                ? 'p-4 text-xs italic text-slate-500 dark:text-slate-400 whitespace-nowrap'
-                : index === 0
-                ? 'p-4 text-xs font-bold whitespace-nowrap'
-                : index === 2
-                ? 'p-4 text-xs font-semibold whitespace-nowrap'
-                : 'p-4 text-xs whitespace-pre-wrap leading-relaxed min-w-[200px]';
-            cell.textContent = value ?? '';
-            row.appendChild(cell);
-        });
-        const actionCell = document.createElement('td'); actionCell.className = 'p-4 text-center';
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'text-red-400 hover:text-red-600 p-2'; button.setAttribute('aria-label','Hapus jurnal');
-        const icon = document.createElement('i'); icon.className = 'fas fa-trash'; button.appendChild(icon); button.addEventListener('click', () => hapusJurnal(item.ID_Jurnal));
-        actionCell.appendChild(button); row.appendChild(actionCell); body.appendChild(row);
+        const card = document.createElement('div');
+        card.className = 'bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-3 transition-colors hover:border-slate-300 dark:hover:border-slate-700';
+
+        // Baris Atas: Metadata jurnal (Tanggal, Jam Ke, Mapel, Keterangan, Tombol Hapus)
+        const topRow = document.createElement('div');
+        topRow.className = 'flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2.5';
+
+        const infoGroup = document.createElement('div');
+        infoGroup.className = 'flex items-center gap-2 flex-wrap';
+
+        const dateBadge = document.createElement('span');
+        dateBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-primary dark:text-indigo-400 text-xs font-bold';
+        const calIcon = document.createElement('i');
+        calIcon.className = 'far fa-calendar-alt text-[11px]';
+        dateBadge.appendChild(calIcon);
+        dateBadge.appendChild(document.createTextNode(normalizeDate(item.Tanggal)));
+        infoGroup.appendChild(dateBadge);
+
+        const jamBadge = document.createElement('span');
+        jamBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold';
+        jamBadge.textContent = `Jam ke-${item.Jam_Ke || '-'}`;
+        infoGroup.appendChild(jamBadge);
+
+        const mapelSpan = document.createElement('span');
+        mapelSpan.className = 'font-bold text-sm text-slate-800 dark:text-white';
+        mapelSpan.textContent = item.Mapel || '-';
+        infoGroup.appendChild(mapelSpan);
+
+        if (item.Keterangan) {
+            const ketSpan = document.createElement('span');
+            ketSpan.className = 'text-xs italic text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#1a1a1a] px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800';
+            ketSpan.textContent = item.Keterangan;
+            infoGroup.appendChild(ketSpan);
+        }
+
+        topRow.appendChild(infoGroup);
+
+        const actionWrap = document.createElement('div');
+        actionWrap.className = 'flex items-center';
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'text-red-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors';
+        deleteBtn.setAttribute('aria-label', 'Hapus jurnal');
+        deleteBtn.setAttribute('title', 'Hapus Jurnal');
+        const trashIcon = document.createElement('i');
+        trashIcon.className = 'fas fa-trash text-sm';
+        deleteBtn.appendChild(trashIcon);
+        deleteBtn.addEventListener('click', () => hapusJurnal(item.ID_Jurnal));
+        actionWrap.appendChild(deleteBtn);
+
+        topRow.appendChild(actionWrap);
+        card.appendChild(topRow);
+
+        // Baris Bawah: Materi / Aktivitas ditempatkan di bawah membentang penuh (Full Width)
+        const contentBox = document.createElement('div');
+        contentBox.className = 'w-full bg-slate-50 dark:bg-[#000000]/40 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80';
+
+        const contentLabel = document.createElement('div');
+        contentLabel.className = 'text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 flex items-center gap-1.5';
+        const bookIcon = document.createElement('i');
+        bookIcon.className = 'fas fa-book-open text-[10px]';
+        contentLabel.appendChild(bookIcon);
+        contentLabel.appendChild(document.createTextNode('Materi / Aktivitas'));
+
+        const contentText = document.createElement('div');
+        contentText.className = 'text-xs text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap';
+        contentText.textContent = item.Materi || '-';
+
+        contentBox.appendChild(contentLabel);
+        contentBox.appendChild(contentText);
+        card.appendChild(contentBox);
+
+        body.appendChild(card);
     });
 }
 
 async function cetakJurnalPDF() {
     await window.ensureSIMNIVendors?.("pdf");
     if (typeof html2pdf !== 'function') return toast('Pustaka PDF belum tersedia. Muat ulang saat online.', 'error');
-    const rows = Array.from(document.querySelectorAll('#rekap-jurnal-body tr')).map((row) => row.cells.length > 1 ? `<tr><td style="border:1px solid #000;padding:5px;text-align:center">${escapeHTML(row.cells[0].innerText)}</td><td style="border:1px solid #000;padding:5px;text-align:center">${escapeHTML(row.cells[1].innerText)}</td><td style="border:1px solid #000;padding:5px">${escapeHTML(row.cells[2].innerText)}</td><td style="border:1px solid #000;padding:5px;white-space:pre-wrap">${escapeHTML(row.cells[3].innerText)}</td><td style="border:1px solid #000;padding:5px">${escapeHTML(row.cells[4].innerText)}</td></tr>` : '').join('');
-    if (!rows) return toast('Data kosong.', 'error');
+    const monthInput = document.getElementById('filter-jurnal-bulan');
+    const month = monthInput?.value || getJakartaMonthString();
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
+    const filtered = (state.jurnal || []).filter((item) => {
+        if (!currentKelas || academicRecordClass(item) !== currentKelas) return false;
+        return normalizeDate(item.Tanggal).startsWith(month);
+    }).sort((a, b) => String(a.Tanggal).localeCompare(String(b.Tanggal)) || Number(a.Jam_Ke) - Number(b.Jam_Ke));
+
+    if (!filtered.length) return toast('Data jurnal kosong untuk bulan ini.', 'error');
+
+    const rows = filtered.map((item) => `<tr>
+        <td style="border:1px solid #000;padding:6px;text-align:center">${escapeHTML(normalizeDate(item.Tanggal))}</td>
+        <td style="border:1px solid #000;padding:6px;text-align:center">${escapeHTML(String(item.Jam_Ke || ''))}</td>
+        <td style="border:1px solid #000;padding:6px;font-weight:bold">${escapeHTML(item.Mapel || '')}</td>
+        <td style="border:1px solid #000;padding:6px;white-space:pre-wrap;line-height:1.4">${escapeHTML(item.Materi || '')}</td>
+        <td style="border:1px solid #000;padding:6px">${escapeHTML(item.Keterangan || '-')}</td>
+    </tr>`).join('');
 
     const element = document.createElement('div');
-    element.innerHTML = `<div style="padding:20px;font-family:'Times New Roman',serif;color:#000;background:#fff"><h2 style="font-size:18px;font-weight:bold;text-align:center;margin-bottom:15px;text-transform:uppercase">Jurnal Mengajar Harian<br>Kelas ${escapeHTML(state.pengaturan.nama_kelas)} - ${escapeHTML(state.pengaturan.tahun_pelajaran)}</h2><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="border:1px solid #000;padding:5px">Tanggal</th><th style="border:1px solid #000;padding:5px">Jam</th><th style="border:1px solid #000;padding:5px">Mapel</th><th style="border:1px solid #000;padding:5px">Uraian Materi</th><th style="border:1px solid #000;padding:5px">Catatan</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    element.innerHTML = `<div style="padding:20px;font-family:'Times New Roman',serif;color:#000;background:#fff">
+        <h2 style="font-size:18px;font-weight:bold;text-align:center;margin-bottom:15px;text-transform:uppercase">
+            Jurnal Mengajar Harian<br>Kelas ${escapeHTML(state?.pengaturan?.nama_kelas || currentKelas || '')} - ${escapeHTML(state?.pengaturan?.tahun_pelajaran || '')}
+        </h2>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+                <tr style="background:#f0f0f0">
+                    <th style="border:1px solid #000;padding:6px;width:15%">Tanggal</th>
+                    <th style="border:1px solid #000;padding:6px;width:8%">Jam</th>
+                    <th style="border:1px solid #000;padding:6px;width:22%">Mapel</th>
+                    <th style="border:1px solid #000;padding:6px;width:40%">Uraian Materi</th>
+                    <th style="border:1px solid #000;padding:6px;width:15%">Catatan</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
     showLoad('Membuat PDF...');
     try {
         await html2pdf().set({
             margin: 0.5,
-            filename: `${safeFilename(`Jurnal_Kelas_${state.pengaturan.nama_kelas}`)}.pdf`,
+            filename: `${safeFilename(`Jurnal_Kelas_${state?.pengaturan?.nama_kelas || currentKelas || 'Rekap'}`)}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }

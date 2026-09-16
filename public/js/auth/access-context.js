@@ -42,11 +42,19 @@ async function authoritative(user){
 }
 export async function establishAccessContext(user){
     if(!user?.uid)throw new Error('Sesi Firebase diperlukan.');
+    let record;
+    try { record = JSON.parse(localStorage.getItem(leaseKey(user.uid)) || 'null'); } catch (_) {}
+    const isLeaseValid = record && record.profile?.uid === user.uid
+        && registry.normalizeEmail(record.profile.email) === registry.normalizeEmail(user.email)
+        && Date.now() >= record.verifiedAt
+        && Date.now() < record.expiresAt;
+    if (isLeaseValid) {
+        clearTimeout(leaseTimer);
+        leaseTimer = setTimeout(invalidate, record.expiresAt - Date.now());
+        return activate(policy.validateProfile(record.profile, user.uid), true);
+    }
     if(!navigator.onLine && !runtime.firebaseEmulator){
-        let record;try{record=JSON.parse(localStorage.getItem(leaseKey(user.uid))||'null');}catch(_){}
-        if(!record || record.profile?.uid!==user.uid || registry.normalizeEmail(record.profile.email)!==registry.normalizeEmail(user.email) || Date.now()<record.verifiedAt || Date.now()>=record.expiresAt)throw new Error('Akses offline kedaluwarsa. Hubungkan internet untuk memverifikasi penugasan.');
-        leaseTimer=setTimeout(invalidate,record.expiresAt-Date.now());
-        return activate(policy.validateProfile(record.profile,user.uid),true);
+        throw new Error('Akses offline kedaluwarsa. Hubungkan internet untuk memverifikasi penugasan.');
     }
     return activate(await authoritative(user),false);
 }

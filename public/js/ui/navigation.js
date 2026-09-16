@@ -191,6 +191,7 @@ async function switchView(id) {
     }
 
     state.currentView = targetId;
+    try { sessionStorage.setItem('simni:active-view', targetId); } catch (_) {}
 
     // Tombol menu garis 3 selalu tersedia pada header mobile
     const btnDrawer = document.getElementById('btn-menu-drawer');

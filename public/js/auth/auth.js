@@ -412,8 +412,10 @@ async function hydrateAuthorizedSession(user, context, generation) {
     window.unlockScreen
         ?.();
 
+    let targetView = 'dashboard';
+    try { targetView = sessionStorage.getItem('simni:active-view') || 'dashboard'; } catch (_) {}
     window.switchView
-        ?.('dashboard');
+        ?.(targetView);
 
     // Minta persistensi IndexedDB/Storage ke browser/Android WebView
     if (typeof navigator !== 'undefined' && typeof navigator.storage?.persist === 'function') {
