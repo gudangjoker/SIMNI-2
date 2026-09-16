@@ -43,7 +43,7 @@ assert(policy.ROLES.SUPERUSER === 'superuser', 'ROLES.SUPERUSER = superuser');
 assert(policy.ROLES.VIP === 'vip', 'ROLES.VIP = vip');
 assert(Object.keys(policy.ROLES).length === 2, 'Access policy hanya memiliki dua role');
 
-assert(policy.FEATURES.CHAT === 'chat', 'FEATURES.CHAT exists');
+assert(policy.FEATURES.CHAT === undefined, 'Chat feature removed');
 assert(policy.FEATURES.DASHBOARD === 'dashboard', 'FEATURES.DASHBOARD exists');
 assert(policy.FEATURES.LPS === 'lps', 'FEATURES.LPS exists');
 assert(policy.FEATURES.DOCUMENTS === 'documents', 'FEATURES.DOCUMENTS exists');
@@ -51,8 +51,8 @@ assert(policy.FEATURES.USER_ADMIN === 'userAdmin', 'FEATURES.USER_ADMIN exists')
 assert(policy.FEATURES.GADM === 'gadm', 'FEATURES.GADM exists');
 
 // Chat access: Superuser dan VIP
-assert(policy.hasFeature('superuser', 'chat') === true, 'Superuser CAN access Chat');
-assert(policy.hasFeature('vip', 'chat') === true, 'VIP CAN access Chat');
+assert(policy.hasFeature('superuser', 'chat') === false, 'Superuser cannot access removed Chat');
+assert(policy.hasFeature('vip', 'chat') === false, 'VIP cannot access removed Chat');
 
 // Documents: Superuser YES, VIP NO
 assert(policy.hasFeature('superuser', 'documents') === true, 'Superuser CAN access Documents');
@@ -558,19 +558,10 @@ Object.defineProperty(globalThis, 'crypto', { value: { subtle }, configurable: t
         section('6. FREE-TIER EDGE — Billing-Safe Contract');
 
         const firebaseDeployment = JSON.parse(fs.readFileSync(path.join(ROOT, 'firebase.json'), 'utf8'));
-        const edgeSource = fs.readFileSync(path.join(ROOT, 'chat/edge/worker.js'), 'utf8');
-        const edgeConfig = JSON.parse(fs.readFileSync(path.join(ROOT, 'chat/edge/wrangler.jsonc'), 'utf8'));
+        const edgeSource = fs.readFileSync(path.join(ROOT, 'edge/worker.js'), 'utf8');
+        const edgeConfig = JSON.parse(fs.readFileSync(path.join(ROOT, 'edge/wrangler.jsonc'), 'utf8'));
         assert(!firebaseDeployment.functions, 'Firebase deploy tidak memuat Cloud Functions/Blaze');
-        assert(edgeConfig.r2_buckets?.length === 1
-            && edgeConfig.r2_buckets[0].binding === 'CHAT_MEDIA_BUCKET'
-            && edgeConfig.r2_buckets[0].bucket_name === 'simni-chat-media',
-        'Media Chat memakai tepat satu binding R2 yang terisolasi');
-        const uploadMediaSource = /async function uploadMedia[\s\S]*?\n}/.exec(edgeSource)?.[0] || '';
-        const readMediaSource = /async function readMedia[\s\S]*?\n}/.exec(edgeSource)?.[0] || '';
-        assert(uploadMediaSource.includes('requireChatMediaBucket') && readMediaSource.includes('requireChatMediaBucket'),
-            'Upload dan pembacaan media Chat memakai R2');
-        assert(!uploadMediaSource.includes('requireCloudinary') && !readMediaSource.includes('requireCloudinary'),
-            'Cloudinary tidak digunakan oleh media Chat');
+        assert(!edgeConfig.r2_buckets, 'Asset Worker has no Chat storage binding');
         assert(edgeSource.includes('CLOUDINARY_POLICY'), 'Worker mempertahankan policy Cloudinary untuk LKPD dan Dokumen');
         assert(edgeSource.includes('8 * 1024 * 1024'), 'Hard limit aset maksimal 8 MB');
         assert(edgeSource.includes('verifyFirebaseIdToken'), 'Worker memverifikasi Firebase ID token');
@@ -592,13 +583,6 @@ Object.defineProperty(globalThis, 'crypto', { value: { subtle }, configurable: t
             './icons/school-logo.png',
             './icons/icon-192.png',
             './icons/icon-512.png',
-            './chat/chat.html',
-            './chat/css/chat-style.css',
-            './chat/js/chat-config.js',
-            './chat/js/chat-auth.js',
-            './chat/js/chat-db.js',
-            './chat/js/chat-query-core.mjs',
-            './chat/js/chat-media.js',
             './js/auth/auth.js',
             './js/core/app.js',
             './js/platform/bootstrap.js',
@@ -623,11 +607,7 @@ Object.defineProperty(globalThis, 'crypto', { value: { subtle }, configurable: t
 
         const indexSource = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
-        assert(indexSource.includes('data-requires-feature="chat"'), 'index.html has chat feature guard');
-        assert(indexSource.includes('./chat/chat.html'), 'index.html links to chat.html');
-        assert(indexSource.includes('fa-comments'), 'index.html has chat icon');
-        const chatLinks = (indexSource.match(/data-requires-feature="chat"/g) || []).length;
-        assert(chatLinks >= 2, `Chat button in both nav surfaces (found ${chatLinks} instances)`);
+        assert(!/chat/i.test(indexSource), 'Chat access absent from desktop and mobile shell');
 
         // ============================================================
         // FINAL REPORT

@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 
 const require = createRequire(import.meta.url);
 const root = process.cwd();
@@ -59,20 +60,21 @@ assert(/function createResponseChecklist\(/.test(source)
     && /other !== checkbox\) other\.checked = false/.test(source),
     'UI ceklis memakai checkbox nyata dan satu pilihan aktif per butir');
 assert(/function createResponseSelect\(/.test(source)
-    && /inputType ===\s*'select'/.test(source),
+    && /'lps-response-overall'/.test(source) && /'lps-response-item'/.test(source),
     'UI dropdown dirender dari kontrak inputType select');
 assert(/function createResponseTextInput\(/.test(source)
     && /inputType ===\s*'text'/.test(source),
     'UI teks dirender dari kontrak inputType text');
-assert(/window\.ExcelJS\?\.Workbook/.test(source)
-    && !/window\.XLSX/.test(source.slice(source.indexOf('async function exportExcelLPS'))),
-    'Ekspor LPS/BLP wajib menggunakan ExcelJS');
-assert(/throw new Error\(`Butir/.test(source)
-    && /throw new Error\(`Aspek/.test(source),
-    'Pemetaan template gagal tertutup bila anchor aspek atau butir tidak ditemukan');
-assert(/candidate\.includes\(target\)/.test(source)
-    && !/target\.includes\(candidate\)/.test(source),
-    'Pencarian anchor tidak menganggap nilai sel pendek sebagai label template');
+const sandbox={window:{SIMNILPSCore:core}};
+vm.runInNewContext(readFileSync('features/lps/lps-reference-data.js','utf8')+'\n'+readFileSync('features/lps/lps-excel.js','utf8'),sandbox);
+for (const periodId of ['lps_mid_s1','blp_final_s1']) {
+    const base=sandbox.window.SIMNILPSExcel.createTemplate(settings,periodId);
+    const renamed=core.deepClone(base);renamed.sections[0].aspects[0].title='Judul guru';
+    assert(sandbox.window.SIMNILPSExcel.matchesStructure(renamed,base),'Ubah nama '+periodId+' tetap memakai layout acuan');
+    renamed.sections[0].aspects[0].items.push({id:'new_item',label:'Butir tambahan'});
+    assert(!sandbox.window.SIMNILPSExcel.matchesStructure(renamed,base),'Tambah butir '+periodId+' menggunakan layout yang memuat struktur baru');
+}
+assert(source.includes('window.SIMNILPSExcel.createWorkbook(reports,names)'), 'Controller meneruskan snapshot tiap siswa ke exporter native');
 assert(/const activeClass\s*=\s*normalizeClassLabel\([\s\S]*?window\.state[\s\S]*?\.activeKelas[\s\S]*?normalizeClassLabel\([\s\S]*?student[\s\S]*?\.Kelas[\s\S]*?===\s*activeClass/.test(source),
     'Dropdown siswa LPS/BLP hanya memuat siswa dari kelas aktif');
 

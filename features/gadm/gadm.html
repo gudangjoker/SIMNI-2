@@ -22,6 +22,96 @@
       <button type="button" data-gadm-pane-value="preview">▣ Hasil</button>
     </nav>
 
+    <!-- LAYER PALING AWAL: PEMILIHAN OPSI ADMINISTRASI GURU -->
+    <div id="gadm-selector-modal" class="gadm-selector-modal" role="dialog" aria-modal="true" aria-labelledby="gadm-selector-title">
+      <div class="gadm-selector-overlay"></div>
+      <div class="gadm-selector-dialog">
+        <button id="gadm-selector-close" type="button" class="gadm-selector-close-btn" aria-label="Tutup Pilihan">✕</button>
+        <div class="gadm-selector-header">
+          <div class="gadm-selector-badge">
+            <span class="gadm-selector-dot"></span>
+            SIMNI · Kurikulum Merdeka 2026
+          </div>
+          <h2 id="gadm-selector-title">Administrasi Apa yang Ingin Anda Buat?</h2>
+          <p id="gadm-selector-subtitle">Pilih salah satu dari 4 opsi administrasi di bawah ini. Formulir akan otomatis disesuaikan agar praktis dan tidak membebani guru.</p>
+        </div>
+
+        <div class="gadm-entry-grid" role="radiogroup" aria-label="Pilih opsi administrasi">
+          <!-- Opsi 1: Modul Ajar -->
+          <div class="gadm-entry-card gadm-is-selected" tabindex="0" role="radio" aria-checked="true" data-gadm-choice="modulAjar" data-gadm-document="modulAjar">
+            <div class="gadm-entry-card-top">
+              <span class="gadm-entry-pill gadm-pill-primary">Deep Learning</span>
+              <span class="gadm-entry-check">✓</span>
+            </div>
+            <div class="gadm-entry-card-icon">
+              <svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10M6 14h6"/></svg>
+            </div>
+            <h3>Modul Ajar</h3>
+            <span class="gadm-entry-type">Pembelajaran Mendalam</span>
+            <p>Skenario mengajar berkesadaran, bermakna, dan menggembirakan (Mindful, Meaningful, Joyful). Lengkap dengan CP/TP terverifikasi, alur sintaks model, diferensiasi proses-produk, asesmen formatif/sumatif, dan refleksi.</p>
+          </div>
+
+          <!-- Opsi 2: Prota - Promes - Silabus -->
+          <div class="gadm-entry-card" role="group" aria-label="Administrasi tahunan dan semester" data-gadm-choice="prota">
+            <div class="gadm-entry-card-top">
+              <span class="gadm-entry-pill gadm-pill-accent">Paket Perencanaan</span>
+              <span class="gadm-entry-check">✓</span>
+            </div>
+            <div class="gadm-entry-card-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 18h2M14 18h2"/></svg>
+            </div>
+            <h3>Prota · Promes · Silabus</h3>
+            <span class="gadm-entry-type">Program Tahunan & Semester</span>
+            <p>Distribusi alokasi waktu tahunan dan semesteran berbasis kalender pendidikan, minggu efektif, dan beban JP sekolah untuk menyusun pemetaan alur pembelajaran yang rapi dan terukur.</p>
+            <div class="gadm-entry-sub-pills" role="group" aria-label="Pilih dokumen perencanaan">
+              <button type="button" class="gadm-entry-sub-btn gadm-sub-active" data-gadm-choice="prota" data-gadm-document="prota">Prota</button>
+              <button type="button" class="gadm-entry-sub-btn" data-gadm-choice="promes" data-gadm-document="promes">Promes</button>
+              <button type="button" class="gadm-entry-sub-btn" data-gadm-choice="silabus" data-gadm-document="silabus">Silabus</button>
+            </div>
+          </div>
+
+          <!-- Opsi 3: Deskripsi Kokurikuler -->
+          <div class="gadm-entry-card" tabindex="0" role="radio" aria-checked="false" data-gadm-choice="deskripsiKokurikuler" data-gadm-document="deskripsiKokurikuler">
+            <div class="gadm-entry-card-top">
+              <span class="gadm-entry-pill gadm-pill-warning">Penguatan Karakter</span>
+              <span class="gadm-entry-check">✓</span>
+            </div>
+            <div class="gadm-entry-card-icon">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <h3>Deskripsi Kokurikuler</h3>
+            <span class="gadm-entry-type">Projek P5 / Kokurikuler</span>
+            <p>Penyusunan narasi ketercapaian Dimensi Profil Pelajar Pancasila berdasarkan bukti perilaku dan karya nyata yang diamati selama aktivitas projek berlangsung di sekolah.</p>
+          </div>
+
+          <!-- Opsi 4: LKPD & Rubrik Penilaian -->
+          <div class="gadm-entry-card" tabindex="0" role="radio" aria-checked="false" data-gadm-choice="lkpdRubrik" data-gadm-document="lkpdRubrik">
+            <div class="gadm-entry-card-top">
+              <span class="gadm-entry-pill gadm-pill-success">Instrumen & Asesmen</span>
+              <span class="gadm-entry-check">✓</span>
+            </div>
+            <div class="gadm-entry-card-icon">
+              <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+            </div>
+            <h3>LKPD & Rubrik Penilaian</h3>
+            <span class="gadm-entry-type">Lembar Kerja & Asesmen Otentik</span>
+            <p>Lembar kerja peserta didik yang kontekstual dan menarik dilengkapi rubrik penilaian berkriteria jelas untuk mengukur pemahaman konsep dan keterampilan murid secara objektif.</p>
+          </div>
+        </div>
+
+        <div class="gadm-selector-footer">
+          <div class="gadm-selector-note">
+            <span class="gadm-info-icon">ℹ</span>
+            <span>Identitas sekolah, nama guru, dan kelas aktif disinkronkan otomatis dari SIMNI.</span>
+          </div>
+          <button id="gadm-btn-start-builder" type="button" class="gadm-entry-start-btn">
+            <span>Mulai Buat Administrasi</span>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <main class="gadm-layout">
       <aside class="gadm-sidebar" aria-label="Jenis dokumen">
         <div class="gadm-sidebar-heading">
@@ -32,10 +122,11 @@
 
         <select id="gadm-document-type" class="gadm-visually-hidden" aria-label="Jenis dokumen">
           <option value="modulAjar">Modul Ajar</option>
-          <option value="prota">Program Tahunan</option>
-          <option value="promes">Program Semester</option>
+          <option value="prota">Program Tahunan (Prota)</option>
+          <option value="promes">Program Semester (Promes)</option>
           <option value="silabus">Silabus Operasional</option>
           <option value="deskripsiKokurikuler">Deskripsi Kokurikuler</option>
+          <option value="lkpdRubrik">LKPD & Rubrik Penilaian</option>
           <option value="deskripsiERapor">Deskripsi e-Rapor</option>
         </select>
 
@@ -54,15 +145,15 @@
           </button>
           <button class="gadm-doc-nav-button" type="button" data-gadm-document="silabus">
             <span class="gadm-doc-icon"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></span>
-            <span><strong>Silabus</strong><small>Peta pembelajaran operasional</small></span>
+            <span><strong>Silabus</strong><small>Peta operasional</small></span>
           </button>
           <button class="gadm-doc-nav-button" type="button" data-gadm-document="deskripsiKokurikuler">
             <span class="gadm-doc-icon"><svg viewBox="0 0 24 24"><path d="M12 3 9.8 8.1 4 9l4.2 4.1-1 5.8 4.8-2.7 4.8 2.7-1-5.8L20 9l-5.8-.9z"/></svg></span>
             <span><strong>Kokurikuler</strong><small>Deskripsi berbasis bukti</small></span>
           </button>
-          <button class="gadm-doc-nav-button" type="button" data-gadm-document="deskripsiERapor">
-            <span class="gadm-doc-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6"/><path d="m9 16 1.5 1.5L15 14"/></svg></span>
-            <span><strong>e-Rapor</strong><small>Deskripsi capaian siswa</small></span>
+          <button class="gadm-doc-nav-button" type="button" data-gadm-document="lkpdRubrik">
+            <span class="gadm-doc-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span>
+            <span><strong>LKPD & Rubrik</strong><small>Lembar kerja & asesmen</small></span>
           </button>
         </nav>
 
@@ -74,8 +165,14 @@
 
       <section class="gadm-builder" aria-label="Konfigurasi dokumen">
         <div class="gadm-builder-head">
-          <div>
-            <span class="gadm-eyebrow">Teacher Copilot</span>
+          <div class="gadm-builder-title-group">
+            <div class="gadm-builder-top-actions">
+              <span class="gadm-eyebrow">Teacher Copilot</span>
+              <button id="gadm-btn-change-doc" type="button" class="gadm-change-doc-btn" title="Pilih kembali dari 4 opsi administrasi">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
+                <span>Ganti Pilihan Dokumen</span>
+              </button>
+            </div>
             <h2 id="gadm-builder-title">Modul Ajar</h2>
             <p id="gadm-builder-description">Berikan fakta pembelajaran. GADM akan menentukan strategi yang paling masuk akal dan menjelaskan alasannya.</p>
           </div>
@@ -96,7 +193,7 @@
         </div>
 
         <form class="gadm-controls" autocomplete="off">
-          <input id="gadm-seed" class="gadm-visually-hidden" value="gadm-teacher-copilot">
+          <input id="gadm-seed" type="hidden" value="gadm-teacher-copilot">
 
           <section class="gadm-step-panel" data-gadm-step-panel="1">
             <div class="gadm-section-intro">
@@ -106,15 +203,25 @@
             </div>
 
             <div class="gadm-field-grid">
-              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus prota promes deskripsiKokurikuler">
+              <div class="gadm-field gadm-field-span" data-gadm-for="prota promes silabus">
+                <label for="gadm-prota-sub-type">Format Dokumen Perencanaan</label>
+                <select id="gadm-prota-sub-type">
+                  <option value="prota">Program Tahunan (Prota)</option>
+                  <option value="promes">Program Semester (Promes)</option>
+                  <option value="silabus">Silabus Operasional</option>
+                </select>
+                <small>Pilih salah satu format perencanaan pembelajaran yang ingin disusun.</small>
+              </div>
+
+              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus prota promes deskripsiKokurikuler lkpdRubrik">
                 <label for="gadm-nama-sekolah">Satuan pendidikan <span class="gadm-optional">opsional</span></label>
                 <input id="gadm-nama-sekolah" placeholder="Contoh: SDIT Bina Muda">
               </div>
-              <div class="gadm-field" data-gadm-for="modulAjar silabus prota promes deskripsiKokurikuler">
+              <div class="gadm-field" data-gadm-for="modulAjar silabus prota promes deskripsiKokurikuler lkpdRubrik">
                 <label for="gadm-nama-guru">Nama guru <span class="gadm-optional">opsional</span></label>
                 <input id="gadm-nama-guru" placeholder="Nama penyusun / guru">
               </div>
-              <div class="gadm-field" data-gadm-for="modulAjar silabus prota promes">
+              <div class="gadm-field" data-gadm-for="modulAjar silabus prota promes lkpdRubrik">
                 <label for="gadm-kelas-fase">Kelas</label>
                 <select id="gadm-kelas-fase">
                   <option value="">Pilih kelas</option>
@@ -125,40 +232,33 @@
                 <small>Fase ditentukan otomatis dari kelas.</small>
               </div>
 
-              <div class="gadm-field" data-gadm-for="modulAjar silabus prota promes">
+              <div class="gadm-field" data-gadm-for="modulAjar silabus prota promes lkpdRubrik">
                 <label for="gadm-mata-pelajaran">Mata pelajaran</label>
                 <select id="gadm-mata-pelajaran">
                   <option value="">Pilih mata pelajaran</option>
-                  <optgroup label="Mata pelajaran nasional SD">
-                    <option value="Pendidikan Agama Islam dan Budi Pekerti">Pendidikan Agama Islam dan Budi Pekerti</option>
-                    <option value="Pendidikan Agama Kristen dan Budi Pekerti">Pendidikan Agama Kristen dan Budi Pekerti</option>
-                    <option value="Pendidikan Agama Katolik dan Budi Pekerti">Pendidikan Agama Katolik dan Budi Pekerti</option>
-                    <option value="Pendidikan Agama Hindu dan Budi Pekerti">Pendidikan Agama Hindu dan Budi Pekerti</option>
-                    <option value="Pendidikan Agama Buddha dan Budi Pekerti">Pendidikan Agama Buddha dan Budi Pekerti</option>
-                    <option value="Pendidikan Agama Khonghucu dan Budi Pekerti">Pendidikan Agama Khonghucu dan Budi Pekerti</option>
-                    <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
-                    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-                    <option value="Matematika">Matematika</option>
-                    <option value="Bahasa Inggris">Bahasa Inggris</option>
-                    <option value="IPAS">Ilmu Pengetahuan Alam dan Sosial (IPAS)</option>
-                    <option value="Seni Musik">Seni Musik</option>
-                    <option value="Seni Rupa">Seni Rupa</option>
-                    <option value="Seni Tari">Seni Tari</option>
-                    <option value="Seni Teater">Seni Teater</option>
-                    <option value="PJOK">Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)</option>
-                    <option value="Koding dan Kecerdasan Artifisial">Koding dan Kecerdasan Artifisial</option>
-                  </optgroup>
-                  <optgroup label="Muatan sekolah/lokal - CP diisi guru">
-                    <option value="Bahasa Sunda">Bahasa Sunda</option>
-                    <option value="BTQ">BTQ</option>
-                    <option value="Murojaah">Murojaah</option>
-                  </optgroup>
+                  <option value="Matematika">Matematika</option>
+                  <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                  <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                  <option value="IPAS">IPAS</option>
+                  <option value="Seni Rupa">Seni Rupa</option>
+                  <option value="PJOK">PJOK</option>
+                  <option value="PAI">PAI</option>
+                  <option value="Bahasa Inggris">Bahasa Inggris</option>
+                  <option value="Bahasa Sunda">Bahasa Sunda</option>
+                  <option value="Komputer">Komputer</option>
+                  <option value="BTQ">BTQ</option>
+                  <option value="Murojaah">Murojaah</option>
                 </select>
               </div>
 
-              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar">
-                <label for="gadm-materi-unit">Materi / topik</label>
+              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar lkpdRubrik">
+                <label for="gadm-materi-unit">Materi / Topik Pembelajaran</label>
                 <input id="gadm-materi-unit" placeholder="Contoh: Perubahan wujud benda">
+              </div>
+
+              <div class="gadm-field" data-gadm-for="lkpdRubrik">
+                <label for="gadm-lkpd-alokasi">Alokasi Waktu Pengerjaan LKPD</label>
+                <input id="gadm-lkpd-alokasi" placeholder="Contoh: 30 menit / 1 JP">
               </div>
 
               <div class="gadm-field gadm-field-span" data-gadm-for="silabus">
@@ -166,7 +266,7 @@
                 <textarea id="gadm-materi-lingkup" rows="3" placeholder="Tuliskan lingkup materi. Satu item per baris bila lebih dari satu."></textarea>
               </div>
 
-              <div class="gadm-field" data-gadm-for="prota promes modulAjar silabus">
+              <div class="gadm-field" data-gadm-for="prota promes modulAjar silabus lkpdRubrik">
                 <label for="gadm-tahun-pelajaran">Tahun pelajaran</label>
                 <input id="gadm-tahun-pelajaran" placeholder="Contoh: 2026/2027">
               </div>
@@ -175,7 +275,7 @@
                 <input id="gadm-prota-total-jp" inputmode="numeric" placeholder="Contoh: 144">
               </div>
 
-              <div class="gadm-field" data-gadm-for="promes modulAjar">
+              <div class="gadm-field" data-gadm-for="promes modulAjar lkpdRubrik">
                 <label for="gadm-semester">Semester</label>
                 <select id="gadm-semester"><option value="1">1 · Ganjil</option><option value="2">2 · Genap</option></select>
               </div>
@@ -204,7 +304,7 @@
             </div>
 
             <div class="gadm-field-grid">
-              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus">
+              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus lkpdRubrik">
                 <div id="gadm-curriculum-suggestion" class="gadm-curriculum-card" data-state="idle">
                   <div class="gadm-curriculum-head">
                     <div><span class="gadm-eyebrow">Rujukan kurikulum 2026</span><strong>Saran CP resmi dan TP turunan</strong></div>
@@ -225,15 +325,28 @@
                 </div>
               </div>
 
-              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus">
+              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus lkpdRubrik">
                 <label for="gadm-cp-tp">Capaian Pembelajaran (CP) resmi atau input manual</label>
                 <input id="gadm-curriculum-record-id" type="hidden" value="">
                 <textarea id="gadm-cp-tp" rows="6" placeholder="Pilih saran CP resmi di atas atau tempel CP terverifikasi secara manual."></textarea>
               </div>
-              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus">
+              <div class="gadm-field gadm-field-span" data-gadm-for="modulAjar silabus lkpdRubrik">
                 <label for="gadm-tp-manual">Tujuan Pembelajaran (TP) pilihan guru</label>
                 <textarea id="gadm-tp-manual" rows="4" placeholder="Gunakan saran TP GADM atau tulis TP manual yang memuat kompetensi dan konten."></textarea>
                 <div class="gadm-field-assurance"><span>✓</span> CP resmi disalin apa adanya dari corpus berprovenance. TP merupakan keputusan guru dan tidak pernah diklaim sebagai teks resmi kementerian.</div>
+              </div>
+
+              <div class="gadm-field gadm-field-span" data-gadm-for="lkpdRubrik">
+                <label for="gadm-lkpd-aktivitas">Aktivitas / Tugas Utama Siswa <span class="gadm-optional">opsional</span></label>
+                <textarea id="gadm-lkpd-aktivitas" rows="3" placeholder="Contoh: Mengamati berbagai benda di kelas/taman, mencatat wujud benda pada tabel, dan menyimpulkan sifatnya bersama kelompok. (Bisa dikosongkan agar otomatis disusun GADM)"></textarea>
+              </div>
+              <div class="gadm-field gadm-field-span" data-gadm-for="lkpdRubrik">
+                <label for="gadm-lkpd-alat-bahan">Alat, Bahan & Media Pengerjaan <span class="gadm-optional">opsional</span></label>
+                <textarea id="gadm-lkpd-alat-bahan" rows="2" placeholder="Contoh: Benda konkret di kelas (batu, air, balon), lembar pengamatan, penggaris, pensil warna."></textarea>
+              </div>
+              <div class="gadm-field gadm-field-span" data-gadm-for="lkpdRubrik">
+                <label for="gadm-lkpd-petunjuk">Petunjuk Khusus Pengerjaan <span class="gadm-optional">opsional</span></label>
+                <textarea id="gadm-lkpd-petunjuk" rows="2" placeholder="Contoh: Kerjakan berkelompok (3-4 murid), baca petunjuk dengan cermat, diskusikan jawaban bersama, dan tanyakan guru jika ragu."></textarea>
               </div>
 
               <div class="gadm-field" data-gadm-for="modulAjar silabus">
@@ -320,6 +433,12 @@
               <span class="gadm-intelligence-state">Aktif</span>
             </div>
 
+            <div class="gadm-intelligence-card" data-gadm-for="lkpdRubrik">
+              <div class="gadm-intelligence-icon">📋</div>
+              <div><strong>Rubrik Otentik & Format LKPD</strong><p>GADM menyusun LKPD berbasis aktivitas konkret murid dan rubrik penilaian berjenjang (4 skala ketercapaian) yang selaras dengan asesmen Kurikulum Merdeka.</p></div>
+              <span class="gadm-intelligence-state">Aktif</span>
+            </div>
+
             <div class="gadm-context-block" data-gadm-for="modulAjar">
               <div class="gadm-context-head"><div><h4>Kondisi kelas</h4><p>Pilih kondisi yang benar-benar ada. Ini akan memengaruhi dukungan, media, dan strategi.</p></div><span class="gadm-optional">opsional</span></div>
               <div class="gadm-chip-grid">
@@ -363,6 +482,20 @@
                 <label for="gadm-target-dimensi">Target dimensi</label>
                 <input id="gadm-target-dimensi" placeholder="Contoh: Kolaborasi, Kewargaan">
                 <small>Pilih hanya dimensi yang benar-benar memiliki bukti dari kegiatan.</small>
+              </div>
+
+              <div class="gadm-field" data-gadm-for="lkpdRubrik">
+                <label for="gadm-rubrik-model">Model Rubrik Penilaian</label>
+                <select id="gadm-rubrik-model">
+                  <option value="skala4">Skala 4 Tingkat Kriteria (Baru Berkembang, Layak, Cakap, Mahir)</option>
+                  <option value="checklist">Daftar Centang / Checklist Indikator Ketercapaian</option>
+                  <option value="deskriptif">Rubrik Kualitatif Deskriptif</option>
+                </select>
+                <small>Standar asesmen Kurikulum Merdeka menganjurkan kriteria jenjang deskriptif.</small>
+              </div>
+              <div class="gadm-field gadm-field-span" data-gadm-for="lkpdRubrik">
+                <label for="gadm-rubrik-kriteria">Fokus Aspek / Kriteria yang Dinilai <span class="gadm-optional">opsional</span></label>
+                <textarea id="gadm-rubrik-kriteria" rows="3" placeholder="Contoh: 1. Ketepatan identifikasi konsep. 2. Kerjasama dalam kelompok. 3. Kejelasan menyampaikan hasil. (Bisa dikosongkan untuk kriteria otomatis dari materi & TP)"></textarea>
               </div>
 
               <div class="gadm-field gadm-field-span" data-gadm-for="deskripsiERapor">
@@ -412,6 +545,7 @@
           </div>
           <div class="gadm-preview-actions">
             <button id="gadm-new-document" class="gadm-tool-button gadm-tool-button-new" type="button"><i class="fas fa-plus" aria-hidden="true"></i><span>Buat Dokumen Baru</span></button>
+            <button id="gadm-edit-form" class="gadm-tool-button" type="button"><i class="fas fa-pen-to-square" aria-hidden="true"></i><span>Ubah Data Form</span></button>
             <button id="gadm-download-word" class="gadm-tool-button" type="button" disabled><i class="fas fa-file-word" aria-hidden="true"></i><span>Unduh Word</span></button>
             <button id="gadm-download-excel" class="gadm-tool-button" type="button" disabled><i class="fas fa-file-excel" aria-hidden="true"></i><span>Unduh Excel</span></button>
             <button id="gadm-print" class="gadm-tool-button gadm-tool-button-primary" type="button" disabled><i class="fas fa-file-pdf" aria-hidden="true"></i><span>Unduh PDF</span></button>

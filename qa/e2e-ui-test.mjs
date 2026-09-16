@@ -19,7 +19,10 @@ const MIME_TYPES = new Map([
     ['.json', 'application/json; charset=utf-8'],
     ['.mjs', 'text/javascript; charset=utf-8'],
     ['.png', 'image/png'],
-    ['.svg', 'image/svg+xml']
+    ['.svg', 'image/svg+xml'],
+    ['.ico', 'image/x-icon'],
+    ['.woff2', 'font/woff2'],
+    ['.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
 ]);
 
 let passed = 0;

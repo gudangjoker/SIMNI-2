@@ -4,13 +4,14 @@
 <div id="view-dashboard" class="view-section fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
                     <div><h2 class="text-2xl font-bold text-slate-800 dark:text-white" id="ui-dash-title">Dashboard SIMNI</h2><p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="ui-dash-subtitle">Tapel 2026-2027</p></div>
-                    <button data-simni-action="toast" data-simni-trigger="click" data-simni-args='["Sistem Realtime Firebase terhubung otomatis dan terlindungi.","success"]' class="bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"><i class="fas fa-bolt"></i> Database Aktif & Aman</button>
+                    <p id="dashboard-sync-status" class="simni-connection-status" role="status" aria-live="polite">Memeriksa koneksi data…</p>
                 </div>
 
                 <!-- WIDGET PERINGATAN DINI -->
-                <div id="peringatan-dini-container" class="mb-6 hidden">
+                <div id="peringatan-dini-container" class="mb-6 hidden simni-academic-warning">
+                    <button id="dismiss-academic-warning" type="button" aria-label="Tutup peringatan akademik">×</button>
                     <h3 class="text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Peringatan Dini Akademik</h3>
-                    <div id="peringatan-dini-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    <div id="peringatan-dini-list" class="grid grid-cols-1 gap-3"></div>
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -32,7 +33,7 @@
                 
                 <div class="mt-8 mb-4 text-center">
                     <div class="w-16 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto mb-4 opacity-50"></div>
-                    <h3 class="text-sm font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-1">SIMNI V.4.6.4 ENTERPRISE</h3>
+                    <h3 id="dashboard-app-version" class="text-sm font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-1">SIMNI V.4.8.0-rc.1 ENTERPRISE</h3>
                     <p class="text-[10px] text-slate-500 dark:text-slate-600">Dirancang secara eksklusif oleh <span class="font-bold text-primary">Unggaran Reka Negara</span></p>
                 </div>
             </div>

@@ -13,6 +13,8 @@ const LEGACY_KEY = 'appState';
 const LEGACY_MIGRATION_KEY = 'appState:migration:v3';
 
 const CACHE_SCHEMA_VERSION = 3;
+const MAX_SNAPSHOT_BYTES = 32 * 1024 * 1024;
+const MAX_DATABASE_BYTES = 96 * 1024 * 1024;
 
 let writeQueue = Promise.resolve();
 let localRevision = 0;
@@ -69,6 +71,9 @@ function cacheScope(
                 access.activeAcademicYearId
             ),
 
+        assignmentRevision:
+            Number(access.assignmentRevision || 1),
+
         schemaVersion:
             CACHE_SCHEMA_VERSION
     };
@@ -87,6 +92,7 @@ function accessCacheKey(
         scope.uid,
         scope.workspaceId,
         scope.activeAcademicYearId,
+        `rev${scope.assignmentRevision}`,
         `schema${CACHE_SCHEMA_VERSION}`
     ].join(':');
 }
@@ -368,7 +374,7 @@ function assertLegacyOwner(
         access.role !==
             'superuser' ||
         access.workspaceId !==
-            'ws_3a' ||
+            'ws_kelas3a' ||
         access.classId !==
             '3A'
     ) {
@@ -515,14 +521,22 @@ async function writeKey(
                 'readwrite'
             );
 
-        transaction
-            .objectStore(
-                STORE_NAME
-            )
-            .put(
-                value,
-                key
-            );
+        const store = transaction.objectStore(STORE_NAME);
+        // Check the total in the same write transaction, without loading all
+        // years into an array. Existing records are never silently evicted.
+        let totalBytes = new Blob([JSON.stringify(value)]).size;
+        let capacityError = null;
+        const cursorRequest = store.openCursor();
+        cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (cursor) {
+                if (cursor.key !== key) totalBytes += new Blob([JSON.stringify(cursor.value)]).size;
+                cursor.continue();
+            } else if (totalBytes > MAX_DATABASE_BYTES) {
+                capacityError = new Error('Penyimpanan offline mencapai batas 96 MiB. Buka Pengaturan → Penyimpanan perangkat, ekspor dan verifikasi cache lama sebelum menghapusnya.');
+                transaction.abort();
+            } else store.put(value, key);
+        };
 
         await new Promise(
             (
@@ -537,7 +551,7 @@ async function writeKey(
                 transaction.onerror =
                     () => {
                         reject(
-                            transaction.error ||
+                            capacityError || transaction.error ||
                             new Error(
                                 'Transaksi IndexedDB gagal.'
                             )
@@ -547,7 +561,7 @@ async function writeKey(
                 transaction.onabort =
                     () => {
                         reject(
-                            transaction.error ||
+                            capacityError || transaction.error ||
                             new Error(
                                 'Transaksi IndexedDB dibatalkan.'
                             )
@@ -1373,6 +1387,7 @@ export async function purgeCurrentLocalCache(access = currentAccess()) {
     await writeQueue.catch(() => undefined);
     await Promise.all(keys.map((key) => deleteKey(key)));
     localRevision = 0;
+    window.SIMNILocalCacheState = null;
     return { ok: true, purged: true, keys: keys.length };
 }
 
@@ -1445,6 +1460,9 @@ export async function saveLocalBackup() {
             persistedState(
                 window.state
             );
+        if (new TextEncoder().encode(JSON.stringify(stateSnapshot)).byteLength > MAX_SNAPSHOT_BYTES) {
+            throw new Error('Salinan offline melebihi 32 MiB. Data cloud tidak dihapus; arsipkan dan tinjau retensi tahun ajaran.');
+        }
     } catch (error) {
         return {
             ok:
@@ -1743,6 +1761,13 @@ export async function loadLocalBackup() {
             verification.state
         );
 
+        window.SIMNILocalCacheState = {
+            loaded: true,
+            revision: verification.revision,
+            stateHash: verification.stateHash,
+            savedAt: cached.__cache?.savedAt || null
+        };
+
         return {
             ok:
                 true,
@@ -1864,11 +1889,497 @@ export async function getLocalCacheDiagnostics() {
     }
 }
 
+function sameCacheOwner(record, access) {
+    return record?.__scope?.uid === access.uid && record.__scope.workspaceId === access.workspaceId &&
+        record.__scope.role === access.role;
+}
+
+export async function listLocalCacheInventory() {
+    const access = { ...currentAccess() };
+    const database = await openDatabase();
+    try {
+        return await new Promise((resolve, reject) => {
+            const rows = [];
+            let totalBytes = 0;
+            const transaction = database.transaction(STORE_NAME);
+            const request = transaction.objectStore(STORE_NAME).openCursor();
+            request.onerror = () => reject(request.error);
+            transaction.onabort = () => reject(transaction.error);
+            request.onsuccess = () => {
+                const cursor = request.result;
+                if (!cursor) { resolve({ rows, totalBytes, limitBytes: MAX_DATABASE_BYTES }); return; }
+                const record = cursor.value;
+                const bytes = new Blob([JSON.stringify(record)]).size;
+                totalBytes += bytes;
+                if (sameCacheOwner(record, access)) rows.push({ key: cursor.key, bytes,
+                    year: record.__scope.activeAcademicYearId, savedAt: record.__cache?.savedAt || '',
+                    current: cursor.key === accessCacheKey(access) });
+                cursor.continue();
+            };
+        });
+    } finally { database.close(); }
+}
+
+export async function exportLocalCacheRecord(key) {
+    const access = { ...currentAccess() };
+    const record = await readKey(key);
+    if (!sameCacheOwner(record, access)) throw new Error('Cache bukan milik akun/workspace aktif.');
+    return { format: 'simni-local-cache-export-v1', key, exportedAt: nowISO(), hash: await sha256(record), record };
+}
+
+export async function deleteLocalCacheAfterVerification(key, exported) {
+    const access = { ...currentAccess() };
+    if (key === accessCacheKey(access)) throw new Error('Cache tahun aktif dipertahankan.');
+    if (exported?.format !== 'simni-local-cache-export-v1' || exported.key !== key ||
+        !sameCacheOwner(exported.record, access) || exported.hash !== await sha256(exported.record)) {
+        throw new Error('Berkas ekspor tidak cocok atau rusak. Cache dipertahankan.');
+    }
+    const expected = stableStringify(exported.record);
+    await writeQueue.catch(() => undefined);
+    const database = await openDatabase();
+    try {
+        await new Promise((resolve, reject) => {
+            const transaction = database.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get(key);
+            let refusal;
+            request.onsuccess = () => {
+                if (access.uid !== currentAccess().uid || access.workspaceId !== currentAccess().workspaceId ||
+                    access.activeAcademicYearId !== currentAccess().activeAcademicYearId ||
+                    !sameCacheOwner(request.result, access) || stableStringify(request.result) !== expected) {
+                    refusal = new Error('Sesi atau cache berubah sejak ekspor. Ekspor ulang sebelum menghapus.');
+                    transaction.abort(); return;
+                }
+                store.delete(key);
+            };
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(refusal || transaction.error);
+        });
+    } finally { database.close(); }
+    return { ok: true };
+}
+
+async function inspectDraftsStorage() {
+    if (typeof indexedDB === 'undefined') return { count: 0, totalBytes: 0, drafts: [] };
+    return new Promise((resolve) => {
+        try {
+            const req = indexedDB.open('SIMNIDraftsDB', 1);
+            req.onerror = () => resolve({ count: 0, totalBytes: 0, drafts: [] });
+            req.onsuccess = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains('academicDrafts')) {
+                    db.close();
+                    resolve({ count: 0, totalBytes: 0, drafts: [] });
+                    return;
+                }
+                const tx = db.transaction('academicDrafts', 'readonly');
+                const store = tx.objectStore('academicDrafts');
+                const getAll = store.getAll();
+                getAll.onsuccess = () => {
+                    const items = getAll.result || [];
+                    let bytes = 0;
+                    const summaries = items.map((item) => {
+                        const itemBytes = new Blob([JSON.stringify(item)]).size;
+                        bytes += itemBytes;
+                        return {
+                            id: item.id,
+                            session: item.session,
+                            date: item.date || null,
+                            classId: item.classId || null,
+                            formId: item.formId || null,
+                            bytes: itemBytes,
+                            updatedAt: item.updatedAt || null
+                        };
+                    });
+                    db.close();
+                    resolve({ count: items.length, totalBytes: bytes, drafts: summaries });
+                };
+                getAll.onerror = () => { db.close(); resolve({ count: 0, totalBytes: 0, drafts: [] }); };
+            };
+        } catch (_) {
+            resolve({ count: 0, totalBytes: 0, drafts: [] });
+        }
+    });
+}
+
+async function inspectGADMStorage() {
+    if (typeof indexedDB === 'undefined') return { documentCount: 0, draftCount: 0, totalBytes: 0 };
+    return new Promise((resolve) => {
+        try {
+            const req = indexedDB.open('simni-gadm-offline', 1);
+            req.onerror = () => resolve({ documentCount: 0, draftCount: 0, totalBytes: 0 });
+            req.onsuccess = () => {
+                const db = req.result;
+                let docCount = 0, draftCount = 0, totalBytes = 0;
+                const storeNames = [];
+                if (db.objectStoreNames.contains('documents')) storeNames.push('documents');
+                if (db.objectStoreNames.contains('drafts')) storeNames.push('drafts');
+                if (!storeNames.length) { db.close(); resolve({ documentCount: 0, draftCount: 0, totalBytes: 0 }); return; }
+
+                const tx = db.transaction(storeNames, 'readonly');
+                let pendingStores = storeNames.length;
+
+                const finishStore = () => {
+                    pendingStores--;
+                    if (pendingStores === 0) {
+                        db.close();
+                        resolve({ documentCount: docCount, draftCount, totalBytes });
+                    }
+                };
+
+                if (db.objectStoreNames.contains('documents')) {
+                    const docReq = tx.objectStore('documents').getAll();
+                    docReq.onsuccess = () => {
+                        const docs = docReq.result || [];
+                        docCount = docs.length;
+                        for (const doc of docs) totalBytes += new Blob([JSON.stringify(doc)]).size;
+                        finishStore();
+                    };
+                    docReq.onerror = finishStore;
+                }
+                if (db.objectStoreNames.contains('drafts')) {
+                    const draftReq = tx.objectStore('drafts').getAll();
+                    draftReq.onsuccess = () => {
+                        const drafts = draftReq.result || [];
+                        draftCount = drafts.length;
+                        for (const d of drafts) totalBytes += new Blob([JSON.stringify(d)]).size;
+                        finishStore();
+                    };
+                    draftReq.onerror = finishStore;
+                }
+            };
+        } catch (_) {
+            resolve({ documentCount: 0, draftCount: 0, totalBytes: 0 });
+        }
+    });
+}
+
+async function inspectServiceWorkerCaches() {
+    if (typeof caches === 'undefined' || typeof caches.keys !== 'function') {
+        return { totalBytes: 0, cacheCount: 0, entryCount: 0, caches: [] };
+    }
+    try {
+        const cacheNames = await caches.keys();
+        const cacheList = [];
+        let totalBytes = 0;
+        let entryCount = 0;
+        for (const name of cacheNames) {
+            const cache = await caches.open(name);
+            const requests = await cache.keys();
+            entryCount += requests.length;
+            let cacheBytes = 0;
+            for (const req of requests) {
+                try {
+                    const res = await cache.match(req);
+                    if (res) {
+                        const buf = await res.clone().arrayBuffer();
+                        cacheBytes += buf.byteLength;
+                    }
+                } catch (_) {}
+            }
+            totalBytes += cacheBytes;
+            cacheList.push({ name, entries: requests.length, bytes: cacheBytes });
+        }
+        return { totalBytes, cacheCount: cacheNames.length, entryCount, caches: cacheList };
+    } catch (_) {
+        return { totalBytes: 0, cacheCount: 0, entryCount: 0, caches: [] };
+    }
+}
+
+export async function getCompleteStorageInventory() {
+    let access = null;
+    try { access = currentAccess(); } catch (_) {}
+
+    const academic = await listLocalCacheInventory().catch(() => ({ rows: [], totalBytes: 0, limitBytes: MAX_DATABASE_BYTES }));
+    const drafts = await inspectDraftsStorage();
+    const gadm = await inspectGADMStorage();
+    const swCaches = await inspectServiceWorkerCaches();
+
+    let storageEstimate = { usage: null, quota: null, isEstimated: true };
+    if (typeof navigator !== 'undefined' && typeof navigator.storage?.estimate === 'function') {
+        try {
+            const est = await navigator.storage.estimate();
+            storageEstimate = {
+                usage: typeof est.usage === 'number' ? est.usage : null,
+                quota: typeof est.quota === 'number' ? est.quota : null,
+                isEstimated: true
+            };
+        } catch (_) {}
+    }
+
+    const totalMeasuredPayloadBytes = academic.totalBytes + drafts.totalBytes + gadm.totalBytes + swCaches.totalBytes;
+
+    const approachingQuota = (storageEstimate.quota && storageEstimate.usage && (storageEstimate.usage / storageEstimate.quota > 0.8)) ||
+        (academic.totalBytes > 75 * 1024 * 1024);
+
+    return {
+        measuredPayload: {
+            academicCacheBytes: academic.totalBytes,
+            academicRows: academic.rows,
+            draftsBytes: drafts.totalBytes,
+            draftCount: drafts.count,
+            draftSummaries: drafts.drafts,
+            gadmBytes: gadm.totalBytes,
+            gadmDocumentCount: gadm.documentCount,
+            gadmDraftCount: gadm.draftCount,
+            swCacheBytes: swCaches.totalBytes,
+            swEntryCount: swCaches.entryCount,
+            swCaches: swCaches.caches,
+            totalMeasuredBytes: totalMeasuredPayloadBytes
+        },
+        browserEstimate: storageEstimate,
+        warnings: {
+            approachingQuota: !!approachingQuota,
+            hasUnsentDrafts: drafts.count > 0,
+            unsentDraftCount: drafts.count
+        },
+        classification: {
+            safeToPurge: ['Service Worker Runtime Cache', 'Expired Caches'],
+            protected: [
+                'Tahun Aktif Akademik',
+                'Draf Formulir Belum Terkirim (SIMNIDraftsDB)',
+            ]
+        }
+    };
+}
+
+export async function purgeSafeCaches() {
+    let purgedBytes = 0;
+    const purgedNames = [];
+    if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
+        try {
+            const names = await caches.keys();
+            for (const name of names) {
+                // App-shell caches can still belong to open tabs. Only disposable
+                // runtime entries owned by SIMNI are eligible for this action.
+                if (!/^simni-runtime-[A-Za-z0-9._-]+$/.test(name)) continue;
+                const cache = await caches.open(name);
+                const reqs = await cache.keys();
+                for (const r of reqs) {
+                    try {
+                        const res = await cache.match(r);
+                        if (res) purgedBytes += (await res.clone().arrayBuffer()).byteLength;
+                    } catch (_) {}
+                }
+                await caches.delete(name);
+                purgedNames.push(name);
+            }
+        } catch (e) {
+            console.warn('[SIMNI Storage] Safe cache purge error:', e);
+        }
+    }
+    return {
+        ok: true,
+        purgedCaches: purgedNames,
+        purgedBytes,
+        preserved: [
+            'SIMNIDraftsDB (Draf Formulir Belum Terkirim)',
+            'AdminKelasDB (Cache Akademik Tahun Aktif)',
+        ]
+    };
+}
+
+if (typeof window !== 'undefined') {
+    window.openLocalStorageManager = async function () {
+        const access = { ...currentAccess() };
+        const completeInventory = await getCompleteStorageInventory();
+        if (access.uid !== currentAccess().uid || access.workspaceId !== currentAccess().workspaceId) return;
+        document.getElementById('simni-storage-manager')?.remove();
+        const dialog = document.createElement('dialog');
+    dialog.id = 'simni-storage-manager';
+    dialog.style.cssText = 'max-width:640px;width:92%;max-height:85vh;overflow:auto;padding:24px;border-radius:16px;border:1px solid #e2e8f0;';
+
+    const title = document.createElement('h2');
+    title.className = 'font-bold text-base mb-2 text-slate-800 dark:text-white';
+    title.innerHTML = '<i class="fas fa-server text-primary mr-2"></i>Penyimpanan Perangkat & Inventaris Subsistem';
+
+    const estimateText = completeInventory.browserEstimate.quota
+        ? `${(completeInventory.browserEstimate.usage / 1048576).toFixed(1)} MiB dari ${(completeInventory.browserEstimate.quota / (1024 * 1024 * 1024)).toFixed(2)} GiB kuota browser`
+        : 'Tidak dilaporkan oleh browser';
+
+    const summary = document.createElement('div');
+    summary.className = 'p-3 rounded-xl bg-slate-100 dark:bg-[#1a1a1a] text-xs space-y-1 mb-3';
+    summary.innerHTML = `
+        <div class="font-bold text-slate-800 dark:text-slate-200">Perkiraan Storage Browser (Termasuk Metadata/SQLite):</div>
+        <div class="text-slate-600 dark:text-slate-400">${estimateText}</div>
+        <div class="font-bold text-slate-800 dark:text-slate-200 mt-2">Total Ukuran Payload Terukur:</div>
+        <div class="text-primary font-extrabold">${(completeInventory.measuredPayload.totalMeasuredBytes / 1048576).toFixed(2)} MiB</div>
+    `;
+
+    dialog.append(title, summary);
+
+    // Warning banner if unsent drafts or approaching quota
+    if (completeInventory.warnings.hasUnsentDrafts) {
+        const warnDraft = document.createElement('div');
+        warnDraft.className = 'p-3 mb-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-bold';
+        warnDraft.innerHTML = `<i class="fas fa-exclamation-triangle mr-1.5"></i>PERINGATAN: Terdapat ${completeInventory.warnings.unsentDraftCount} draf formulir yang belum dikirim ke server. Draf ini aman tersimpan di perangkat dan dilindungi dari pembersihan otomatis.`;
+        dialog.append(warnDraft);
+    }
+    if (completeInventory.warnings.approachingQuota) {
+        const warnQuota = document.createElement('div');
+        warnQuota.className = 'p-3 mb-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-900 dark:text-red-200 text-xs font-bold';
+        warnQuota.innerHTML = '<i class="fas fa-exclamation-circle mr-1.5"></i>PERINGATAN KAPASITAS: Penyimpanan perangkat mendekati ambang batas kapasitas.';
+        dialog.append(warnQuota);
+    }
+
+    // Breakdown subsistem
+    const breakdown = document.createElement('div');
+    breakdown.className = 'space-y-2 mb-4';
+
+    const pAkademik = document.createElement('div');
+    pAkademik.className = 'p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs';
+    pAkademik.innerHTML = `
+        <div class="flex justify-between font-bold text-slate-700 dark:text-slate-200">
+            <span>Cache Akademik & LPS (IndexedDB)</span>
+            <span>${(completeInventory.measuredPayload.academicCacheBytes / 1048576).toFixed(2)} MiB</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Tahun aktif dipertahankan. Tahun lama dapat diverifikasi dan dibersihkan secara selektif.</div>
+    `;
+    breakdown.append(pAkademik);
+
+    const pDrafts = document.createElement('div');
+    pDrafts.className = 'p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs';
+    pDrafts.innerHTML = `
+        <div class="flex justify-between font-bold text-slate-700 dark:text-slate-200">
+            <span>Draf Formulir Belum Terkirim (SIMNIDraftsDB)</span>
+            <span>${completeInventory.measuredPayload.draftCount} draf · ${(completeInventory.measuredPayload.draftBytes / 1024).toFixed(1)} KiB</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Pekerjaan lokal yang belum dikirim ke server. Dilindungi dari pembersihan otomatis.</div>
+    `;
+    breakdown.append(pDrafts);
+
+    const pGadm = document.createElement('div');
+    pGadm.className = 'p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs';
+    pGadm.innerHTML = `
+        <div class="flex justify-between font-bold text-slate-700 dark:text-slate-200">
+            <span>Penyimpanan GADM Offline (IndexedDB)</span>
+            <span>${completeInventory.measuredPayload.gadmDocumentCount} dokumen · ${(completeInventory.measuredPayload.gadmBytes / 1048576).toFixed(2)} MiB</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Dokumen modul ajar, prota, promes lokal. Ekspor tersedia di menu GADM.</div>
+    `;
+    breakdown.append(pGadm);
+
+    const pSw = document.createElement('div');
+    pSw.className = 'p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs';
+    pSw.innerHTML = `
+        <div class="flex justify-between font-bold text-slate-700 dark:text-slate-200">
+            <span>Cache Service Worker (PWA Offline)</span>
+            <span>${completeInventory.measuredPayload.swEntryCount} berkas · ${(completeInventory.measuredPayload.swCacheBytes / 1048576).toFixed(2)} MiB</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Aset PWA offline yang aman dibuat ulang saat terhubung ke jaringan.</div>
+    `;
+    breakdown.append(pSw);
+
+    dialog.append(breakdown);
+
+    // Safe purge button
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'flex flex-col sm:flex-row gap-2 mb-4';
+
+    const safePurgeBtn = document.createElement('button');
+    safePurgeBtn.type = 'button';
+    safePurgeBtn.className = 'flex-1 py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer';
+    safePurgeBtn.textContent = 'Bersihkan Cache Aman (SW Runtime)';
+    safePurgeBtn.onclick = async () => {
+        if (!confirm('Bersihkan cache Service Worker yang dapat diunduh ulang? Draf dan data akademik aktif tidak akan dihapus.')) return;
+        const res = await purgeSafeCaches();
+        if (res.ok) {
+            alert(`Cache aman dibersihkan (${(res.purgedBytes / 1048576).toFixed(2)} MiB dibebaskan). Draf dan data aktif tetap terjaga.`);
+            dialog.close(); dialog.remove();
+        }
+    };
+    actionsRow.append(safePurgeBtn);
+
+    const recoveryGuideBtn = document.createElement('button');
+    recoveryGuideBtn.type = 'button';
+    recoveryGuideBtn.className = 'flex-1 py-2.5 px-3 bg-slate-800 dark:bg-[#222222] hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer';
+    recoveryGuideBtn.textContent = 'Panduan Pemulihan Subsistem';
+    recoveryGuideBtn.onclick = () => {
+        dialog.close(); dialog.remove();
+        if (typeof window.openSubsystemRecoveryGuide === 'function') window.openSubsystemRecoveryGuide();
+    };
+    actionsRow.append(recoveryGuideBtn);
+
+    dialog.append(actionsRow);
+
+    // Detail tahun akademik
+    const detailTitle = document.createElement('h3');
+    detailTitle.className = 'font-bold text-xs text-slate-700 dark:text-slate-300 uppercase mb-2';
+    detailTitle.textContent = 'Riwayat Cache Akademik per Tahun:';
+    dialog.append(detailTitle);
+
+    const status = document.createElement('p'); status.setAttribute('role', 'status'); status.className = 'text-xs text-slate-600 dark:text-slate-400 mb-2';
+    dialog.append(status);
+
+    for (const row of completeInventory.measuredPayload.academicRows) {
+        const article = document.createElement('div');
+        article.className = 'flex items-center justify-between p-2 mb-2 bg-slate-50 dark:bg-[#111111] rounded-lg border text-xs';
+        const info = document.createElement('span');
+        info.textContent = `${row.year} · ${(row.bytes / 1048576).toFixed(2)} MiB${row.current ? ' (Aktif — Terlindungi)' : ''}`;
+        article.append(info);
+
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'flex items-center gap-1.5';
+
+        const download = document.createElement('button');
+        download.className = 'px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded font-bold text-[11px]';
+        download.textContent = 'Ekspor';
+        download.onclick = async () => {
+            try {
+                const payload = await exportLocalCacheRecord(row.key);
+                const url = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+                const anchor = document.createElement('a'); anchor.href = url; anchor.download = `SIMNI_cache_${row.year}.json`; anchor.click();
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                status.textContent = 'Simpan berkas JSON, lalu pilih kembali untuk verifikasi sebelum menghapus cache tahun lama.';
+            } catch (error) { status.textContent = error.message; }
+        };
+        btnGroup.append(download);
+
+        if (!row.current) {
+            const verifyLabel = document.createElement('label');
+            verifyLabel.className = 'px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded font-bold text-[11px] cursor-pointer';
+            verifyLabel.textContent = 'Hapus (Verifikasi)';
+            const input = document.createElement('input'); input.type = 'file'; input.accept = '.json,application/json'; input.className = 'hidden';
+            input.onchange = async () => {
+                try {
+                    const file = input.files?.[0]; if (!file) return;
+                    if (file.size > MAX_DATABASE_BYTES) throw new Error('Berkas terlalu besar.');
+                    const payload = JSON.parse(await file.text());
+                    if (!confirm(`Hapus cache lokal tahun ${row.year} setelah mencocokkan berkas ekspor? Data cloud tetap tersedia sesuai retensinya.`)) return;
+                    await deleteLocalCacheAfterVerification(row.key, payload);
+                    article.remove(); status.textContent = 'Berkas cocok. Cache lokal yang dipilih telah dihapus.';
+                } catch (error) { status.textContent = error.message; }
+            };
+            verifyLabel.append(input);
+            btnGroup.append(verifyLabel);
+        }
+
+        article.append(btnGroup);
+        dialog.append(article);
+    }
+
+    const close = document.createElement('button');
+    close.className = 'w-full mt-3 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl text-xs font-bold transition-colors cursor-pointer';
+    close.textContent = 'Tutup';
+    close.onclick = () => { dialog.close(); dialog.remove(); };
+    dialog.append(close);
+
+    document.body.append(dialog);
+    dialog.showModal();
+};
+}
+
 const SIMNILocalCache =
     Object.freeze({
         migrateLegacyCacheIfNeeded,
         purgeLegacyUnscopedCache,
         purgeCurrentLocalCache,
+        listLocalCacheInventory,
+        getCompleteStorageInventory,
+        purgeSafeCaches,
+        exportLocalCacheRecord,
+        deleteLocalCacheAfterVerification,
         saveLocalBackup,
         loadLocalBackup,
 
@@ -1876,23 +2387,24 @@ const SIMNILocalCache =
             getLocalCacheDiagnostics
     });
 
-Object.assign(
-    window,
-    {
-        loadLocalBackup,
+if (typeof window !== 'undefined') {
+    Object.assign(
+        window,
+        {
+            loadLocalBackup,
+            saveLocalBackup,
+            migrateLegacyCacheIfNeeded,
+            purgeLegacyUnscopedCache,
+            purgeCurrentLocalCache,
+            getCompleteStorageInventory,
+            purgeSafeCaches,
 
-        saveLocalBackup,
+            getSIMNILocalCacheDiagnostics:
+                getLocalCacheDiagnostics,
 
-        migrateLegacyCacheIfNeeded,
-
-    purgeLegacyUnscopedCache,
-    purgeCurrentLocalCache,
-
-        getSIMNILocalCacheDiagnostics:
-            getLocalCacheDiagnostics,
-
-        SIMNILocalCache
-    }
-);
+            SIMNILocalCache
+        }
+    );
+}
 
 export default SIMNILocalCache;

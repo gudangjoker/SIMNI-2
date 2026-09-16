@@ -666,7 +666,7 @@ export const GADM_ENGINE = (() => {
   }
 
   function renderTable(headers, rows) {
-    return `<div class="gadm-table-wrap"><table class="gadm-table"><thead><tr>${headers.map((header) => `<th>${escapeHTML(header)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHTML(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    return `<div class="gadm-table-wrap" tabindex="0" role="region" aria-label="Tabel dokumen"><table class="gadm-table"><thead><tr>${headers.map((header) => `<th>${escapeHTML(header)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHTML(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   }
 
   function renderFormatBasis(documentName) {
@@ -728,59 +728,264 @@ export const GADM_ENGINE = (() => {
     const built = buildModulePlan(input, seed);
     const validation = built.validation ?? { ok: false, errors: [makeIssue("MODULE_BUILD_FAILED", "Rencana modul tidak dapat dibangun.")], warnings: [] };
     if (!validation.ok) {
-      const html = `${renderHeader("Modul Ajar — Belum Dapat Digenerasi")}${renderIssues(validation)}${renderQualityAudit(built.qualityAudit)}`;
+      const html = `${renderHeader("Modul Ajar — Belum Dapat Digenerasi")}${renderIssues(validation)}`;
       const text = ["MODUL AJAR — GENERASI DIBLOKIR", ...validation.errors.map((item) => `- ${item.message || item.code}`)].join("\n");
       return resultFromHTML("modulAjar", "Modul Ajar", html, text, validation, built);
     }
 
-    const { phase, curriculum, teacherContext, model, methods, media, profiles, profileEvidence, timePlan, decisionExplanations, qualityAudit, plan } = built;
+    const { phase, curriculum, teacherContext, model, methods, media, profiles, profileEvidence, timePlan, qualityAudit, plan } = built;
     const profileLabels = profiles.map((item) => item.label);
-    const profileRows = profiles.map((item) => [item.priority || "pendukung", item.label, profileEvidence[item.key || item.dimension] || ""]);
-    const principles = Object.values(GADM_KB.pembelajaranMendalam.prinsip).map((item) => `${sentenceCase(item.id)} — ${deterministicPick(item.essence, `${seed}:principle:${item.id}`)}`);
-    const framework = Object.entries(GADM_KB.pembelajaranMendalam.kerangkaPembelajaran).map(([key, item]) => `${sentenceCase(key)} — ${item.definition}`);
+    const topic = normalizeText(input.materiAtauUnit) || "Materi Pokok";
+    const cpText = escapeHTML(input.cpResmiAtauManual || input.cpAtauTp || "");
+    const tpText = escapeHTML(input.tujuanPembelajaran || input.tujuan || input.cpAtauTp || "");
+    const schoolName = input.namaSekolah || "SDIT Bina Muda";
+    const teacherName = input.namaGuru || "Guru Kelas / Mata Pelajaran";
+    const academicYear = input.tahunPelajaran || "2024/2025";
+    const semester = input.semester || "1 (Ganjil)";
+    const timeAlloc = input.alokasiWaktu || "2 x 35 Menit (1 Pertemuan)";
+    const phaseLabel = GADM_KB.faseMap[phase]?.label || "Fase B";
+
+    // Alokasi waktu terstruktur (Pendahuluan, Inti, Penutup)
+    const timeIntro = timePlan?.ok && timePlan.segments?.pendahuluan ? `${timePlan.segments.pendahuluan} Menit` : "10 Menit";
+    const timeCore = timePlan?.ok ? `${(timePlan.segments?.memahami || 20) + (timePlan.segments?.mengaplikasi || 20) + (timePlan.segments?.merefleksi || 10)} Menit` : "50 Menit";
+    const timeClosing = timePlan?.ok && timePlan.segments?.penutup ? `${timePlan.segments.penutup} Menit` : "10 Menit";
+
+    // Pertanyaan pemantik kontekstual
+    const pemantik = [
+      `Pernahkah kalian menemukan atau mengamati peristiwa yang berkaitan dengan ${topic} di sekitar kalian?`,
+      `Mengapa pemahaman tentang ${topic} penting bagi kehidupan kita sehari-hari?`,
+      `Bagaimana kita dapat membuktikan atau mencari tahu lebih mendalam tentang ${topic} bersama teman-teman?`
+    ];
+
+    // Pemahaman Bermakna kontekstual
+    const pemahamanBermakna = `Peserta didik menyadari bahwa konsep ${topic} memiliki keterkaitan erat dengan kehidupan sehari-hari dan lingkungan sekitar. Melalui proses pengamatan, diskusi kolaboratif, dan penyelidikan, peserta didik menumbuhkan rasa syukur atas keteraturan ciptaan Tuhan YME, mengasah nalar kritis, serta mampu mengambil keputusan secara bijak dalam menyelesaikan permasalahan kontekstual.`;
+
+    // Kompetensi Awal
+    const kompetensiAwal = input.kondisiAwalMurid
+      ? `Peserta didik telah memiliki pemahaman dasar awal terkait materi ${topic} melalui pengalaman sehari-hari. Berdasarkan identifikasi awal: ${input.kondisiAwalMurid}.`
+      : `Sebelum mengikuti pembelajaran ini, peserta didik telah mengenal fenomena dasar terkait ${topic} dari pengamatan dan pengalaman sehari-hari, serta siap mengikuti penyelidikan terarah dalam kelompok.`;
+
+    // Skenario Sintaks Kegiatan Inti
     const syntaxRows = plan.modelSyntax.map((step, index) => {
-      const experience = index < Math.ceil(plan.modelSyntax.length / 3) ? "Memahami" : index < Math.ceil((plan.modelSyntax.length * 2) / 3) ? "Mengaplikasi" : "Merefleksi";
-      return [String(index + 1), modelSyntaxLabel(step), model.phaseNotes?.[phase] ?? "", experience];
+      const expType = index < Math.ceil(plan.modelSyntax.length / 3) ? "Memahami" : index < Math.ceil((plan.modelSyntax.length * 2) / 3) ? "Mengaplikasi" : "Merefleksi";
+      const expNarrative = expType === "Memahami" ? plan.memahami : expType === "Mengaplikasi" ? plan.mengaplikasi : plan.merefleksi;
+      return [
+        `Tahap ${index + 1}`,
+        modelSyntaxLabel(step),
+        expNarrative,
+        expType
+      ];
     });
 
+    // Profile table rows (hanya jika ada dimensi profil lulusan yang terpilih)
+    const profileRows = profiles.map((item) => [
+      item.label,
+      profileEvidence[item.key || item.dimension] || "Menunjukkan keterlibatan aktif, kerja sama tim, dan kemampuan bernalar objektif selama proses pembelajaran."
+    ]);
+
     const html = [
-      renderHeader("Modul Ajar Pembelajaran Mendalam", `${GADM_KB.faseMap[phase].label} • ${input.mataPelajaran}`),
-      renderFormatBasis("modulAjar"),
-      `<section><h2>A. Identitas Modul</h2>${renderKeyValue([
-        ["Satuan Pendidikan", input.namaSekolah], ["Nama Guru", input.namaGuru], ["Tahun Pelajaran", input.tahunPelajaran], ["Semester", input.semester],
-        ["Kelas/Fase", `${input.kelasAtauFase} / ${GADM_KB.faseMap[phase].label}`], ["Mata Pelajaran", input.mataPelajaran], ["Materi/Unit", input.materiAtauUnit],
-        ["Alokasi Waktu", input.alokasiWaktu]
-      ])}</section>`,
-      `<section><h2>B. Landasan Kurikulum dan Tujuan</h2><div class="gadm-curriculum-text"><h3>Capaian Pembelajaran (CP)</h3><p>${escapeHTML(input.cpResmiAtauManual || input.cpAtauTp)}</p><h3>Tujuan Pembelajaran (TP)</h3><p>${escapeHTML(input.tujuanPembelajaran || input.tujuan || input.cpAtauTp)}</p></div>${renderKeyValue([
-        ["Pendekatan", GADM_KB.pendekatanPembelajaran.pembelajaranMendalam.label],
-        ["Model Pembelajaran", model.label], ["Metode", joinNatural(methods.map((item) => item.label))], ["Media", joinNatural(media)],
-        ["Dimensi Profil Lulusan", joinNatural(profileLabels)]
-      ])}${renderCurriculumGrounding(curriculum)}</section>`,
-      `<section><h2>C. Identifikasi Kesiapan dan Konteks</h2>${renderTeacherContext(teacherContext)}${input.kondisiAwalMurid ? `<h3>Kondisi Awal Murid</h3><p>${escapeHTML(input.kondisiAwalMurid)}</p>` : ""}${input.sumberDaya ? `<h3>Sumber Daya yang Tersedia</h3><p>${escapeHTML(input.sumberDaya)}</p>` : ""}${input.konteksSekolah ? `<h3>Konteks Sekolah</h3><p>${escapeHTML(input.konteksSekolah)}</p>` : ""}</section>`,
-      `<section><h2>D. Desain Pembelajaran</h2>${renderTimePlan(timePlan)}<h3>Prinsip Pembelajaran Mendalam</h3>${renderBullets(principles)}<h3>Kerangka Pembelajaran</h3>${renderBullets(framework)}</section>`,
-      `<section><h2>E. Pengalaman Belajar</h2><h3>1. Memahami</h3><p>${escapeHTML(plan.memahami)}</p><h3>2. Mengaplikasi</h3><p>${escapeHTML(plan.mengaplikasi)}</p><h3>3. Merefleksi</h3><p>${escapeHTML(plan.merefleksi)}</p></section>`,
-      `<section><h2>F. Langkah Pembelajaran</h2>${renderTable(["Tahap", "Sintaks", "Panduan Fase", "Pengalaman Belajar"], syntaxRows)}</section>`,
-      `<section><h2>G. Asesmen dan Bukti Belajar</h2>${renderTable(["Tahap", "Bentuk"], [["Awal", plan.asesmen.awal], ["Proses", plan.asesmen.proses], ["Akhir", plan.asesmen.akhir]])}</section>`,
-      profileRows.length ? `<section><h2>H. Fokus Profil Lulusan</h2>${renderTable(["Prioritas", "Dimensi", "Indikator yang Dirancang untuk Diamati"], profileRows)}</section>` : "",
-      `<section><h2>I. Diferensiasi, Scaffolding, dan Tindak Lanjut</h2>${renderBullets(unique([plan.tindakLanjut.support, plan.tindakLanjut.fadingRule, ...(teacherContext.recommendedSupports || [])]))}</section>`,
-      renderDecisionExplanations(decisionExplanations),
-      renderQualityAudit(qualityAudit),
+      renderHeader("Modul Ajar Pembelajaran Mendalam", `KURIKULUM MERDEKA • ${schoolName.toUpperCase()} • TAHUN PELAJARAN ${academicYear}`),
+      
+      `<section><h2>I. INFORMASI UMUM</h2>`,
+      `<h3>A. Identitas Modul</h3>`,
+      renderKeyValue([
+        ["Nama Penyusun", teacherName],
+        ["Satuan Pendidikan", schoolName],
+        ["Tahun Pelajaran", academicYear],
+        ["Mata Pelajaran", input.mataPelajaran || "-"],
+        ["Fase / Kelas / Semester", `${phaseLabel} / Kelas ${input.kelasAtauFase} / Semester ${semester}`],
+        ["Elemen / Domain", input.materiAtauUnit ? `Pemahaman ${input.mataPelajaran || "Materi"}` : "-"],
+        ["Materi Pokok", topic],
+        ["Alokasi Waktu", timeAlloc]
+      ]),
+      `<h3>B. Kompetensi Awal</h3>`,
+      `<p>${escapeHTML(kompetensiAwal)}</p>`,
+      `<h3>C. Profil Pelajar Pancasila</h3>`,
+      renderBullets(profileLabels.length ? profileLabels : ["Beriman, Bertakwa kepada Tuhan YME, dan Berakhlak Mulia", "Bernalar Kritis", "Gotong Royong", "Mandiri"]),
+      `<h3>D. Sarana dan Prasarana</h3>`,
+      renderBullets([
+        `Media Pembelajaran: ${joinNatural(media.length ? media : ["Papan tulis", "Kartu gambar kontekstual", "Benda konkret lingkungan", "Proyektor LCD/Video"])}`,
+        `Sumber Belajar: Buku Guru dan Buku Siswa ${input.mataPelajaran || "Kemendikbudristek"}, bahan tayang, dan lingkungan sekitar`,
+        `Alat dan Bahan: Alat tulis, lembar pengamatan/eksplorasi ${topic}`
+      ]),
+      `<h3>E. Target Peserta Didik</h3>`,
+      renderBullets([
+        "Peserta didik reguler/tipikal: umum, tidak ada kesulitan dalam mencerna dan memahami materi ajar.",
+        "Peserta didik dengan pencapaian tinggi: mencerna dan memahami dengan cepat, mampu mencapai keterampilan berpikir tingkat tinggi (HOTS).",
+        "Peserta didik dengan kesulitan belajar: difasilitasi dengan bimbingan terfokus dan pendampingan bertahap (scaffolding)."
+      ]),
+      `<h3>F. Jumlah Peserta Didik</h3>`,
+      `<p>20 – 28 Peserta Didik (kondisi ideal pembelajaran tatap muka)</p>`,
+      `<h3>G. Pendekatan, Model, dan Metode Pembelajaran</h3>`,
+      renderKeyValue([
+        ["Pendekatan", "Deep Learning / Pembelajaran Mendalam (Mindful, Meaningful, Joyful)"],
+        ["Model Pembelajaran", model.label],
+        ["Metode Pembelajaran", joinNatural(methods.map((item) => item.label))]
+      ]),
+      `</section>`,
+
+      `<section><h2>II. KOMPONEN INTI</h2>`,
+      `<h3>A. Capaian Pembelajaran (CP)</h3>`,
+      `<div class="gadm-curriculum-text"><p>${cpText}</p>${curriculum?.officialTextClaimAllowed ? '<small class="gadm-curriculum-source" style="display:block;margin-top:6px;color:#64748b;font-size:10px;">Status: Record KB terverifikasi</small>' : ""}</div>`,
+      `<h3>B. Tujuan Pembelajaran (TP)</h3>`,
+      `<div class="gadm-curriculum-text"><p>${tpText}</p></div>`,
+      `<h3>C. Pemahaman Bermakna</h3>`,
+      `<p>${escapeHTML(pemahamanBermakna)}</p>`,
+      `<h3>D. Kemitraan Pembelajaran</h3>`,
+      renderBullets([
+        "Lingkungan Sekolah: Interaksi kolaboratif antarsiswa dalam tim belajar, koordinasi berkala bersama guru kelas/sejawat, pemanfaatan ruang kelas dan perpustakaan.",
+        "Luar Sekolah / Orang Tua: Pendampingan kebiasaan belajar di rumah serta obrolan bermakna seputar materi di lingkungan keluarga.",
+        "Mitra Digital / Sumber Belajar: Pemanfaatan sumber belajar digital edukatif terverifikasi dan media visual kontekstual."
+      ]),
+      `<h3>E. Lingkungan Belajar</h3>`,
+      renderBullets([
+        "Ruang Fisik: Penataan tempat duduk kelompok yang fleksibel, sirkulasi udara baik, pencahayaan nyaman, dan sarana mudah diakses.",
+        "Ruang Virtual / Media: Media visual disajikan secara jelas, terarah, dan ramah anak.",
+        "Budaya Belajar: Menumbuhkan rasa saling menghormati, keterbukaan dalam menyampaikan ide, keberanian berpendapat tanpa takut salah, dan semangat gotong royong."
+      ]),
+      `<h3>F. Pertanyaan Pemantik</h3>`,
+      renderBullets(pemantik),
+      `<h3>G. Pembelajaran Berdiferensiasi</h3>`,
+      renderBullets([
+        `Diferensiasi Proses: Guru memberikan bimbingan bertahap (scaffolding: ${escapeHTML(plan.tindakLanjut.support || "panduan pertanyaan pemandu")}) bagi kelompok yang memerlukan bantuan, serta tantangan eksplorasi mandiri bagi peserta didik yang bergerak lebih cepat.`,
+        "Diferensiasi Produk: Peserta didik diberikan keleluasaan dalam menyajikan pemahaman hasil diskusi/pengamatan (misalnya melalui paparan lisan, lembar kerja kelompok, atau representasi visual/gambar)."
+      ]),
+      `<h3>H. Urutan Kegiatan Pembelajaran</h3>`,
+      `<div class="gadm-learning-scenario">`,
+      `<h4>1. Kegiatan Awal / Pendahuluan (${timeIntro})</h4>`,
+      renderBullets([
+        "Berkesadaran (Mindful): Guru mengkondisikan kelas, memberi salam hangat, memimpin doa bersama, mengecek kehadiran, dan memastikan kesiapan belajar peserta didik.",
+        "Apersepsi: Guru mengaitkan materi pembelajaran dengan pengalaman nyata sehari-hari murid atau materi sebelumnya melalui tanya jawab kontekstual.",
+        "Menggembirakan (Joyful): Guru memberikan motivasi berupa yel-yel penyemangat, tepuk fokus, atau ice breaking singkat untuk membangun antusiasme.",
+        "Penyampaian Tujuan: Guru menjelaskan tujuan pembelajaran hari ini, alur kegiatan belajar yang akan dilalui, serta kesepakatan belajar kelompok."
+      ]),
+      `<h4>2. Kegiatan Inti (${timeCore})</h4>`,
+      `<p>Pelaksanaan kegiatan inti mengacu pada sintaks model <strong>${escapeHTML(model.label)}</strong> yang mengintegrasikan pengalaman belajar <em>Memahami</em>, <em>Mengaplikasi</em>, dan <em>Merefleksi</em>:</p>`,
+      renderTable(["Tahap", "Sintaks Pembelajaran", "Aktivitas dan Eksplorasi Pembelajaran", "Pengalaman Belajar"], syntaxRows),
+      `<h4>3. Kegiatan Penutup (${timeClosing})</h4>`,
+      renderBullets([
+        "Refleksi & Rangkuman: Guru bersama peserta didik merangkum poin-poin penting yang telah dipelajari hari ini.",
+        "Peserta didik menyampaikan refleksi singkat mengenai kegiatan yang paling bermakna dan berkesan.",
+        "Apresiasi & Penguatan: Guru memberikan apresiasi atas kerja sama tim seluruh murid serta menyampaikan pesan moral karakter.",
+        "Tindak Lanjut: Guru menyampaikan pengantar rencana topik belajar untuk pertemuan berikutnya.",
+        "Penutup: Pembelajaran diakhiri dengan doa bersama penuh syukur dan salam penutup."
+      ]),
+      `</div>`,
+      `</section>`,
+
+      `<section><h2>III. ASESMEN PEMBELAJARAN</h2>`,
+      renderKeyValue([
+        ["Asesmen Awal (Diagnostik)", `Observasi kesiapan belajar non-kognitif serta tanya jawab lisan kognitif awal (${escapeHTML(plan.asesmen.awal)})`],
+        ["Asesmen Formatif (Proses)", `Observasi keterlibatan diskusi, kinerja kerja sama kelompok, dan lembar catatan proses (${escapeHTML(plan.asesmen.proses)})`],
+        ["Asesmen Sumatif (Akhir)", `Uji pemahaman mandiri tertulis / penugasan performa di akhir lingkup materi (${escapeHTML(plan.asesmen.akhir)})`]
+      ]),
+      profileRows.length ? `<h3>Fokus Dimensi Profil Pelajar Pancasila yang Diamati</h3>${renderTable(["Dimensi", "Indikator Ketercapaian yang Diamati"], profileRows)}` : "",
+      `</section>`,
+
+      `<section><h2>IV. PROGRAM PENGAYAAN DAN REMEDIAL</h2>`,
+      renderBullets([
+        "Program Pengayaan: Diberikan kepada peserta didik yang telah mencapai kriteria ketuntasan tujuan pembelajaran untuk memperluas dan memperdalam wawasan materi melalui tugas eksplorasi kontekstual tingkat tinggi (HOTS) atau menjadi tutor sebaya bagi temannya.",
+        `Program Remedial: Diberikan kepada peserta didik yang membutuhkan bimbingan tambahan dalam memahami indikator tertentu melalui pendampingan terbimbing secara perorangan atau kelompok kecil (guided scaffolding) dengan bantuan ${escapeHTML(plan.tindakLanjut.support || "penjelasan ulang konsep kunci")}.`
+      ]),
+      `</section>`,
+
+      `<section><h2>V. REFLEKSI GURU DAN PESERTA DIDIK</h2>`,
+      `<h3>A. Refleksi Guru</h3>`,
+      renderBullets([
+        "Apakah tujuan pembelajaran hari ini tercapai secara optimal oleh seluruh peserta didik?",
+        "Bagian alur kegiatan pembelajaran mana yang paling disukai dan paling efektif bagi peserta didik?",
+        "Kesulitan atau hambatan apa yang ditemukan selama memfasilitasi proses pembelajaran?",
+        "Apakah diferensiasi proses dan pendampingan bertahap (scaffolding) telah berjalan efektif?",
+        "Langkah perbaikan apa yang perlu disiapkan untuk diterapkan pada pertemuan berikutnya?"
+      ]),
+      `<h3>B. Refleksi Peserta Didik</h3>`,
+      renderBullets([
+        "Apa hal baru dan paling menarik yang kalian pelajari hari ini?",
+        "Bagian mana dari pelajaran hari ini yang masih terasa menantang atau perlu dipelajari lagi?",
+        "Bagaimana perasaan kalian setelah bekerja sama dan menyelesaikan kegiatan bersama teman sekelompok?"
+      ]),
+      `</section>`,
+
       renderApprovalBlock(input),
       renderIssues(validation)
     ].join("");
 
-    const timeText = timePlan?.ok ? Object.entries(timePlan.segments).map(([key, value]) => `${sentenceCase(key)}: ${value} menit`).join("\n") : "Reality Check waktu belum tersedia.";
     const text = [
-      "MODUL AJAR PEMBELAJARAN MENDALAM", input.namaSekolah ? `Satuan Pendidikan: ${input.namaSekolah}` : "", input.namaGuru ? `Nama Guru: ${input.namaGuru}` : "", input.tahunPelajaran ? `Tahun Pelajaran: ${input.tahunPelajaran}` : "", input.semester ? `Semester: ${input.semester}` : "", `Kelas/Fase: ${input.kelasAtauFase} / ${GADM_KB.faseMap[phase].label}`, `Mata Pelajaran: ${input.mataPelajaran}`,
-      `Materi/Unit: ${input.materiAtauUnit}`, `Alokasi Waktu: ${input.alokasiWaktu}`, `CP/TP: ${input.cpAtauTp}`,
-      `Pendekatan: ${GADM_KB.pendekatanPembelajaran.pembelajaranMendalam.label}`, `Model: ${model.label}`,
-      `Metode: ${joinNatural(methods.map((item) => item.label))}`, `Media: ${joinNatural(media)}`,
-      profileLabels.length ? `Dimensi Profil Lulusan: ${joinNatural(profileLabels)}` : "Dimensi Profil Lulusan: belum dipilih karena belum ada sinyal bukti yang cukup.",
-      "", "REALITY CHECK WAKTU", timeText, "", "MEMAHAMI", plan.memahami, "", "MENGAPLIKASI", plan.mengaplikasi, "", "MEREFLEKSI", plan.merefleksi,
-      "", "ASESMEN", `Awal: ${plan.asesmen.awal}`, `Proses: ${plan.asesmen.proses}`, `Akhir: ${plan.asesmen.akhir}`,
-      "", "TINDAK LANJ", ...unique([plan.tindakLanjut.support, plan.tindakLanjut.fadingRule, ...(teacherContext.recommendedSupports || [])]).map((item) => `- ${item}`),
-      "", `QUALITY INSPECTOR: ${qualityAudit?.score ?? "-"}/100 • ${qualityAudit?.status ?? "belum diaudit"}`
-    ].join("\n");
+      "MODUL AJAR KURIKULUM MERDEKA",
+      `PEMBELAJARAN MENDALAM (DEEP LEARNING) — ${schoolName.toUpperCase()}`,
+      "",
+      "I. INFORMASI UMUM",
+      `Satuan Pendidikan: ${schoolName}`,
+      `Nama Guru: ${teacherName}`,
+      `Tahun Pelajaran: ${academicYear}`,
+      `Semester: ${semester}`,
+      `Fase / Kelas: ${phaseLabel} / Kelas ${input.kelasAtauFase}`,
+      `Mata Pelajaran: ${input.mataPelajaran || "-"}`,
+      `Materi Pokok: ${topic}`,
+      `Alokasi Waktu: ${timeAlloc}`,
+      "",
+      "A. Kompetensi Awal",
+      kompetensiAwal,
+      "",
+      "B. Profil Pelajar Pancasila",
+      ...(profileLabels.length ? profileLabels : ["Beriman, Bertakwa kepada Tuhan YME", "Bernalar Kritis", "Gotong Royong", "Mandiri"]).map((p) => `- ${p}`),
+      "",
+      "C. Sarana dan Prasarana",
+      `- Media: ${joinNatural(media.length ? media : ["Media visual konkret", "Kartu gambar", "Proyektor LCD"])}`,
+      `- Sumber Belajar: Buku Siswa dan Buku Guru ${input.mataPelajaran || "Kemendikbudristek"}, lingkungan sekitar`,
+      `- Alat dan Bahan: Alat tulis, lembar eksplorasi kerja`,
+      "",
+      "D. Target Peserta Didik",
+      "- Peserta didik reguler/tipikal",
+      "- Peserta didik pencapaian tinggi",
+      "- Peserta didik membutuhkan bimbingan (scaffolding)",
+      "",
+      "E. Pendekatan, Model, dan Metode",
+      "Pendekatan: Deep Learning (Mindful, Meaningful, Joyful)",
+      `Model: ${model.label}`,
+      `Metode: ${joinNatural(methods.map((item) => item.label))}`,
+      "",
+      "II. KOMPONEN INTI",
+      "A. Capaian Pembelajaran (CP)",
+      input.cpResmiAtauManual || input.cpAtauTp || "-",
+      "",
+      "B. Tujuan Pembelajaran (TP)",
+      input.tujuanPembelajaran || input.tujuan || input.cpAtauTp || "-",
+      "",
+      "C. Pemahaman Bermakna",
+      pemahamanBermakna,
+      "",
+      "D. Pertanyaan Pemantik",
+      ...pemantik.map((q, i) => `${i + 1}. ${q}`),
+      "",
+      "E. Pembelajaran Berdiferensiasi",
+      `- Proses: Pendampingan bertahap (scaffolding: ${plan.tindakLanjut.support || "panduan terarah"}) dan eksplorasi mandiri.`,
+      "- Produk: Ragam penyajian lisan, catatan lembar kerja, atau visual kelompok.",
+      "",
+      "F. Urutan Kegiatan Pembelajaran",
+      `1. Pendahuluan (${timeIntro}): Orientasi mindful, salam & doa, apersepsi kontekstual, motivasi joyful, dan penyampaian tujuan.`,
+      `2. Kegiatan Inti (${timeCore}): Mengacu pada sintaks model ${model.label}:`,
+      `   - Memahami: ${plan.memahami}`,
+      `   - Mengaplikasi: ${plan.mengaplikasi}`,
+      `   - Merefleksi: ${plan.merefleksi}`,
+      `3. Penutup (${timeClosing}): Refleksi bersama, kesimpulan materi, apresiasi guru, pesan karakter, rencana tindak lanjut, dan doa penutup.`,
+      "",
+      "III. ASESMEN PEMBELAJARAN",
+      `Awal (Diagnostik): ${plan.asesmen.awal}`,
+      `Proses (Formatif): ${plan.asesmen.proses}`,
+      `Akhir (Sumatif): ${plan.asesmen.akhir}`,
+      "",
+      "IV. PROGRAM PENGAYAAN DAN REMEDIAL",
+      "Pengayaan: Pendalaman konsep dan tugas eksploratif (HOTS) bagi peserta didik yang tuntas.",
+      `Remedial: Pendampingan terfokus secara individu/kelompok kecil (scaffolding) dengan ${plan.tindakLanjut.support || "bimbingan bertahap"}.`,
+      "",
+      "V. REFLEKSI GURU DAN PESERTA DIDIK",
+      "Refleksi Guru: Evaluasi ketercapaian tujuan, efektivitas waktu, respon antusiasme murid, dan adaptasi pembelajaran.",
+      "Refleksi Murid: Kesan belajar, hal bermakna yang dipahami, serta hal yang masih perlu dilatih.",
+      "",
+      "VI. PENGESAHAN",
+      `Mengetahui: Kepala Satuan Pendidikan | Guru: ${teacherName}`
+    ].filter(Boolean).join("\n");
 
     return resultFromHTML("modulAjar", "Modul Ajar Pembelajaran Mendalam", html, text, validation, built);
   }
@@ -1034,6 +1239,159 @@ export const GADM_ENGINE = (() => {
     return resultFromHTML("deskripsiERapor", "Deskripsi e-Rapor", html, finalText, validation, { stateKey });
   }
 
+  function generateLKPDRubrik(input, seed) {
+    const base = validateDocumentInput("lkpdRubrik", input);
+    const errors = [...base.errors];
+    const warnings = [...base.warnings];
+    const validation = { ok: errors.length === 0, errors, warnings };
+    if (!validation.ok) {
+      return resultFromHTML(
+        "lkpdRubrik",
+        "LKPD & Rubrik Penilaian",
+        `${renderHeader("LKPD & Rubrik Penilaian — Belum Dapat Digenerasi")}${renderIssues(validation)}`,
+        ["LKPD & RUBRIK PENILAIAN — GENERASI DIBLOKIR", ...errors.map((item) => `- ${item.message}`)].join("\n"),
+        validation
+      );
+    }
+
+    const schoolName = input.namaSekolah || "SDIT Bina Muda";
+    const teacherName = input.namaGuru || "Guru Kelas / Mata Pelajaran";
+    const academicYear = input.tahunPelajaran || "2024/2025";
+    const semester = input.semester || "1 (Ganjil)";
+    const phase = resolvePhase(input.kelasAtauFase || input.phase || input.kelas);
+    const phaseLabel = GADM_KB.faseMap[phase]?.label || "Fase B";
+    const topic = normalizeText(input.materiAtauUnit) || "Materi Pembelajaran";
+    const timeAlloc = input.alokasiWaktu || input.lkpdAlokasi || "30 Menit (1 Pertemuan)";
+    const tpText = input.tujuanPembelajaran || input.tujuan || input.cpAtauTp || `Peserta didik mampu memahami dan menyajikan hasil pengamatan terkait materi ${topic} secara mandiri maupun kolaboratif.`;
+    const activityType = input.lkpdAktivitas || "Pengamatan Langsung dan Diskusi Kelompok Terarah";
+    const toolsAndMaterials = input.lkpdAlatBahan || "Alat tulis, lembar kerja pengamatan, dan benda/lingkungan konkret di sekitar kelas";
+    const rawSteps = input.lkpdPetunjuk
+      ? input.lkpdPetunjuk.split("\n").map((s) => s.trim()).filter(Boolean)
+      : [
+          "Bentuklah kelompok kecil beranggotakan 4–5 orang secara tertib.",
+          "Bacalah setiap langkah kerja dan instruksi pada lembar ini bersama teman sekelompokmu.",
+          `Lakukan eksplorasi/pengamatan terhadap objek atau fenomena ${topic} yang telah disiapkan.`,
+          "Diskusikan hasil temuan kelompok dan catatlah secara rapi pada tabel pengamatan yang tersedia.",
+          "Jawab pertanyaan pemandu diskusi dan rumuskan kesimpulan bersama kelompok.",
+          "Presentasikan hasil kerja kelompok di depan kelas dengan penuh percaya diri."
+        ];
+
+    const rawRubricCriteria = input.rubrikKriteria
+      ? input.rubrikKriteria.split("\n").map((c) => c.trim()).filter(Boolean)
+      : [
+          `Penguasaan Konsep (${topic})`,
+          "Keterampilan Eksplorasi & Pengamatan Data",
+          "Kerja Sama Tim & Keterlibatan Aktif",
+          "Komunikasi & Penyampaian Hasil Diskusi"
+        ];
+
+    const rubricRows = rawRubricCriteria.map((crit) => {
+      return [
+        crit,
+        "Belum menunjukkan pemahaman; memerlukan bimbingan penuh dari guru dan teman sejawat.",
+        "Menunjukkan pemahaman dasar sebagian; masih memerlukan pengingat atau bantuan bertahap.",
+        "Menunjukkan pemahaman yang baik, mandiri, dan mampu menyelesaikan tugas secara tepat.",
+        "Sangat mandiri, akurat, bernalar kritis, dan mampu membantu atau membimbing teman sekelompok."
+      ];
+    });
+
+    const html = [
+      renderHeader("LEMBAR KERJA PESERTA DIDIK (LKPD)", `${schoolName.toUpperCase()} • TAHUN PELAJARAN ${academicYear}`),
+      
+      `<section><h2>I. IDENTITAS LEMBAR KERJA</h2>`,
+      renderKeyValue([
+        ["Satuan Pendidikan", schoolName],
+        ["Mata Pelajaran", input.mataPelajaran || "-"],
+        ["Fase / Kelas / Semester", `${phaseLabel} / Kelas ${input.kelasAtauFase} / Semester ${semester}`],
+        ["Topik / Materi", topic],
+        ["Alokasi Waktu", timeAlloc],
+        ["Nama Kelompok / Anggota", "1. .....................  2. .....................  3. .....................  4. ....................."]
+      ]),
+      `</section>`,
+
+      `<section><h2>II. TUJUAN PEMBELAJARAN</h2>`,
+      `<div class="gadm-curriculum-text"><p>${escapeHTML(tpText)}</p></div>`,
+      `</section>`,
+
+      `<section><h2>III. ALAT DAN SUMBER BELAJAR</h2>`,
+      `<p>${escapeHTML(toolsAndMaterials)}</p>`,
+      `</section>`,
+
+      `<section><h2>IV. PETUNJUK KERJA PESERTA DIDIK</h2>`,
+      renderBullets(rawSteps),
+      `</section>`,
+
+      `<section><h2>V. LEMBAR AKTIVITAS & PENGAMATAN SISWA</h2>`,
+      `<p><strong>Bentuk Aktivitas:</strong> ${escapeHTML(activityType)}</p>`,
+      `<p>Amati dan lakukan pengamatan bersama kelompokmu, kemudian isilah tabel di bawah ini dengan cermat:</p>`,
+      renderTable(
+        ["No", "Objek / Aspek yang Diamati", "Hasil Pengamatan & Ciri yang Ditemukan", "Catatan Penjelasan"],
+        [
+          ["1", "Pengamatan 1 (Kondisi Awal / Contoh 1)", "", ""],
+          ["2", "Pengamatan 2 (Perubahan / Contoh 2)", "", ""],
+          ["3", "Pengamatan 3 (Penerapan Sehari-hari)", "", ""]
+        ]
+      ),
+      `<h3>Pertanyaan Diskusi Pemandu:</h3>`,
+      renderBullets([
+        `Berdasarkan data di atas, apa hal paling menarik yang kalian temukan terkait ${topic}?`,
+        "Mengapa hal tersebut dapat terjadi? Jelaskan alasan atau bukti yang kelompok kalian temukan!",
+        `Apa kesimpulan utama yang dapat diambil oleh kelompok kalian mengenai ${topic}?`
+      ]),
+      `<div style="margin-top:14px;border:1px dashed #cbd5e1;border-radius:10px;padding:14px;min-height:90px;background:#f8fafc;">`,
+      `<strong>Ruang Kesimpulan Kelompok:</strong><br><br>`,
+      `<span style="color:#94a3b8;font-size:11px;font-style:italic;">(Tuliskan rangkuman kesimpulan kelompokmu di sini)</span>`,
+      `</div>`,
+      `</section>`,
+
+      `<section><h2>VI. RUBRIK PENILAIAN ASESMEN OTENTIK</h2>`,
+      `<p>Pedoman penilaian kinerja dan proses ketercapaian tujuan pembelajaran:</p>`,
+      renderTable(
+        ["Kriteria Penilaian", "Skor 1 (Perlu Bimbingan)", "Skor 2 (Cukup)", "Skor 3 (Baik)", "Skor 4 (Sangat Baik)"],
+        rubricRows
+      ),
+      `<div style="margin-top:10px;font-size:11px;color:#475569;background:#f1f5f9;padding:9px 12px;border-radius:8px;">`,
+      `<strong>Pedoman Penskoran:</strong> Nilai Akhir = (Total Skor Perolehan / Total Skor Maksimal [${rawRubricCriteria.length * 4}]) × 100`,
+      `</div>`,
+      `</section>`,
+
+      renderApprovalBlock(input)
+    ].join("");
+
+    const text = [
+      "LEMBAR KERJA PESERTA DIDIK (LKPD) & RUBRIK PENILAIAN",
+      `${schoolName.toUpperCase()} — TAHUN PELAJARAN ${academicYear}`,
+      "",
+      "I. IDENTITAS",
+      `Satuan Pendidikan: ${schoolName}`,
+      `Mata Pelajaran: ${input.mataPelajaran || "-"}`,
+      `Fase / Kelas / Semester: ${phaseLabel} / Kelas ${input.kelasAtauFase} / Semester ${semester}`,
+      `Topik / Materi: ${topic}`,
+      `Alokasi Waktu: ${timeAlloc}`,
+      "Nama Kelompok / Anggota: ......................................................",
+      "",
+      "II. TUJUAN PEMBELAJARAN",
+      tpText,
+      "",
+      "III. ALAT DAN SUMBER BELAJAR",
+      toolsAndMaterials,
+      "",
+      "IV. PETUNJUK KERJA PESERTA DIDIK",
+      ...rawSteps.map((s, i) => `${i + 1}. ${s}`),
+      "",
+      "V. LEMBAR AKTIVITAS SISWA",
+      `Bentuk Aktivitas: ${activityType}`,
+      "Tabel Pengamatan: [Tersedia format pengamatan dan pertanyaan pemandu diskusi]",
+      "",
+      "VI. RUBRIK PENILAIAN ASESMEN OTENTIK",
+      ...rawRubricCriteria.map((c, i) => `${i + 1}. Kriteria: ${c} (Skala Skor 1–4)`),
+      "",
+      `VII. PENGESAHAN: Guru: ${teacherName}`
+    ].filter(Boolean).join("\n");
+
+    return resultFromHTML("lkpdRubrik", "LKPD & Rubrik Penilaian", html, text, validation);
+  }
+
   function generateDocument(rawInput) {
     const input = normalizeHostInput(rawInput);
     const type = normalizeText(input.documentType);
@@ -1046,6 +1404,7 @@ export const GADM_ENGINE = (() => {
       case "silabus": result = generateSilabus(input, seed); break;
       case "deskripsiKokurikuler": result = generateKokurikuler(input, seed); break;
       case "deskripsiERapor": result = generateERapor(input, seed); break;
+      case "lkpdRubrik": result = generateLKPDRubrik(input, seed); break;
       default: {
         const validation = { ok: false, errors: [makeIssue("DOCUMENT_TYPE_UNKNOWN", `Jenis dokumen '${type}' tidak dikenali.`)], warnings: [] };
         result = resultFromHTML(type, "GADM", `${renderHeader("GADM")}${renderIssues(validation)}`, validation.errors[0].message, validation);
@@ -1126,7 +1485,13 @@ export const GADM_ENGINE = (() => {
       evidence: get("gadm-erapor-evidence"),
       kompetensi: get("gadm-erapor-kompetensi"),
       nextStep: get("gadm-erapor-next-step"),
-      teacherObservation: get("gadm-erapor-observation")
+      teacherObservation: get("gadm-erapor-observation"),
+      lkpdAktivitas: get("gadm-lkpd-aktivitas"),
+      lkpdAlatBahan: get("gadm-lkpd-alat-bahan"),
+      lkpdPetunjuk: get("gadm-lkpd-petunjuk"),
+      rubrikModel: get("gadm-rubrik-model"),
+      rubrikKriteria: get("gadm-rubrik-kriteria"),
+      lkpdAlokasi: get("gadm-lkpd-alokasi")
     };
   }
 
@@ -1142,15 +1507,16 @@ export const GADM_ENGINE = (() => {
     const status = document.querySelector("#gadm-status");
     if (preview) preview.innerHTML = result.html;
     if (status) {
-      status.textContent = result.validation.ok ? `Siap • Engine ${result.engineVersion} • KB ${result.kbVersion}${result.data?.qualityAudit ? ` • Quality ${result.data.qualityAudit.score}/100` : ""}` : `${result.validation.errors.length} masalah harus diperbaiki`;
+      status.textContent = result.validation.ok ? 'Dokumen siap ditinjau' : `${result.validation.errors.length} masalah harus diperbaiki`;
+      status.title = `Engine ${result.engineVersion} · KB ${result.kbVersion}`;
       status.dataset.state = result.validation.ok ? "ok" : "error";
     }
     state.lastResult = result;
     state.lastValidation = result.validation;
     setResultActionsEnabled(Boolean(result.validation.ok));
     updateQualitySummary(result);
-    if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 760px)").matches) {
-      setMobilePane("preview");
+    setMobilePane("preview");
+    if (typeof window !== "undefined") {
       window.requestAnimationFrame(scrollGadmToTop);
     }
   }
@@ -1169,7 +1535,9 @@ export const GADM_ENGINE = (() => {
         semester: "gadm-semester", hasilProtaAtauDistribusiTahunan: "gadm-referensi-prota", mingguEfektifSemester: "gadm-minggu-efektif-semester",
         tpAtauUnitSemester: "gadm-promes-unit", kegiatan: "gadm-kegiatan-kokurikuler", targetDimensi: "gadm-target-dimensi",
         evidenceObservasi: "gadm-evidence-kokurikuler", materiAtauTP: "gadm-erapor-materi", statusCapaian: "gadm-erapor-status",
-        evidence: "gadm-erapor-evidence", kompetensi: "gadm-erapor-kompetensi", nextStep: "gadm-erapor-next-step", teacherObservation: "gadm-erapor-observation"
+        evidence: "gadm-erapor-evidence", kompetensi: "gadm-erapor-kompetensi", nextStep: "gadm-erapor-next-step", teacherObservation: "gadm-erapor-observation",
+        lkpdAktivitas: "gadm-lkpd-aktivitas", lkpdAlatBahan: "gadm-lkpd-alat-bahan", lkpdPetunjuk: "gadm-lkpd-petunjuk",
+        rubrikModel: "gadm-rubrik-model", rubrikKriteria: "gadm-rubrik-kriteria", lkpdAlokasi: "gadm-lkpd-alokasi"
   });
 
   function populateInputFields(input) {
@@ -1256,7 +1624,8 @@ export const GADM_ENGINE = (() => {
     renderEmptyPreview();
     const status = document.querySelector("#gadm-status");
     if (status) {
-      status.textContent = `Siap • Engine ${ENGINE_VERSION} • KB ${GADM_KB_VERSION}`;
+      status.textContent = 'Siap membuat dokumen';
+      status.title = `Engine ${ENGINE_VERSION} · KB ${GADM_KB_VERSION}`;
       status.dataset.state = "ok";
     }
     const summary = document.querySelector("#gadm-quality-summary");
@@ -1303,7 +1672,19 @@ export const GADM_ENGINE = (() => {
     URL.revokeObjectURL(url);
   }
 
-  async function printOutput() {
+  let activePDFJob = null;
+  function printOutput() {
+    if (activePDFJob) return activePDFJob;
+    const button = document.querySelector('#gadm-print');
+    if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
+    activePDFJob = printOutputImplementation().finally(() => {
+      activePDFJob = null;
+      if (button) { button.disabled = !state.lastValidation?.ok; button.removeAttribute('aria-busy'); }
+    });
+    return activePDFJob;
+  }
+  async function printOutputImplementation() {
+    await window.ensureSIMNIVendors?.("pdf");
     if (!state.lastResult?.html) return;
     if (typeof window.html2pdf !== "function") throw new Error("Pustaka PDF SIMNI belum tersedia.");
     const exportContainer = document.createElement("article");
@@ -1331,10 +1712,10 @@ export const GADM_ENGINE = (() => {
       await window.html2pdf().set({
         margin: [10, 10, 10, 10],
         filename: `${normalizeId(state.lastResult.title) || "gadm-output"}.pdf`,
-        image: { type: "jpeg", quality: 0.96 },
-        html2canvas: { scale: 1.25, useCORS: false, logging: false, windowWidth: 1024 },
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 1024, scrollY: 0 },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"], avoid: ["tr", ".gadm-signature-grid"] }
+        pagebreak: { mode: ["avoid-all", "css", "legacy"], avoid: ["tr", "h2", "h3", ".gadm-signature-grid", ".gadm-doc-meta", ".gadm-curriculum-text", ".gadm-output-alert"] }
       }).from(exportContainer).save();
     } finally {
       document.querySelectorAll(".html2pdf__overlay").forEach((overlay) => overlay.remove());
@@ -1454,6 +1835,10 @@ export const GADM_ENGINE = (() => {
     deskripsiERapor: {
       title: "Deskripsi e-Rapor",
       description: "Ubah evidence capaian menjadi deskripsi yang empatik, konkret, dan bebas klaim yang tidak didukung bukti."
+    },
+    lkpdRubrik: {
+      title: "LKPD & Rubrik Penilaian",
+      description: "Susun Lembar Kerja Peserta Didik berbasis aktivitas kontekstual serta Rubrik Asesmen Otentik berjenjang 4 kriteria."
     }
   });
 
@@ -1477,7 +1862,8 @@ export const GADM_ENGINE = (() => {
     if (title) title.textContent = config.title;
     if (description) description.textContent = config.description;
     document.querySelectorAll("[data-gadm-document]").forEach((button) => {
-      const active = button.dataset.gadmDocument === type;
+      const active = button.dataset.gadmDocument === type
+        || (button.dataset.gadmDocument === "prota" && (type === "promes" || type === "silabus"));
       button.classList.toggle("gadm-is-active", active);
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");

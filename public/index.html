@@ -19,6 +19,11 @@
     >
 
     <meta
+        name="application-version"
+        content="4.8.0-rc.1"
+    >
+
+    <meta
         name="apple-mobile-web-app-capable"
         content="yes"
     >
@@ -56,6 +61,7 @@
     >
 
     <link rel="stylesheet" href="js/ui/shell.css">
+  <meta name="simni-edge-url" content="https://simni-assets-gateway.2ndgoal.workers.dev">
 </head>
 
 <body
@@ -134,6 +140,10 @@
                     Lupa kata sandi?
                 </button>
 
+                <a href="./register.html" class="login-reset inline-flex justify-center items-center gap-2">
+                    <i class="fas fa-user-plus" aria-hidden="true"></i> Daftar sebagai guru dengan undangan
+                </a>
+
                 <p id="auth-error" class="text-red-600 text-sm hidden font-medium text-center bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200 dark:border-red-900/60 w-full mt-3" role="alert" aria-live="polite"></p>
 
                 <p class="login-security-note">
@@ -155,7 +165,7 @@
 
     <div
         id="toast-container"
-        class="fixed top-4 right-4 z-[11000] flex flex-col gap-2 no-print pointer-events-none"
+        class="fixed top-16 right-4 max-w-sm z-[9990] flex flex-col gap-2 no-print pointer-events-none"
     ></div>
 
     <div
@@ -196,12 +206,14 @@
             <div
                 class="overflow-hidden"
             >
-                <h1
-                    class="text-base font-bold text-slate-800 dark:text-white leading-tight truncate"
-                    id="ui-nama-kelas"
-                >
-                    SIMNI
-                </h1>
+                <div class="flex items-center gap-2">
+                    <h1
+                        class="text-base font-bold text-slate-800 dark:text-white leading-tight truncate"
+                        id="ui-nama-kelas"
+                    >
+                        SIMNI
+                    </h1>
+                </div>
 
                 <p
                     class="text-xs text-slate-500 dark:text-slate-400 font-medium truncate"
@@ -348,22 +360,6 @@
 
                 File &amp; LKPD
             </button>
-
-            <a
-                href="./chat/chat.html"
-                data-requires-feature="chat"
-                class="nav-btn chat-nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-colors text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-[#111111] hidden"
-                aria-hidden="true"
-            >
-                <i
-                    class="fas fa-comments w-5 text-center text-indigo-500"
-                    aria-hidden="true"
-                ></i>
-
-                Chat Privat
-
-                <span class="chat-unread-badge hidden" data-chat-unread-badge aria-label="0 pesan Chat belum dibaca">0</span>
-            </a>
         </nav>
 
         <div
@@ -386,30 +382,37 @@
                 <button
                     type="button"
                     data-shell-action="toggle-theme"
-                    class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-amber-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 text-[10px] font-bold gap-2"
+                    title="Beralih Mode Gelap / Terang"
+                    aria-label="Beralih Mode Gelap / Terang"
+                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-[11px] font-semibold whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                    
-
-                    
-
-                    <span
-                        class="dark:hidden"
-                    >
-                        Mode Gelap
-                    </span>
-
-                    <span
-                        class="hidden dark:inline"
-                    >
-                        Mode Terang
-                    </span>
+                    <i class="fas fa-moon dark:hidden text-xs"></i>
+                    <span class="dark:hidden">Gelap</span>
+                    <i class="fas fa-sun hidden dark:inline text-xs text-amber-400"></i>
+                    <span class="hidden dark:inline">Terang</span>
                 </button>
             </div>
 
             <button
                 type="button"
-                data-shell-modal-open="modal-pengaturan"
-                class="w-full flex items-center justify-between px-3 py-3 bg-slate-100 dark:bg-[#111111] text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors shadow-sm border dark:border-slate-800"
+                data-requires-feature="accounts"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["kelola-akun"]'
+                data-target="kelola-akun"
+                class="w-full flex items-center justify-between px-3 py-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors shadow-sm border border-indigo-100 dark:border-indigo-900 cursor-pointer"
+            >
+                <span class="flex items-center gap-2"><i class="fas fa-users-cog" aria-hidden="true"></i> Kelola Akun</span>
+                <i class="fas fa-chevron-right text-indigo-400" aria-hidden="true"></i>
+            </button>
+
+            <button
+                type="button"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["pengaturan"]'
+                data-target="pengaturan"
+                class="w-full flex items-center justify-between px-3 py-3 bg-slate-100 dark:bg-[#111111] text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors shadow-sm border dark:border-slate-800 cursor-pointer"
             >
                 <span
                     class="flex items-center gap-2"
@@ -436,7 +439,7 @@
          ====================================== -->
 
     <main
-        class="flex-1 flex flex-col h-full w-full overflow-hidden relative pb-28 dark:bg-[#000000]"
+        class="flex-1 flex flex-col h-full w-full overflow-hidden relative dark:bg-[#000000]"
     >
 
         <!-- MOBILE HEADER -->
@@ -444,37 +447,45 @@
         <header
             class="mobile-shell-header md:hidden bg-white dark:bg-[#000000] px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-sm no-print z-10 transition-colors"
         >
-            <div
-                class="mobile-header-brand flex items-center gap-2"
-            >
-                <div
-                    class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-bold shadow-sm overflow-hidden"
-                    id="icon-mobile-container"
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    id="btn-menu-drawer"
+                    data-simni-action="toggleMenuDrawer"
+                    data-simni-trigger="click"
+                    class="md:hidden text-primary text-base p-1.5 bg-indigo-50 dark:bg-primary/20 hover:bg-indigo-100 dark:hover:bg-primary/30 rounded-xl w-8 h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    aria-label="Buka Menu Navigasi"
+                    title="Menu"
                 >
-                    <img src="./icons/simni-logo.png" alt="Logo SIMNI" class="h-full w-full object-contain bg-white" width="32" height="32">
-                </div>
+                    <i
+                        class="fas fa-bars text-sm"
+                        aria-hidden="true"
+                    ></i>
+                </button>
 
-                <div class="mobile-app-identity">
-                    <h1
-                        class="mobile-app-title text-sm font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[120px]"
-                        id="ui-mobile-nama-kelas"
+                <div
+                    class="mobile-header-brand flex items-center gap-2 ml-0.5"
+                >
+                    <div
+                        class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-bold shadow-sm overflow-hidden shrink-0"
+                        id="icon-mobile-container"
                     >
-                        SIMNI
-                    </h1>
+                        <img src="./icons/simni-logo.png" alt="Logo SIMNI" class="h-full w-full object-contain bg-white" width="32" height="32">
+                    </div>
 
-                </div>
-
-                <div
-                    id="sync-status-mobile"
-                    class="mobile-sync-status flex items-center gap-1.5 text-[9px] font-bold text-slate-500 dark:text-slate-400"
-                >
-                    <div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
-                    <span class="mobile-sync-label">Offline</span>
+                    <div class="mobile-app-identity flex items-center gap-1.5">
+                        <h1
+                            class="mobile-app-title text-sm font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[120px]"
+                            id="ui-mobile-nama-kelas"
+                        >
+                            SIMNI
+                        </h1>
+                    </div>
                 </div>
             </div>
 
             <div
-                class="flex items-center gap-2"
+                class="flex items-center gap-2 ml-auto"
             >
                 <div id="kelas-selector-mobile-container" class="hidden">
                     <select id="mobile-kelas-select" data-simni-action="setActiveKelas" data-simni-trigger="change" data-simni-argument="value" class="px-2 py-1 bg-slate-100 dark:bg-[#111111] border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary appearance-none">
@@ -492,39 +503,28 @@
                         <option value="6B">Kelas 6B</option>
                     </select>
                 </div>
-                <button
-                    type="button"
-                    data-shell-modal-open="modal-pengaturan"
-                    class="text-primary text-base p-2 bg-indigo-50 dark:bg-primary/20 rounded-full w-8 h-8 flex items-center justify-center"
-                    aria-label="Buka Pusat Pengaturan"
-                >
-                    <i
-                        class="fas fa-cog"
-                        aria-hidden="true"
-                    ></i>
-                </button>
 
-                <button
-                    type="button"
-                    data-shell-action="toggle-theme"
-                    class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-amber-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 text-[10px] font-bold gap-1.5 shadow-sm transition-colors"
-                >
-                    
-
-                    
-
-                    <span
-                        class="dark:hidden"
+                <div>
+                    <button
+                        type="button"
+                        data-shell-action="toggle-theme"
+                        title="Beralih Mode Gelap / Terang"
+                        aria-label="Beralih Mode Gelap / Terang"
+                        class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-xs shadow-xs cursor-pointer shrink-0"
                     >
-                        Mode Gelap
-                    </span>
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline text-amber-400"></i>
+                    </button>
+                </div>
 
-                    <span
-                        class="hidden dark:inline"
-                    >
-                        Mode Terang
-                    </span>
-                </button>
+                <div
+                    id="sync-status-mobile"
+                    class="mobile-sync-status flex items-center justify-center p-1 cursor-default"
+                    title="Status Koneksi"
+                >
+                    <div class="w-2 h-2 rounded-full bg-slate-400"></div>
+                    <span class="mobile-sync-label hidden">Offline</span>
+                </div>
             </div>
         </header>
 
@@ -534,7 +534,7 @@
              ================================== -->
 
         <div
-            class="flex-1 overflow-y-auto p-4 md:p-6 pb-28 hide-scrollbar no-print transition-colors"
+            class="flex-1 overflow-y-auto p-4 md:p-6 pb-8 hide-scrollbar no-print transition-colors"
             id="main-scroll-area"
         >
             <div
@@ -545,124 +545,222 @@
 
 
         <!-- ==================================
-             MOBILE BOTTOM NAVIGATION
+             DRAWER MENU GARIS 3 (MOBILE & TABLET)
              ================================== -->
 
+        <!-- Backdrop overlay -->
+        <div
+            id="menu-drawer-backdrop"
+            data-simni-action="closeMenuDrawer"
+            data-simni-trigger="click"
+            class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm z-[9998] hidden opacity-0 pointer-events-none transition-opacity duration-300 no-print"
+            aria-hidden="true"
+        ></div>
+
+        <!-- Drawer Navigation Panel -->
         <nav
-            id="mobile-bottom-navigation"
-            class="fixed bottom-0 left-0 w-full z-[999] bg-white dark:bg-[#000000] border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex md:hidden justify-around items-center py-2 px-1 pb-safe no-print transition-colors"
+            id="mobile-menu-drawer"
             aria-label="Navigasi utama mobile"
+            class="hidden fixed top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white dark:bg-[#111111] border-r border-slate-200 dark:border-slate-800 shadow-2xl z-[9999] flex flex-col no-print"
+            aria-hidden="true"
         >
-            <button
-                type="button"
-                data-shell-view="dashboard"
-                data-target="dashboard"
-                class="nav-btn-mobile flex flex-col items-center p-2 text-primary"
-            >
-                <i
-                    class="fas fa-home text-lg mb-1"
-                    aria-hidden="true"
-                ></i>
-
-                <span
-                    class="text-[10px] font-bold"
+            <!-- Drawer Header -->
+            <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm overflow-hidden">
+                        <img src="./icons/simni-logo.png" alt="Logo SIMNI" class="h-full w-full object-contain bg-white" width="32" height="32">
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <h2 class="text-sm font-bold text-slate-800 dark:text-white leading-tight">SIMNI</h2>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    data-simni-action="closeMenuDrawer"
+                    data-simni-trigger="click"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    aria-label="Tutup Menu"
                 >
-                    Home
-                </span>
-            </button>
+                    <i class="fas fa-times text-sm" aria-hidden="true"></i>
+                </button>
+            </div>
 
-            <button
-                type="button"
-                data-shell-view="siswa"
-                data-target="siswa"
-                class="nav-btn-mobile flex flex-col items-center p-2 text-slate-600 dark:text-slate-300"
-            >
-                <i
-                    class="fas fa-users text-lg mb-1"
-                    aria-hidden="true"
-                ></i>
+            <!-- Drawer Scrollable Menu List -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-1 hide-scrollbar">
+                <!-- Section: Navigasi Utama -->
+                <p class="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Navigasi Utama</p>
 
-                <span
-                    class="text-[10px] font-bold"
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["dashboard"]'
+                    data-target="dashboard"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
                 >
-                    Siswa
-                </span>
-            </button>
+                    <i class="fas fa-home w-5 text-center text-base text-primary" aria-hidden="true"></i>
+                    Dashboard
+                </button>
 
-            <button
-                type="button"
-                data-shell-view="presensi"
-                data-target="presensi"
-                class="nav-btn-mobile flex flex-col items-center p-2 text-slate-600 dark:text-slate-300"
-            >
-                <i
-                    class="fas fa-calendar-check text-lg mb-1"
-                    aria-hidden="true"
-                ></i>
-
-                <span
-                    class="text-[10px] font-bold"
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["siswa"]'
+                    data-target="siswa"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
                 >
-                    Absen
-                </span>
-            </button>
+                    <i class="fas fa-users w-5 text-center text-base text-blue-500" aria-hidden="true"></i>
+                    Data Siswa
+                </button>
 
-            <button
-                type="button"
-                data-shell-view="nilai"
-                data-target="nilai"
-                class="nav-btn-mobile flex flex-col items-center p-2 text-slate-600 dark:text-slate-300"
-            >
-                <i
-                    class="fas fa-star text-lg mb-1"
-                    aria-hidden="true"
-                ></i>
-
-                <span
-                    class="text-[10px] font-bold"
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["presensi"]'
+                    data-target="presensi"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
                 >
-                    Nilai TP
-                </span>
-            </button>
+                    <i class="fas fa-calendar-check w-5 text-center text-base text-emerald-500" aria-hidden="true"></i>
+                    Presensi
+                </button>
 
-            <button
-                type="button"
-                data-shell-view="lps"
-                data-target="lps"
-                data-requires-feature="lps"
-                class="nav-btn-mobile hidden flex flex-col items-center p-2 text-slate-600 dark:text-slate-300"
-            >
-                <i
-                    class="fas fa-file-signature text-lg mb-1"
-                    aria-hidden="true"
-                ></i>
-
-                <span
-                    class="text-[10px] font-bold"
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["nilai"]'
+                    data-target="nilai"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
                 >
-                    LPS
-                </span>
-            </button>
+                    <i class="fas fa-star w-5 text-center text-base text-amber-500" aria-hidden="true"></i>
+                    Input Nilai TP
+                </button>
 
-            <a
-                href="./chat/chat.html"
-                data-requires-feature="chat"
-                class="nav-btn-mobile chat-nav-link flex flex-col items-center p-2 text-indigo-500 hidden"
-                aria-hidden="true"
-            >
-                <i
-                    class="fas fa-comments text-lg mb-1"
-                    aria-hidden="true"
-                ></i>
-
-                <span
-                    class="text-[10px] font-bold"
+                <button
+                    type="button"
+                    data-requires-feature="lps"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["lps"]'
+                    data-target="lps"
+                    class="nav-btn-drawer hidden w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
                 >
-                    Chat
-                </span>
+                    <i class="fas fa-file-signature w-5 text-center text-base text-teal-500" aria-hidden="true"></i>
+                    Rapor LPS / BLP
+                </button>
 
-                <span class="chat-unread-badge hidden" data-chat-unread-badge aria-label="0 pesan Chat belum dibaca">0</span>
-            </a>
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["jurnal"]'
+                    data-target="jurnal"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-book-open w-5 text-center text-base text-purple-500" aria-hidden="true"></i>
+                    Jurnal Mengajar
+                </button>
+
+                <!-- Section: Aksi Cepat -->
+                <div class="pt-3 pb-1">
+                    <p class="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Aksi Cepat</p>
+                </div>
+
+                <button
+                    type="button"
+                    data-requires-feature="attendance"
+                    data-simni-action="openAttendanceScanner"
+                    data-simni-trigger="click"
+                    class="w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-qrcode w-5 text-center text-base text-indigo-600" aria-hidden="true"></i>
+                    Scan Presensi
+                </button>
+
+                <button
+                    type="button"
+                    data-requires-feature="gadm"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["gadm"]'
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-wand-magic-sparkles w-5 text-center text-base text-indigo-500" aria-hidden="true"></i>
+                    Buat Administrasi GADM
+                </button>
+
+                <button
+                    type="button"
+                    data-requires-feature="notes"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["catatan"]'
+                    data-target="catatan"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-clipboard-list w-5 text-center text-base text-amber-500" aria-hidden="true"></i>
+                    Catatan Guru
+                </button>
+
+                <button
+                    type="button"
+                    data-requires-feature="documents"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["dokumen"]'
+                    data-target="dokumen"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-folder-open w-5 text-center text-base text-blue-500" aria-hidden="true"></i>
+                    File &amp; LKPD
+                </button>
+
+                <button
+                    type="button"
+                    data-requires-feature="students"
+                    data-simni-action="openStudentsCreate"
+                    data-simni-trigger="click"
+                    class="w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-user-plus w-5 text-center text-base text-rose-500" aria-hidden="true"></i>
+                    Tambah Siswa
+                </button>
+
+            </div>
+
+            <!-- Drawer Bottom Section: Pusat Pengaturan -->
+            <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0d1021]">
+                <!-- Pusat Pengaturan (paling bawah dengan ikon gerigi) -->
+                <button
+                    type="button"
+                    data-requires-feature="accounts"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["kelola-akun"]'
+                    data-target="kelola-akun"
+                    class="nav-btn-drawer w-full flex items-center justify-between px-4 py-3 mb-2 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 rounded-xl text-sm font-bold border border-indigo-100 dark:border-indigo-900"
+                >
+                    <span class="flex items-center gap-3"><i class="fas fa-users-cog" aria-hidden="true"></i> Kelola Akun</span>
+                    <i class="fas fa-chevron-right text-xs" aria-hidden="true"></i>
+                </button>
+
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["pengaturan"]'
+                    data-target="pengaturan"
+                    class="nav-btn-drawer w-full flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-[#191f3c] text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors shadow-sm border border-slate-200/80 dark:border-slate-700/60"
+                >
+                    <span class="flex items-center gap-3">
+                        <i class="fas fa-cog text-primary text-base" aria-hidden="true"></i>
+                        Pusat Pengaturan
+                    </span>
+                    <i class="fas fa-chevron-right text-xs text-slate-400" aria-hidden="true"></i>
+                </button>
+            </div>
         </nav>
     </main>
 
@@ -718,12 +816,21 @@
          ====================================== -->
 
     <script
+        src="js/auth/workspace-registry-core.js"
+    ></script>
+
+    <script
         src="js/auth/access-policy-core.js"
         defer
     ></script>
 
     <script
         src="js/database/workspace-paths-core.js"
+        defer
+    ></script>
+
+    <script
+        src="js/database/paged-query.js"
         defer
     ></script>
 
@@ -767,6 +874,20 @@
         defer
     ></script>
 
+
+    <!-- ======================================
+         NATIVE & PLATFORM SERVICES
+         ====================================== -->
+
+    <script
+        src="js/platform/download-service.js"
+        defer
+    ></script>
+
+    <script
+        src="js/platform/native-back-button.js"
+        defer
+    ></script>
 
     <!-- ======================================
          SINGLE PLATFORM BOOTSTRAP

@@ -1,0 +1,24 @@
+// Static artifact audit only: does not run any feature or contact a service.
+import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+const root=process.cwd(), output=path.join(root,'public');
+const sha=value=>createHash('sha256').update(value).digest('hex');
+const manifest=JSON.parse(await readFile(path.join(output,'build-manifest.json'),'utf8'));
+assert.equal(sha(JSON.stringify(manifest.files)),manifest.buildId);
+for(const [name,hash] of Object.entries(manifest.files)) assert.equal(sha(await readFile(path.join(output,name))),hash,name);
+const sw=await readFile(path.join(output,'sw.js'),'utf8');
+const list=sw.slice(sw.indexOf('const PRECACHE_PATHS'),sw.indexOf('const PRECACHE_URLS'));
+const assets=[...list.matchAll(/'\.\/([^']+)'/g)].map(match=>match[1]);
+for(const asset of assets) assert.ok((await stat(path.join(output,asset))).isFile(),asset);
+assert.ok(!list.includes('mock-adapter'));
+assert.ok(!Object.keys(manifest.files).some(file=>file.startsWith('qa/') || file.endsWith('mock-adapter.js')));
+const critical=['js/core/state.js','js/core/runtime-config.js','js/database/repository.js','js/database/sync.js','js/database/local-cache.js','js/ui/feedback.js','js/ui/render.js','js/ui/actions.js','features/attendance/attendance.js','features/journal/journal.js','features/grades/grades.js','features/archive/archive.js','features/settings/settings.html','features/dashboard/dashboard.html','sw.js','manifest.json'];
+for(const file of critical) assert.equal(sha(await readFile(path.join(root,file))),manifest.files[file],file);
+const pkg=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
+assert.equal(manifest.version,pkg.version);
+const result={auditedAt:new Date().toISOString(),kind:'static-artifact-audit',version:manifest.version,buildId:manifest.buildId,hashedFiles:Object.keys(manifest.files).length,precacheFiles:assets.length,identicalCriticalFiles:critical.length,mockShipped:false,featureRuntimeExecuted:false,status:'PASS'};
+await mkdir(path.join(root,'test-output/academic-4.6.7'),{recursive:true});
+await writeFile(path.join(root,'test-output/academic-4.6.7/build-audit.json'),JSON.stringify(result,null,2));
+console.log(JSON.stringify(result,null,2));

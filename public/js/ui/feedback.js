@@ -3,30 +3,94 @@
 // Loading, toast, beep, dan status sinkronisasi.
 // ==========================================
 
-function showLoad(text) {
-    const bar = document.getElementById('slim-loading-bar');
-    if (bar) { bar.style.opacity = '1'; bar.style.width = '75%'; }
-    const overlay = document.getElementById('loading-overlay');
-    const label = document.getElementById('loading-text');
-    if (overlay && label) {
-        label.textContent = String(text || 'Memproses Data...');
-        overlay.classList.remove('hidden', 'opacity-0', 'translate-y-10');
-        overlay.classList.add('flex', 'opacity-100', 'translate-y-0');
-    }
+let loadingTimer = null, loadingHideTimer = null, loadingShownAt = 0, loadingGeneration = 0;
+let loadingSeq = 0;
+const activeLoadingOwners = new Map();
+
+function getActiveLoadingOwners() {
+    return Array.from(activeLoadingOwners.keys());
 }
 
-function hideLoad() {
-    const bar = document.getElementById('slim-loading-bar');
-    if (bar) {
-        bar.style.width = '100%';
-        setTimeout(() => { bar.style.opacity = '0'; setTimeout(() => { bar.style.width = '0'; }, 300); }, 300);
-    }
+function showLoad(text, ownerId) {
+    const generation = ++loadingGeneration;
+    clearTimeout(loadingTimer);
+    clearTimeout(loadingHideTimer);
+
+    const token = String(ownerId || `load_${++loadingSeq}_${Date.now()}`);
+    const message = String(text || 'Memproses data…');
+    activeLoadingOwners.set(token, {
+        text: message,
+        createdAt: performance.now(),
+        isAnonymous: !ownerId
+    });
+
     const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-        overlay.classList.remove('opacity-100', 'translate-y-0');
-        overlay.classList.add('opacity-0', 'translate-y-10');
-        setTimeout(() => { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }, 300);
+    const label = document.getElementById('loading-text');
+    if (label) label.textContent = message;
+
+    const reveal = () => {
+        if (generation !== loadingGeneration || activeLoadingOwners.size === 0) return;
+        loadingShownAt = performance.now();
+        overlay?.classList.remove('hidden', 'opacity-0', 'translate-y-10');
+        overlay?.classList.add('flex', 'opacity-100', 'translate-y-0');
+        overlay?.setAttribute('role', 'status');
+        const bar = document.getElementById('slim-loading-bar');
+        if (bar) { bar.style.opacity = '1'; bar.style.width = '75%'; }
+    };
+
+    if (overlay && !overlay.classList.contains('hidden')) reveal();
+    else loadingTimer = setTimeout(reveal, 120);
+
+    return token;
+}
+
+function hideLoad(token) {
+    if (token) {
+        activeLoadingOwners.delete(String(token));
+    } else {
+        let anonKey = null;
+        for (const [key, meta] of activeLoadingOwners.entries()) {
+            if (meta.isAnonymous) anonKey = key;
+        }
+        if (!anonKey && activeLoadingOwners.size > 0) {
+            anonKey = activeLoadingOwners.keys().next().value;
+        }
+        if (anonKey) activeLoadingOwners.delete(anonKey);
     }
+
+    const overlay = document.getElementById('loading-overlay');
+    const label = document.getElementById('loading-text');
+
+    if (activeLoadingOwners.size > 0) {
+        const remaining = Array.from(activeLoadingOwners.values());
+        const latest = remaining[remaining.length - 1];
+        if (label && latest) label.textContent = latest.text;
+        return;
+    }
+
+    const generation = ++loadingGeneration;
+    clearTimeout(loadingTimer);
+    clearTimeout(loadingHideTimer);
+
+    loadingHideTimer = setTimeout(() => {
+        if (generation !== loadingGeneration || activeLoadingOwners.size > 0) return;
+        overlay?.classList.add('hidden', 'opacity-0');
+        overlay?.classList.remove('flex');
+        const bar = document.getElementById('slim-loading-bar');
+        if (bar) { bar.style.opacity = '0'; bar.style.width = '0'; }
+    }, overlay && !overlay.classList.contains('hidden') ? Math.max(0, 300 - (performance.now() - loadingShownAt)) : 0);
+}
+
+function clearAllLoading() {
+    activeLoadingOwners.clear();
+    const generation = ++loadingGeneration;
+    clearTimeout(loadingTimer);
+    clearTimeout(loadingHideTimer);
+    const overlay = document.getElementById('loading-overlay');
+    overlay?.classList.add('hidden', 'opacity-0');
+    overlay?.classList.remove('flex');
+    const bar = document.getElementById('slim-loading-bar');
+    if (bar) { bar.style.opacity = '0'; bar.style.width = '0'; }
 }
 
 function playBeep() {
@@ -47,97 +111,77 @@ function playBeep() {
 }
 
 function toast(message, type = 'info') {
-    if (type === 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const overlay = document.createElement('div');
-        overlay.className = 'fixed inset-0 z-[12000] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300 opacity-0';
-        overlay.setAttribute('role', 'status');
-        overlay.setAttribute('aria-live', 'polite');
-        overlay.setAttribute('aria-atomic', 'true');
-        
-        const popup = document.createElement('div');
-        popup.className = 'bg-white dark:bg-[#111111] p-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center transform scale-90 transition-transform duration-300 border border-slate-100 dark:border-slate-800';
-        
-        const iconWrapper = document.createElement('div');
-        iconWrapper.className = 'w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-4 text-emerald-500';
-        iconWrapper.innerHTML = '<i class="fas fa-check-circle text-4xl" aria-hidden="true"></i>';
-        
-        const text = document.createElement('h3');
-        text.className = 'text-xl font-bold text-slate-800 dark:text-slate-100 text-center';
-        text.textContent = String(message ?? 'Berhasil disimpan');
-        
-        popup.append(iconWrapper, text);
-        overlay.appendChild(popup);
-        container.appendChild(overlay);
-        
-        if (String(message).includes('Hadir')) playBeep();
-        
-        // Animate in
-        requestAnimationFrame(() => {
-            overlay.classList.remove('opacity-0');
-            popup.classList.remove('scale-90');
-            popup.classList.add('scale-100');
-        });
-        
-        // Animate out after 1.5s
-        setTimeout(() => {
-            overlay.classList.add('opacity-0');
-            popup.classList.remove('scale-100');
-            popup.classList.add('scale-90');
-            setTimeout(() => {
-                if (container.contains(overlay)) container.removeChild(overlay);
-            }, 300);
-        }, 1500);
-        
-        return;
-    }
-
     const container = document.getElementById('toast-container');
     if (!container) return;
-    const palette = {
-        success: 'bg-emerald-100 text-emerald-800 border-l-emerald-500 shadow-emerald-500/20',
-        error: 'bg-red-100 text-red-800 border-l-red-500 shadow-red-500/20',
-        warning: 'bg-amber-100 text-amber-800 border-l-amber-500 shadow-amber-500/20',
-        info: 'bg-blue-100 text-blue-800 border-l-blue-500 shadow-blue-500/20'
-    };
+    const text = String(message ?? '');
+    // Repeated identical notifications are represented once, with no growing queue.
+    for (const previous of container.children) if (previous.dataset.message === text) previous.remove();
+    if (type === 'success') container.querySelectorAll('[data-simni-success]').forEach(node => node.remove());
+    while (container.children.length >= 4) container.firstElementChild.remove();
     const node = document.createElement('div');
-    node.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border-l-4 font-bold text-sm fade-in ${palette[type] || palette.info} dark:bg-[#111111] dark:border dark:border-slate-800 dark:text-slate-200 transition-all duration-300 transform translate-x-0`;
-    node.setAttribute('role', type === 'error' ? 'alert' : 'status');
-    node.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
-    const icons = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-times-circle',
-        warning: 'fas fa-exclamation-triangle',
-        info: 'fas fa-info-circle'
-    };
-    const icon = document.createElement('i');
-    icon.className = `${icons[type] || icons.info} text-lg shrink-0`;
-    icon.setAttribute('aria-hidden', 'true');
-    const span = document.createElement('span');
-    span.textContent = String(message ?? '');
-    node.append(icon, span);
-    container.appendChild(node);
-    
-    setTimeout(() => {
-        node.classList.replace('translate-x-0', 'translate-x-full');
-        node.style.opacity = '0';
-        setTimeout(() => { if (container.contains(node)) node.remove(); }, 300);
-    }, 3000);
+    node.className = 'simni-notification'; node.dataset.tone = type; node.dataset.message = text;
+    if (type === 'success') node.dataset.simniSuccess = 'true';
+    const content = document.createElement('span');
+    content.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    content.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+    content.setAttribute('aria-atomic', 'true'); content.textContent = text;
+    const close = document.createElement('button'); close.type = 'button'; close.textContent = '×';
+    close.setAttribute('aria-label', 'Tutup pemberitahuan'); close.addEventListener('click', () => node.remove());
+    node.append(content, close); container.append(node);
+    if (type === 'success') {
+        const active = document.querySelector('.view-section:not([hidden]):not(.hidden)');
+        if (active) {
+            let status = active.querySelector('[data-save-status]');
+            if (!status) { status = document.createElement('p'); status.dataset.saveStatus = ''; status.className = 'simni-save-status'; active.append(status); }
+            status.textContent = text + ' · ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+        }
+        if (text.includes('Hadir')) playBeep();
+    }
+    if (type !== 'error' && type !== 'warning') setTimeout(() => node.remove(), 4000);
+}
+
+// A successful commit remains successful even if a renderer fails afterwards.
+function notifyCommittedSave(render, message = 'Berhasil disimpan.') {
+    toast(message, 'success');
+    try { render(); } catch (error) {
+        console.error('[SIMNI Render after commit]', error);
+        toast('Data tersimpan, tetapi tampilan belum dapat diperbarui. Buka kembali halaman ini.', 'warning');
+    }
 }
 
 function updateSyncUI(online) {
-    const label = online ? 'Online' : 'Offline';
+    const connected = online === true && navigator.onLine !== false && window.SIMNISyncState?.status === 'ready' && window.SIMNISyncState?.connected === true;
+    const label = connected ? 'Tersinkron' : navigator.onLine === false ? 'Offline · data lokal' : 'Koneksi data terputus';
+    online = connected;
+    const badge = document.getElementById('dashboard-sync-status');
+    if (badge) { badge.textContent = label; badge.dataset.connected = String(connected); }
+    window.SIMNILastConnectionLabel = label;
     const render = (element, small = false) => {
         if (!element) return;
         element.replaceChildren();
+        element.setAttribute('role', 'status');
+        element.setAttribute('aria-label', label); element.title = label;
         const dot = document.createElement('div');
-        dot.className = `${small ? 'w-1.5 h-1.5' : 'w-2 h-2'} rounded-full ${online ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`;
+        dot.className = `w-2 h-2 rounded-full ${online ? 'bg-emerald-500' : 'bg-slate-400'}`;
+        if (small) {
+            element.append(dot);
+            return;
+        }
         const text = document.createElement('span');
-        text.className = small ? 'mobile-sync-label' : 'sync-label';
+        text.className = 'sync-label';
         text.textContent = label;
         element.append(dot, text);
     };
     render(document.getElementById('sync-status-desktop'));
     render(document.getElementById('sync-status-mobile'), true);
+}
+
+if (typeof window !== 'undefined') {
+    window.showLoad = showLoad;
+    window.hideLoad = hideLoad;
+    window.clearAllLoading = clearAllLoading;
+    window.getActiveLoadingOwners = getActiveLoadingOwners;
+    window.playBeep = playBeep;
+    window.toast = toast;
+    window.updateSyncUI = updateSyncUI;
 }

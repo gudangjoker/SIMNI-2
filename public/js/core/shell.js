@@ -335,7 +335,7 @@
                     await window.startSIMNIPlatform();
                     return;
                 }
-                await import('./js/platform/main.js');
+                await import('../platform/main.js');
             }
 
             async function invokeAuthAction(
@@ -517,7 +517,16 @@
                     return;
                 }
 
-
+                // Jangan daftarkan Service Worker jika berjalan di native Android/Capacitor
+                // Pada native, seluruh aset web sudah di-bundle di APK secara offline.
+                if (
+                    Boolean(window.Capacitor) ||
+                    Boolean(window.SIMNIPlatform) ||
+                    window.location.protocol === 'capacitor:'
+                ) {
+                    console.log('SIMNI Native Runtime terdeteksi: Service Worker web dilewati.');
+                    return;
+                }
 
                 const pageStartedWithController = Boolean(
                     navigator.serviceWorker.controller
@@ -530,7 +539,9 @@
                         if (!pageStartedWithController) return;
                         if (reloadingForServiceWorker) return;
                         reloadingForServiceWorker = true;
-                        window.location.reload();
+                        // Keep unsaved work in this tab. The next navigation uses
+                        // the newly active release; no automatic page reload.
+                        window.toast?.('Versi baru tersedia. Tutup lalu buka SIMNI setelah selesai menyimpan.', 'info');
                     }
                 );
 

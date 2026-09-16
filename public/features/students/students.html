@@ -11,19 +11,19 @@
                             <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                             <input type="text" id="search-siswa" data-simni-action="renderSiswaList" data-simni-trigger="keyup" placeholder="Cari NISN atau Nama Siswa dengan cepat..." class="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm font-medium text-slate-800 dark:text-slate-200 transition-colors">
                         </div>
-                        <div class="flex flex-wrap gap-2 w-full justify-between">
+                        <div class="simni-student-actions flex flex-wrap gap-2 w-full justify-between">
                             <button data-simni-action="generatePrintQR" data-simni-trigger="click" class="flex-1 md:flex-none px-4 py-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-[#222222] transition-colors"><i class="fas fa-qrcode"></i> Cetak QR</button>
                             
-                            <div class="flex flex-1 md:flex-none min-w-[250px] gap-2">
+                            <div class="simni-student-template-controls flex flex-1 md:flex-none min-w-[250px] gap-2">
                                 <label class="sr-only" for="student-import-template">Jenis template impor siswa</label>
-                                <select id="student-import-template" data-simni-action="updateStudentTemplateLink" data-simni-trigger="change" class="min-w-0 flex-1 px-3 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 rounded-xl text-xs md:text-sm font-bold">
+                                <select id="student-import-template" aria-label="Template impor siswa" data-simni-action="updateStudentTemplateLink" data-simni-trigger="change" class="min-w-0 flex-1 px-3 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 rounded-xl text-xs md:text-sm font-bold">
                                     <option value="one">Template 1 kelas</option>
                                     <option value="multi">Template 12 kelas</option>
                                 </select>
                                 <a id="student-import-template-download" href="templates/Template_Data_Siswa_1_Kelas.xlsx" download class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2" aria-label="Unduh template impor siswa"><i class="fas fa-download"></i><span>Unduh</span></a>
                             </div>
                             
-                            <label class="flex-1 md:flex-none px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"><i class="fas fa-file-excel"></i> Impor<input type="file" class="hidden" accept=".xlsx, .xls" data-simni-action="importSiswaExcel" data-simni-trigger="change" data-simni-argument="event"></label>
+                            <label class="flex-1 md:flex-none px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"><i class="fas fa-file-excel"></i> Impor<input type="file" class="hidden" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel" data-simni-action="importSiswaExcel" data-simni-trigger="change" data-simni-argument="event"></label>
                             
                             <button data-simni-action="openAddSiswaModal" data-simni-trigger="click" class="flex-1 md:flex-none px-4 py-3 bg-primary hover:bg-indigo-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 transition-colors"><i class="fas fa-user-plus"></i> Tambah</button>
                         </div>
@@ -36,25 +36,37 @@
 <template data-simni-modal>
 <div id="modal-form-siswa" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
         <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-transform duration-300 border border-slate-100 dark:border-slate-800">
-            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]"><h3 id="modal-form-siswa-title" class="font-bold text-lg dark:text-white">Tambah Siswa</h3><button data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button></div>
+            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]"><h3 id="modal-form-siswa-title" class="font-bold text-lg dark:text-white">Tambah Siswa</h3><button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button></div>
             <form id="form-add-siswa" data-simni-action="submitSiswa" data-simni-trigger="submit" data-simni-argument="event" class="p-5 space-y-4">
                 <input type="hidden" id="input-old-nisn">
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">NISN</label><input type="text" id="input-nisn" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Lengkap</label><input type="text" id="input-nama" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Panggilan</label><input type="text" id="input-panggilan" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kelompok BTQ</label><select id="input-kelompok" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm font-bold text-amber-600"><option value="">-- Belum Diatur --</option><option value="Kelompok 1">Kelompok 1</option><option value="Kelompok 2">Kelompok 2</option><option value="Kelompok 3">Kelompok 3</option></select></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">URL Foto (Opsional)</label><input type="url" id="input-foto" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div class="pt-4 flex gap-3"><button type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="flex-1 py-2 bg-slate-100 dark:bg-[#000000] border dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold">Batal</button><button type="submit" class="flex-1 py-2 bg-primary text-white rounded-xl font-bold">Simpan Data</button></div>
+                <input type="hidden" id="input-foto-public-id">
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-nisn">NISN</label><input type="text" id="input-nisn" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-nama">Nama Lengkap</label><input type="text" id="input-nama" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-panggilan">Nama Panggilan</label><input type="text" id="input-panggilan" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-kelas">Kelas</label><select id="input-kelas" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm font-bold text-primary"><option value="">-- Pilih Kelas --</option><option value="1A">1A</option><option value="1B">1B</option><option value="2A">2A</option><option value="2B">2B</option><option value="3A">3A</option><option value="3B">3B</option><option value="4A">4A</option><option value="4B">4B</option><option value="5A">5A</option><option value="5B">5B</option><option value="6A">6A</option><option value="6B">6B</option></select></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-kelompok">Kelompok BTQ</label><select id="input-kelompok" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm font-bold text-amber-600"><option value="">-- Belum Diatur --</option><option value="Kelompok 1">Kelompok 1</option><option value="Kelompok 2">Kelompok 2</option><option value="Kelompok 3">Kelompok 3</option></select></div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Foto Siswa (Cloudinary / URL)</label>
+                    <div class="flex gap-2 items-center mb-2">
+                        <label class="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-primary dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center gap-1.5">
+                            <i class="fas fa-cloud-upload-alt"></i> Unggah ke Cloudinary
+                            <input type="file" id="input-foto-file" accept="image/png,image/jpeg,image/webp" class="hidden" data-simni-action="uploadStudentPhotoAction" data-simni-trigger="change" data-simni-argument="event">
+                        </label>
+                        <span id="foto-upload-status" class="text-xs text-slate-400 font-medium truncate"></span>
+                    </div>
+                    <input type="url" id="input-foto" placeholder="URL foto https://res.cloudinary.com/..." class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm">
+                </div>
+                <div class="pt-4 flex gap-3"><button aria-label="Tutup dialog" type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="flex-1 py-2 bg-slate-100 dark:bg-[#000000] border dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold">Batal</button><button type="submit" class="flex-1 py-2 bg-primary text-white rounded-xl font-bold">Simpan Data</button></div>
             </form>
         </div>
     </div>
 <div id="modal-profil-siswa" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
         <div class="bg-white dark:bg-[#111111] rounded-3xl shadow-xl w-full max-w-sm overflow-hidden relative max-h-[90vh] flex flex-col border border-slate-100 dark:border-slate-800">
-            <button data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-profil-siswa"]' class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/50 text-slate-800 hover:bg-white z-10"><i class="fas fa-times"></i></button>
+            <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-profil-siswa"]' class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/50 text-slate-800 hover:bg-white z-10"><i class="fas fa-times"></i></button>
             <div class="overflow-y-auto hide-scrollbar">
                 <div class="h-24 shrink-0 bg-gradient-to-r from-primary to-indigo-400"></div>
                 <div class="px-6 pb-6 pt-0 flex flex-col items-center relative">
-                    <img id="profil-foto" src="https://ui-avatars.com/api/?name=Siswa" class="w-24 h-24 rounded-full border-4 border-white shadow-md -mt-12 mb-3 object-cover bg-white">
+                    <img id="profil-foto" src="./icons/simni-logo.png" class="w-24 h-24 rounded-full border-4 border-white shadow-md -mt-12 mb-3 object-cover bg-white">
                     <h3 id="profil-nama" class="font-bold text-xl text-slate-800 dark:text-white text-center leading-tight">Nama</h3>
                     <p id="profil-nisn" class="text-sm text-slate-500 font-bold mb-4">NISN: 0</p>
                     <div class="bg-slate-50 dark:bg-[#000000] p-4 rounded-2xl w-full flex flex-col items-center mb-4 border dark:border-slate-800"><p class="text-xs font-bold text-slate-400 uppercase mb-2">QR Presensi</p><div id="profil-qr" class="bg-white p-2 rounded-xl shadow-sm border mb-2"></div></div>
@@ -75,7 +87,7 @@
         <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-transform duration-300 border border-slate-100 dark:border-slate-800">
             <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]">
                 <h3 class="font-bold text-lg dark:text-white">Pratinjau Impor Siswa</h3>
-                <button data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button>
+                <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-5 overflow-y-auto max-h-[60vh]">
                 <div id="preview-siswa-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"></div>
@@ -90,7 +102,7 @@
                 </div>
             </div>
             <div class="p-4 border-t dark:border-slate-800 bg-slate-50 dark:bg-[#000000] flex justify-end gap-2">
-                <button data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-sm">Batal</button>
+                <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-sm">Batal</button>
                 <button data-simni-action="commitSiswaImport" data-simni-trigger="click" id="btn-commit-siswa-import" class="px-4 py-2 bg-primary text-white font-bold rounded-xl text-sm">Simpan Data</button>
             </div>
         </div>

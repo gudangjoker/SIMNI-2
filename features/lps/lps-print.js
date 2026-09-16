@@ -794,7 +794,7 @@
                 Array.isArray(
                     aspect.options
                 )
-                    ? aspect
+                    ? aspect.options
                         .map(
                             trimmed
                         )
@@ -1382,6 +1382,12 @@
                                 </p>
                             </div>
 
+                            ${renderTeacherSignature(report)}
+
+                            <div class="lps-note-box">
+                                <strong>Catatan Wali Kelas Kedua:</strong>
+                                <p>${escapeHTML(report.teacherNoteSecondary || '')}</p>
+                            </div>
                             ${renderTeacherSignature(report)}
 
                             <div class="lps-note-box">

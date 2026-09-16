@@ -12,10 +12,11 @@
 
                 <div id="presensi-tab-input">
                     <div class="flex flex-wrap gap-2 w-full justify-between items-center mb-4">
-                        <input type="date" id="presensi-date" data-simni-action="renderPresensiManual" data-simni-trigger="change" class="px-3 py-2 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                        <input type="date" id="presensi-date" aria-label="Tanggal presensi" data-simni-action="renderPresensiManual" data-simni-trigger="change" class="px-3 py-2 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
                         <button data-simni-action="openQRScanner" data-simni-trigger="click" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 dark:border dark:border-slate-700 text-white rounded-xl text-sm font-bold shadow-md flex items-center gap-2"><i class="fas fa-camera text-lg"></i> Scanner</button>
                     </div>
                     <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+                        <div id="presensi-draft-status-container" class="px-4 pt-3 empty:hidden"><div id="presensi-table-body-draft-status" data-simni-draft-status class="hidden"></div></div>
                         <div id="presensi-entry-table" class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 dark:bg-[#000000] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider"><th class="p-4 font-bold">Nama Siswa</th><th class="p-4 font-bold text-center text-emerald-600">Hadir</th><th class="p-4 font-bold text-center text-amber-500">Sakit</th><th class="p-4 font-bold text-center text-blue-500">Izin</th><th class="p-4 font-bold text-center text-red-500">Alpa</th><th class="p-4 font-bold">Keterangan</th></tr></thead><tbody id="presensi-table-body" class="text-sm divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
                         <div id="presensi-completed-state" class="hidden p-10 text-center text-emerald-700 dark:text-emerald-400"><i class="fas fa-check-circle text-5xl mb-3" aria-hidden="true"></i><p class="font-bold text-lg">Presensi sudah dilakukan</p><p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Data kehadiran pada tanggal ini telah tersimpan lengkap.</p></div>
                         <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#000000] flex justify-end"><button id="presensi-primary-action" data-simni-action="savePresensiManual" data-simni-trigger="click" class="px-6 py-2 bg-primary hover:bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"><i class="fas fa-save"></i><span>Simpan Kehadiran</span></button></div>
@@ -26,20 +27,17 @@
                 <div id="presensi-tab-rekap" class="hidden">
                     <div class="bg-white dark:bg-[#111111] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-4 flex flex-col md:flex-row gap-4 flex-wrap">
                         <div class="flex-1 min-w-[150px]">
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Penyaring Waktu</label>
-                            <select id="filter-presensi-waktu" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="filter-presensi-waktu">Penyaring Waktu</label><select id="filter-presensi-waktu" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
                                 <option value="hari">Hari / Tanggal Tertentu</option>
                                 <option value="bulan">Bulan Ini</option>
                                 <option value="semester">Semester Ini</option>
                             </select>
                         </div>
                         <div class="flex-1 min-w-[150px]" id="container-filter-tanggal">
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Pilih Tanggal</label>
-                            <input type="date" id="filter-presensi-tanggal" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="filter-presensi-tanggal">Pilih Tanggal</label><input type="date" id="filter-presensi-tanggal" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
                         </div>
                         <div class="flex-1 min-w-[150px]">
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Penyaring Siswa</label>
-                            <select id="filter-presensi-siswa" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="filter-presensi-siswa">Penyaring Siswa</label><select id="filter-presensi-siswa" data-simni-action="renderRekapPresensi" data-simni-trigger="change" class="w-full px-3 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary font-bold transition-colors">
                                 <option value="">Semua Siswa</option>
                             </select>
                         </div>
@@ -62,14 +60,18 @@
 </template>
 
 <template data-simni-modal>
-<div id="modal-scanner" class="fixed inset-0 bg-black/90 z-[10000] hidden flex-col items-center justify-center no-print opacity-0 transition-opacity">
-        <div class="w-full max-w-md p-4 relative">
-            <button data-simni-action="closeQRScanner" data-simni-trigger="click" class="absolute -top-12 right-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white z-10 transition-colors"><i class="fas fa-times"></i></button>
-            <div class="bg-white rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-700">
-                <div class="p-4 bg-slate-800 text-center"><h3 class="font-bold text-white">Scanner QR Presensi</h3><p class="text-xs text-slate-300" id="scan-date-label">Hari ini</p></div>
-                <div id="reader" class="w-full aspect-square bg-black"></div>
-                <div class="p-4 bg-slate-50 text-center text-sm font-bold text-slate-600" id="scan-result-text">Arahkan kamera ke QR Siswa</div>
-            </div>
+<div id="modal-scanner" class="fixed inset-0 z-[10000] hidden flex-col items-center justify-center no-print opacity-0 transition-opacity">
+    <section class="simni-scanner-panel" aria-labelledby="scanner-title" aria-describedby="scanner-instructions">
+        <header class="simni-scanner-header">
+            <div><h3 id="scanner-title">Scan Presensi</h3><p id="scan-date-label">Hari ini</p></div>
+            <button type="button" data-simni-action="closeQRScanner" data-simni-trigger="click" class="simni-scanner-close" aria-label="Tutup pemindai QR">×</button>
+        </header>
+        <div class="simni-scanner-content">
+            <p id="scanner-instructions">Aktifkan kamera dan izinkan akses saat diminta. Arahkan QR siswa ke dalam kotak, atau pilih foto QR dari perangkat.</p>
+            <div id="reader"></div>
         </div>
-    </div>
+        <p id="scan-result-text" class="simni-scanner-status" role="status" aria-live="polite" aria-atomic="true">Siap memindai QR siswa.</p>
+        <p class="simni-scanner-help">Kamera tidak tersedia? Pilih foto QR, atau tutup pemindai untuk mengisi presensi manual.</p>
+    </section>
+</div>
 </template>

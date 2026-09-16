@@ -4,7 +4,7 @@
 // ==========================================
 
 function tpId(tp) {
-    return String(tp?.ID_mapel ?? tp?.learningObjectiveId ?? '').trim();
+    return String(tp?.ID_mapel || tp?.learningObjectiveId || tp?.kode_tp || '').trim();
 }
 
 function gradeSubjectAllowed(subject) {
@@ -16,8 +16,9 @@ function visibleLearningObjectives() {
     const activeClass = normalizeClassLabel(state?.activeKelas);
     return state.mapelTP.filter((tp) => {
         if (!gradeSubjectAllowed(tp.mapel)) return false;
-        const objectiveClass = normalizeClassLabel(tp.kelas || tp.Kelas);
-        return !activeClass || !objectiveClass || objectiveClass === activeClass;
+        const objectiveClass = normalizeClassLabel(academicRecordClass(tp));
+        if (!objectiveClass) return true;
+        return objectiveClass === activeClass;
     });
 }
 
@@ -37,7 +38,9 @@ function applyGradeSubjectPolicy() {
 }
 
 function getTPById(id) {
-    return visibleLearningObjectives().find((tp) => tpId(tp) === String(id || '')) || null;
+    const cleanId = String(id || '').trim();
+    if (!cleanId) return null;
+    return visibleLearningObjectives().find(tp => tpId(tp) === cleanId) || null;
 }
 
 function legacyCodeUnique(code) {
@@ -46,21 +49,44 @@ function legacyCodeUnique(code) {
 
 function gradeMatchesTP(grade, tp) {
     const targetId = tpId(tp);
+    if (academicRecordClass(grade) !== academicRecordClass(tp)) return false;
     if (grade?.learningObjectiveId && targetId) return String(grade.learningObjectiveId) === targetId;
-    return legacyCodeUnique(tp?.kode_tp) && String(grade?.Deskripsi_TP || grade?.kode_tp || '') === String(tp?.kode_tp || '');
+
+    // Fallback untuk grade legacy tanpa learningObjectiveId:
+    // Cocokkan kode_tp serta mapel dan semester jika tersedia
+    const gradeCode = String(grade?.Deskripsi_TP || grade?.kode_tp || '').trim();
+    const tpCode = String(tp?.kode_tp || '').trim();
+    if (!gradeCode || !tpCode || gradeCode !== tpCode) return false;
+
+    if (grade?.mapel && tp?.mapel && String(grade.mapel).toLowerCase() !== String(tp.mapel).toLowerCase()) {
+        return false;
+    }
+    if (grade?.semester && tp?.semester && String(grade.semester) !== String(tp.semester)) {
+        return false;
+    }
+    const candidates = state.mapelTP.filter(item =>
+        academicRecordClass(item) === academicRecordClass(grade) &&
+        String(item.kode_tp || '') === gradeCode &&
+        (!grade.mapel || item.mapel === grade.mapel) &&
+        (!grade.semester || String(item.semester) === String(grade.semester)));
+    return candidates.length === 1 && tpId(candidates[0]) === targetId;
 }
 
 function gradeIdFor(student, tp) {
     const studentId = safeFirebaseKey(student?.ID_Siswa || `stu_${student?.NISN}`, 'studentId');
-    const objectiveId = safeFirebaseKey(tpId(tp), 'learningObjectiveId');
+    const rawObjective = tpId(tp) || String(tp?.kode_tp || '').trim();
+    const objectiveId = String(rawObjective).replace(/[.#$\/\[\]]/g, '_');
+    if (!objectiveId) throw new Error('learningObjectiveId tidak valid.');
     return `grade_${studentId}__${objectiveId}`;
 }
 
 function activeGradeStudents() {
-    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
     return [...state.students]
-        .filter((student) => currentKelas === '' || student.Kelas === currentKelas)
-        .sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+        .filter((student) => {
+            return Boolean(currentKelas && academicRecordClass(student) === currentKelas && student.status !== 'inactive');
+        })
+        .sort((a, b) => (a['Nama Lengkap'] || a?.nama || '').localeCompare(b['Nama Lengkap'] || b?.nama || ''));
 }
 
 function gradeForStudentTP(student, tp) {
@@ -70,14 +96,14 @@ function gradeForStudentTP(student, tp) {
         return studentKeys.has(itemKey) && gradeMatchesTP(item, tp);
     });
     if (!matches.length) return null;
-    return matches.find((m) => Number.isFinite(Number(m.nilai))) || matches[0];
+    return matches.find((m) => academicScore(m.nilai) !== null) || null;
 }
 
 function gradeProgressForTP(tp) {
     const students = activeGradeStudents();
     const graded = students.filter((student) => {
         const grade = gradeForStudentTP(student, tp);
-        return grade && Number.isFinite(Number(grade.nilai));
+        return grade && academicScore(grade.nilai) !== null;
     }).length;
     return { total: students.length, graded, completed: students.length > 0 && graded === students.length };
 }
@@ -89,8 +115,14 @@ function setNilaiTab(tab) {
         const panel = document.getElementById(`nilai-tab-${name}`);
         if (panel) panel.classList.toggle('hidden', tab !== name);
     });
-    if (tab === 'rekap') updateRekapTPDropdown();
-    if (tab === 'induk') renderBukuInduk();
+    if (tab === 'rekap') {
+        updateRekapTPDropdown();
+        if (typeof populateAllDropdowns === 'function') populateAllDropdowns();
+    }
+    if (tab === 'induk') {
+        populateIndukDropdown();
+        renderBukuInduk();
+    }
 }
 
 function renderNilaiTPControls() {
@@ -104,31 +136,170 @@ async function hapusTP(idMapel, kodeTP) {
     if (!tp) return toast('TP tidak ditemukan.', 'error');
     if (!confirm(`Hapus TP ${kodeTP}? Semua nilai pada TP ini di tahun aktif akan ikut dihapus.`)) return;
 
-    const updates = { [`Mapel_TP/${safeFirebaseKey(tpId(tp), 'ID TP')}`]: null };
+    const cleanTpKey = safeFirebaseKey(String(tpId(tp)).replace(/[.#$\[\]\/]/g, '_'), 'ID TP');
+    const updates = { [`Mapel_TP/${cleanTpKey}`]: null };
     state.nilaiTP.filter((grade) => gradeMatchesTP(grade, tp)).forEach((grade) => {
         const id = grade.ID_Nilai || gradeIdFor({ ID_Siswa: grade.ID_Siswa, NISN: grade.NISN }, tp);
-        updates[`Nilai_TP/${safeFirebaseKey(id, 'ID nilai')}`] = null;
+        if (id) {
+            const cleanGradeKey = safeFirebaseKey(String(id).replace(/[.#$\[\]\/]/g, '_'), 'ID nilai');
+            updates[`Nilai_TP/${cleanGradeKey}`] = null;
+        }
     });
     const result = await dbUpdate(updates);
-    if (result?.ok) toast('TP dan nilai terkait berhasil dihapus.', 'success');
+    if (result?.ok) {
+        toast('TP dan nilai terkait berhasil dihapus.', 'success');
+    } else {
+        toast(result?.error?.message || 'Gagal menghapus TP.', 'error');
+    }
+}
+
+function resolveChapterNumber(tp) {
+    if (tp.chapterDefined && tp.chapterNumber == null) return null;
+    if (tp.chapterNumber != null) {
+        const n = Number(tp.chapterNumber);
+        return (Number.isInteger(n) && n >= 1 && n <= 10) ? n : null;
+    }
+    const legacyId = String(tp.bab_id || '').trim();
+    if (legacyId) {
+        const n = Number(legacyId);
+        if (n >= 1 && n <= 10) return n;
+        const match = String(tp.bab_nama || tp.bab || '').match(/\bBab\s+(\d{1,2})\b/i);
+        if (match) {
+            const m = Number(match[1]);
+            if (m >= 1 && m <= 10) return m;
+        }
+    }
+    return null;
+}
+
+function selectBabDropdown(selectId, chapterNumber) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.value = (chapterNumber != null && chapterNumber >= 1 && chapterNumber <= 10)
+        ? String(chapterNumber)
+        : '';
 }
 
 function updateTPListModal() {
     const list = document.getElementById('list-tp-modal');
     if (!list) return;
     list.replaceChildren();
-    visibleLearningObjectives().forEach((tp) => {
-        const row = document.createElement('div');
-        row.className = 'bg-slate-50 p-2 rounded border border-slate-200 mb-2 flex justify-between items-start';
-        const content = document.createElement('div'); content.className = 'flex-1';
-        const code = document.createElement('span'); code.className = 'font-bold text-xs text-primary bg-indigo-50 px-2 py-0.5 rounded'; code.textContent = tp.kode_tp || '';
-        const meta = document.createElement('span'); meta.className = 'text-[10px] text-slate-500 uppercase font-bold ml-1'; meta.textContent = `${tp.mapel || ''} Smt.${tp.semester || ''}`;
-        const desc = document.createElement('p'); desc.className = 'text-xs mt-1 text-slate-700'; desc.textContent = tp.deskripsi_tp || '';
-        content.append(code, meta, desc);
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'text-red-400 hover:text-red-600 ml-2'; button.setAttribute('aria-label', `Hapus TP ${tp.kode_tp || ''}`);
-        const icon = document.createElement('i'); icon.className = 'fas fa-trash text-xs'; button.appendChild(icon);
-        button.addEventListener('click', () => hapusTP(tpId(tp), tp.kode_tp || ''));
-        row.append(content, button); list.appendChild(row);
+
+    const currentMapel = document.getElementById('input-tp-mapel')?.value || '';
+    const currentSmt = document.getElementById('input-tp-smt')?.value || '';
+
+    const allTPs = visibleLearningObjectives();
+    if (!allTPs.length) {
+        const empty = document.createElement('div');
+        empty.className = 'text-center p-6 text-slate-400 text-xs italic';
+        empty.textContent = 'Belum ada Tujuan Pembelajaran yang tersimpan.';
+        list.appendChild(empty);
+        return;
+    }
+
+    const UNGROUPED_KEY = '__ungrouped__';
+    const groups = new Map();
+    groups.set(UNGROUPED_KEY, { name: 'Umum / Belum Dikelompokkan', items: [] });
+
+    allTPs.forEach((tp) => {
+        const ch = resolveChapterNumber(tp);
+        const key = ch != null ? String(ch) : UNGROUPED_KEY;
+        if (!groups.has(key)) {
+            groups.set(key, { name: `Bab ${ch}`, items: [] });
+        }
+        groups.get(key).items.push(tp);
+    });
+
+    // Sort: Bab 1..10 first, then Ungrouped last
+    const sortedGroups = [...groups.entries()].sort((a, b) => {
+        if (a[0] === UNGROUPED_KEY) return 1;
+        if (b[0] === UNGROUPED_KEY) return -1;
+        return Number(a[0]) - Number(b[0]);
+    });
+
+    sortedGroups.forEach(([, group]) => {
+        if (!group.items.length) return;
+
+        const card = document.createElement('div');
+        card.className = 'border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden mb-3 bg-white dark:bg-[#111111] shadow-sm';
+
+        const header = document.createElement('button');
+        header.type = 'button';
+        header.className = 'w-full px-3 py-2.5 bg-slate-100/70 dark:bg-slate-900/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 flex justify-between items-center text-left transition-colors cursor-pointer';
+
+        const titleArea = document.createElement('div');
+        titleArea.className = 'flex items-center gap-2 min-w-0';
+        const titleText = document.createElement('span');
+        titleText.className = 'text-xs font-bold text-slate-800 dark:text-slate-200 truncate';
+        titleText.textContent = group.name;
+        const countBadge = document.createElement('span');
+        countBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0';
+        countBadge.textContent = `${group.items.length} TP`;
+        titleArea.append(titleText, countBadge);
+
+        const chevron = document.createElement('i');
+        chevron.className = 'fas fa-chevron-down text-slate-400 text-xs transition-transform duration-200 shrink-0 ml-2';
+        header.append(titleArea, chevron);
+
+        const body = document.createElement('div');
+        body.className = 'p-2 space-y-2 divide-y divide-slate-100 dark:divide-slate-800/60';
+
+        group.items.forEach((tp) => {
+            const item = document.createElement('div');
+            item.className = 'pt-2 first:pt-0 flex justify-between items-start gap-2';
+
+            const content = document.createElement('div');
+            content.className = 'flex-1 min-w-0';
+
+            const badgeRow = document.createElement('div');
+            badgeRow.className = 'flex flex-wrap items-center gap-1.5 mb-1';
+
+            const code = document.createElement('span');
+            code.className = 'font-bold text-[11px] text-primary bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded';
+            code.textContent = tp.kode_tp || '';
+
+            const meta = document.createElement('span');
+            meta.className = 'text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase';
+            meta.textContent = `${tp.mapel || ''} · Smt ${tp.semester || ''}`;
+
+            badgeRow.append(code, meta);
+
+            const desc = document.createElement('p');
+            desc.className = 'text-xs text-slate-700 dark:text-slate-300 leading-relaxed break-words';
+            desc.textContent = tp.deskripsi_tp || '';
+
+            content.append(badgeRow, desc);
+
+            const actions = document.createElement('div');
+            actions.className = 'flex items-center gap-1 shrink-0';
+
+            const btnEdit = document.createElement('button');
+            btnEdit.type = 'button';
+            btnEdit.className = 'w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer';
+            btnEdit.title = 'Edit TP';
+            btnEdit.innerHTML = '<i class="fas fa-edit text-xs"></i>';
+            btnEdit.addEventListener('click', () => openEditTPModal(tpId(tp)));
+
+            const btnDelete = document.createElement('button');
+            btnDelete.type = 'button';
+            btnDelete.className = 'w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer';
+            btnDelete.title = 'Hapus TP';
+            btnDelete.innerHTML = '<i class="fas fa-trash text-xs"></i>';
+            btnDelete.addEventListener('click', () => hapusTP(tpId(tp), tp.kode_tp || ''));
+
+            actions.append(btnEdit, btnDelete);
+            item.append(content, actions);
+            body.appendChild(item);
+        });
+
+        header.addEventListener('click', () => {
+            const isClosed = body.classList.contains('hidden');
+            body.classList.toggle('hidden', !isClosed);
+            chevron.style.transform = isClosed ? 'rotate(0deg)' : 'rotate(-90deg)';
+        });
+
+        card.append(header, body);
+        list.appendChild(card);
     });
 }
 
@@ -145,8 +316,20 @@ async function submitTP(event) {
     const duplicate = state.mapelTP.some((tp) => tp.mapel === mapel && String(tp.semester) === String(semester) && String(tp.kode_tp).toLowerCase() === kode.toLowerCase() && (tp.kelas || tp.Kelas || '') === currentKelas);
     if (duplicate) return toast('Kode TP sudah digunakan pada mapel dan semester yang sama di kelas ini.', 'warning');
 
+    const babSelect = document.getElementById('input-tp-bab');
+    const babVal = babSelect?.value || '';
+    const chapterNumber = babVal ? Number(babVal) : null;
+
     const id = typeof crypto?.randomUUID === 'function' ? `tp_${crypto.randomUUID()}` : `tp_${Date.now()}`;
-    const payload = { ID_mapel: id, mapel, semester, kode_tp: kode, deskripsi_tp: deskripsi, kelas: currentKelas };
+    const payload = {
+        ID_mapel: id,
+        mapel,
+        semester,
+        kode_tp: kode,
+        deskripsi_tp: deskripsi,
+        kelas: currentKelas,
+        chapterNumber: chapterNumber
+    };
     const result = await dbSet(`Mapel_TP/${safeFirebaseKey(id, 'ID TP')}`, payload);
     if (result?.ok) {
         state.mapelTP = state.mapelTP.filter((tp) => tpId(tp) !== id).concat(payload);
@@ -156,6 +339,415 @@ async function submitTP(event) {
         updateTPDropdown(true);
         updateRekapTPDropdown();
         toast('Berhasil disimpan.', 'success');
+    } else {
+        toast(result?.error?.message || 'Gagal menyimpan Tujuan Pembelajaran.', 'error');
+    }
+}
+
+function openEditTPModal(idMapel) {
+    const tp = getTPById(idMapel);
+    if (!tp) return toast('TP tidak ditemukan.', 'error');
+
+    const idInput = document.getElementById('edit-tp-id');
+    const mapelInput = document.getElementById('edit-tp-mapel');
+    const smtSelect = document.getElementById('edit-tp-smt');
+    const kodeInput = document.getElementById('edit-tp-kode');
+    const descInput = document.getElementById('edit-tp-desc');
+
+    if (idInput) idInput.value = tpId(tp);
+    if (mapelInput) mapelInput.value = tp.mapel || '';
+    if (smtSelect) smtSelect.value = String(tp.semester || '1');
+    if (kodeInput) kodeInput.value = tp.kode_tp || '';
+    if (descInput) descInput.value = tp.deskripsi_tp || '';
+
+    selectBabDropdown('edit-tp-bab', resolveChapterNumber(tp));
+    closeModal('modal-kelola-tp');
+    openModal('modal-edit-tp');
+}
+
+async function submitEditTP(event) {
+    event.preventDefault();
+    const id = document.getElementById('edit-tp-id')?.value;
+    const tp = getTPById(id);
+    if (!tp) return toast('TP tidak ditemukan.', 'error');
+
+    const kode = document.getElementById('edit-tp-kode')?.value.trim();
+    const deskripsi = document.getElementById('edit-tp-desc')?.value.trim();
+    const semester = document.getElementById('edit-tp-smt')?.value;
+    const babSelect = document.getElementById('edit-tp-bab');
+    const babVal = babSelect?.value || '';
+    const chapterNumber = babVal ? Number(babVal) : null;
+
+    if (!kode || !deskripsi) return toast('Kode dan deskripsi TP wajib diisi.', 'warning');
+    if (!gradeSubjectAllowed(tp.mapel)) return toast('Mata pelajaran tidak diizinkan.', 'error');
+    if (chapterNumber !== null && (!Number.isInteger(chapterNumber) || chapterNumber < 1 || chapterNumber > 10)) return toast('Bab harus 1 sampai 10.', 'warning');
+    if (visibleLearningObjectives().some(item => tpId(item) !== id && item.mapel === tp.mapel && String(item.semester) === String(semester) && String(item.kode_tp).toLowerCase() === kode.toLowerCase())) return toast('Kode TP sudah digunakan pada kelas, mapel dan semester ini.', 'warning');
+    if ((kode !== tp.kode_tp || String(semester) !== String(tp.semester)) && state.nilaiTP.some(grade => gradeMatchesTP(grade, tp))) return toast('TP sudah memiliki nilai. Kode dan semester dipertahankan; Bab dan deskripsi tetap dapat diedit.', 'warning');
+
+    const safeId = safeFirebaseKey(id, 'ID TP');
+
+    const changes = {
+        ID_mapel: safeId,
+        kode_tp: kode,
+        deskripsi_tp: deskripsi,
+        semester,
+        kelas: academicRecordClass(tp),
+        chapterNumber: chapterNumber,
+        chapterDefined: true,
+        updated_at: new Date().toISOString()
+    };
+    const payload = { ...tp, ...changes };
+
+    const session = academicSessionKey();
+    const result = await dbUpdate(Object.fromEntries(Object.entries(changes).map(([field, value]) => [`Mapel_TP/${safeId}/${field}`, value])));
+    if (result?.ok) {
+        if (session !== academicSessionKey()) return;
+        state.mapelTP = state.mapelTP.map((item) => (tpId(item) === id ? payload : item));
+        notifyCommittedSave(() => {
+            closeModal('modal-edit-tp');
+            openModal('modal-kelola-tp');
+            updateTPListModal();
+            updateTPDropdown(true);
+            updateRekapTPDropdown();
+        }, 'Berhasil disimpan: Tujuan Pembelajaran diperbarui.');
+    } else {
+        toast(result?.error?.message || 'Gagal memperbarui Tujuan Pembelajaran.', 'error');
+    }
+}
+
+function deleteTPEditModal() {
+    const id = document.getElementById('edit-tp-id')?.value;
+    const tp = getTPById(id);
+    if (!tp) return;
+    closeModal('modal-edit-tp');
+    openModal('modal-kelola-tp');
+    hapusTP(id, tp.kode_tp || '');
+}
+
+// --- SMART OCR & SIMNI LENS ---
+let ocrWorkerInstance = null;
+let activeLensStream = null;
+let lensRotationDegree = 0;
+
+function getActiveOCRWorker() {
+    if (!ocrWorkerInstance) {
+        ocrWorkerInstance = new Worker('./vendor/tesseract/ocr-worker.js');
+        ocrWorkerInstance.onmessage = handleOCRWorkerMessage;
+    }
+    return ocrWorkerInstance;
+}
+
+function handleOCRWorkerMessage(e) {
+    const { type, progress, message, rawText } = e.data || {};
+    const statusLabel = document.getElementById('ocr-status-label');
+    const pContainer = document.getElementById('ocr-progress-container');
+    const pBar = document.getElementById('ocr-progress-bar');
+    const pText = document.getElementById('ocr-progress-text');
+
+    if (type === 'STATUS') {
+        if (statusLabel) statusLabel.textContent = message || 'Menganalisis...';
+        if (pText) pText.textContent = message || '';
+    } else if (type === 'PROGRESS') {
+        if (pBar) pBar.style.width = `${progress}%`;
+        if (pText) pText.textContent = `Menganalisis teks: ${progress}%`;
+    } else if (type === 'SUCCESS') {
+        if (statusLabel) statusLabel.textContent = 'Pemindaian selesai!';
+        if (pContainer) pContainer.classList.add('hidden');
+        document.getElementById('ocr-shutter-controls')?.classList.add('hidden');
+
+        const resultContainer = document.getElementById('ocr-result-container');
+        if (resultContainer) {
+            resultContainer.classList.remove('hidden');
+            resultContainer.classList.add('flex');
+        }
+
+        const parsedTP = smartParseTP(rawText || '');
+        const preview = document.getElementById('ocr-result-preview');
+        const countBadge = document.getElementById('ocr-detected-count');
+        if (preview) {
+            preview.value = parsedTP.length ? parsedTP.join('\n\n') : (rawText || '').trim();
+        }
+        if (countBadge) {
+            countBadge.textContent = `${parsedTP.length} TP Terdeteksi`;
+        }
+    } else if (type === 'ERROR') {
+        if (pContainer) pContainer.classList.add('hidden');
+        if (statusLabel) statusLabel.textContent = 'Gagal memproses gambar.';
+        toast(`Error OCR: ${message || 'Gagal memindai.'}`, 'error');
+    }
+}
+
+function smartParseTP(rawText) {
+    const lines = String(rawText || '').split(/\r?\n/);
+    const subjekRegex = /^(peserta didik|siswa|murid|anak)\s+(mampu|dapat|memahami|terampil|mempunyai)/i;
+    const kkoRegex = /^(mengidentifikasi|menjelaskan|menganalisis|menyajikan|menerapkan|memahami|menghitung|mengevaluasi|mempraktikkan|membandingkan|mengklasifikasikan|menyimpulkan|merancang|membuat|mengembangkan|menentukan|mendeskripsikan|menemukan|menyelesaikan|membaca|menulis|menyimak|menceritakan|menunjukkan|membedakan)/i;
+
+    const listHasilTP = [];
+    let bufferTP = '';
+
+    for (const line of lines) {
+        const cleanLine = line.trim();
+        if (cleanLine.length < 10) continue;
+
+        const cleanWithoutBullet = cleanLine.replace(/^(\d+[\.\)]|[a-zA-Z][\.\)]|tp\s*\d*[:\.\-]?|[-•*])\s*/i, '').trim();
+        const isMatch = subjekRegex.test(cleanWithoutBullet) || kkoRegex.test(cleanWithoutBullet);
+
+        if (isMatch) {
+            if (bufferTP.length > 0) listHasilTP.push(bufferTP);
+            bufferTP = cleanWithoutBullet;
+        } else if (bufferTP.length > 0) {
+            if (!/^(bab|unit|semester|modul|kementerian|halaman|kurikulum|mata pelajaran|kelas|\d+$)/i.test(cleanLine)) {
+                bufferTP += ` ${cleanLine}`;
+            }
+        }
+    }
+
+    if (bufferTP.length > 0) listHasilTP.push(bufferTP);
+    return listHasilTP;
+}
+
+async function openSIMNILens() {
+    const overlay = document.getElementById('simni-ocr-overlay');
+    if (!overlay) return;
+
+    closeModal('modal-kelola-tp');
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+
+    document.getElementById('ocr-result-container')?.classList.add('hidden');
+    document.getElementById('ocr-progress-container')?.classList.add('hidden');
+    document.getElementById('ocr-shutter-controls')?.classList.remove('hidden');
+
+    const statusLabel = document.getElementById('ocr-status-label');
+    if (statusLabel) statusLabel.textContent = 'Menghubungkan kamera...';
+    lensRotationDegree = 0;
+
+    const mapel = document.getElementById('input-tp-mapel')?.value || 'Matematika';
+    const smt = document.getElementById('input-tp-smt')?.value || '1';
+    const targetBabSelect = document.getElementById('ocr-target-bab-select');
+    if (targetBabSelect) {
+        targetBabSelect.replaceChildren();
+        const defOpt = document.createElement('option');
+        defOpt.value = '';
+        defOpt.textContent = '-- Tanpa Bab (Umum) --';
+        targetBabSelect.appendChild(defOpt);
+        for (let i = 1; i <= 10; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = `Bab ${i}`;
+            targetBabSelect.appendChild(opt);
+        }
+        const currentInputBab = document.getElementById('input-tp-bab')?.value;
+        if (currentInputBab) targetBabSelect.value = currentInputBab;
+    }
+
+    try {
+        if (window.SIMNIPermissionService) {
+            const status = await window.SIMNIPermissionService.request('camera', {
+                rationale: 'SIMNI membutuhkan akses kamera untuk memindai dokumen Buku Paket via SIMNI Lens.'
+            });
+            if (status === 'permanently-denied' || status === 'denied') {
+                throw new Error('Izin kamera ditolak oleh pengguna.');
+            }
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+            throw new Error('Kamera tidak didukung pada browser ini.');
+        }
+        activeLensStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+        });
+        const video = document.getElementById('ocr-video-feed');
+        if (video) {
+            video.srcObject = activeLensStream;
+            await video.play().catch(() => {});
+        }
+        if (statusLabel) statusLabel.textContent = 'Arahkan ke butir TP di buku paket';
+    } catch (err) {
+        toast(`Kamera tidak dapat diakses: ${err.message || err}. Anda dapat memilih file foto dari tombol galeri.`, 'warning');
+        if (statusLabel) statusLabel.textContent = 'Kamera tidak aktif. Gunakan tombol galeri di bawah.';
+    }
+}
+
+function stopLensStream() {
+    if (activeLensStream) {
+        activeLensStream.getTracks().forEach((t) => t.stop());
+        activeLensStream = null;
+    }
+}
+
+function closeSIMNILens() {
+    stopLensStream();
+    const overlay = document.getElementById('simni-ocr-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+    document.getElementById('ocr-progress-container')?.classList.add('hidden');
+    openModal('modal-kelola-tp');
+}
+
+function rotateLens90() {
+    lensRotationDegree = (lensRotationDegree + 90) % 360;
+    const label = document.getElementById('ocr-status-label');
+    if (label) label.textContent = `Rotasi: ${lensRotationDegree}°`;
+}
+
+function restartLensCapture() {
+    document.getElementById('ocr-result-container')?.classList.add('hidden');
+    document.getElementById('ocr-shutter-controls')?.classList.remove('hidden');
+    openSIMNILens();
+}
+
+async function captureLensFrameToRAM() {
+    const video = document.getElementById('ocr-video-feed');
+    if (!video || !video.videoWidth) {
+        return toast('Video feed belum siap.', 'warning');
+    }
+
+    const pContainer = document.getElementById('ocr-progress-container');
+    const pBar = document.getElementById('ocr-progress-bar');
+    const pText = document.getElementById('ocr-progress-text');
+    const statusLabel = document.getElementById('ocr-status-label');
+
+    if (statusLabel) statusLabel.textContent = 'Membekukan frame teks ke RAM...';
+    if (pContainer) pContainer.classList.remove('hidden');
+    if (pBar) pBar.style.width = '10%';
+    if (pText) pText.textContent = 'Mempersiapkan frame ke RAM...';
+
+    let targetW = video.videoWidth;
+    let targetH = video.videoHeight;
+    const maxDimension = 1600;
+    if (targetW > maxDimension || targetH > maxDimension) {
+        if (targetW > targetH) {
+            targetH = Math.round((targetH * maxDimension) / targetW);
+            targetW = maxDimension;
+        } else {
+            targetW = Math.round((targetW * maxDimension) / targetH);
+            targetH = maxDimension;
+        }
+    }
+
+    let frameCanvas = document.createElement('canvas');
+    frameCanvas.width = targetW;
+    frameCanvas.height = targetH;
+    const ctx = frameCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, targetW, targetH);
+
+    stopLensStream();
+
+    if (lensRotationDegree !== 0) {
+        const rotCanvas = document.createElement('canvas');
+        const rotCtx = rotCanvas.getContext('2d');
+        if (lensRotationDegree === 90 || lensRotationDegree === 270) {
+            rotCanvas.width = frameCanvas.height;
+            rotCanvas.height = frameCanvas.width;
+        } else {
+            rotCanvas.width = frameCanvas.width;
+            rotCanvas.height = frameCanvas.height;
+        }
+        rotCtx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
+        rotCtx.rotate((lensRotationDegree * Math.PI) / 180);
+        rotCtx.drawImage(frameCanvas, -frameCanvas.width / 2, -frameCanvas.height / 2);
+        frameCanvas.width = 0;
+        frameCanvas.height = 0;
+        frameCanvas = rotCanvas;
+    }
+
+    const worker = getActiveOCRWorker();
+    const imageBitmap = await createImageBitmap(frameCanvas);
+    frameCanvas.width = 0;
+    frameCanvas.height = 0;
+
+    worker.postMessage({ type: 'SCAN_IMAGE', imageBitmap }, [imageBitmap]);
+}
+
+async function handleLensGalleryFile(event) {
+    const input = event.target;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+        if (input) input.value = '';
+        return toast('Ukuran gambar tidak boleh melebihi 10 MB.', 'error');
+    }
+
+    if (!file.type || !file.type.startsWith('image/')) {
+        if (input) input.value = '';
+        return toast('File yang dipilih harus berupa gambar.', 'error');
+    }
+
+    const pContainer = document.getElementById('ocr-progress-container');
+    const pBar = document.getElementById('ocr-progress-bar');
+    const pText = document.getElementById('ocr-progress-text');
+    const statusLabel = document.getElementById('ocr-status-label');
+
+    stopLensStream();
+    if (statusLabel) statusLabel.textContent = 'Membaca gambar dari galeri...';
+    if (pContainer) pContainer.classList.remove('hidden');
+    if (pBar) pBar.style.width = '10%';
+    if (pText) pText.textContent = 'Memuat gambar...';
+
+    try {
+        const imageBitmap = await createImageBitmap(file);
+        const worker = getActiveOCRWorker();
+        worker.postMessage({ type: 'SCAN_IMAGE', imageBitmap }, [imageBitmap]);
+    } catch (err) {
+        toast(`Gagal membaca file gambar: ${err.message || err}`, 'error');
+        if (pContainer) pContainer.classList.add('hidden');
+    } finally {
+        if (input) input.value = '';
+    }
+}
+
+async function batchInsertScannedTP() {
+    const preview = document.getElementById('ocr-result-preview');
+    const rawText = String(preview?.value || '').trim();
+    if (!rawText) return toast('Teks TP tidak boleh kosong.', 'warning');
+
+    const targetBabSelect = document.getElementById('ocr-target-bab-select');
+    const babVal = targetBabSelect?.value || '';
+    const chapterNumber = babVal ? Number(babVal) : null;
+
+    const mapel = document.getElementById('input-tp-mapel')?.value || 'Matematika';
+    const semester = document.getElementById('input-tp-smt')?.value || '1';
+    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
+
+    const items = rawText.split(/\n\s*\n/).map((t) => t.trim()).filter((t) => t.length > 5);
+    if (!items.length) return toast('Tidak ada butir TP valid yang terdeteksi.', 'warning');
+
+    const prefix = mapel.substring(0, 3).toUpperCase();
+    const existingMapelTPs = visibleLearningObjectives().filter((tp) => tp.mapel === mapel && String(tp.semester) === String(semester));
+    let nextNum = existingMapelTPs.length + 1;
+
+    const updates = {};
+    const newItems = [];
+
+    for (const desc of items) {
+        const id = typeof crypto?.randomUUID === 'function' ? `tp_${crypto.randomUUID()}` : `tp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const code = `${prefix}.${nextNum}`;
+        const payload = {
+            ID_mapel: id,
+            mapel,
+            semester,
+            kode_tp: code,
+            deskripsi_tp: desc,
+            kelas: currentKelas,
+            chapterNumber: chapterNumber,
+            created_at: new Date().toISOString()
+        };
+        updates[`Mapel_TP/${safeFirebaseKey(id, 'ID TP')}`] = payload;
+        newItems.push(payload);
+        nextNum++;
+    }
+
+    const result = await dbUpdate(updates);
+    if (result?.ok) {
+        state.mapelTP = state.mapelTP.concat(newItems);
+        closeSIMNILens();
+        updateTPListModal();
+        updateTPDropdown(true);
+        updateRekapTPDropdown();
+        toast(`Berhasil menambahkan ${newItems.length} butir TP ke ${chapterNumber ? `Bab ${chapterNumber}` : 'daftar TP'}!`, 'success');
     }
 }
 
@@ -209,10 +801,20 @@ function renderTPImportPreview(summary) {
         : 'Mode 1 kelas hanya menerima TP untuk kelas aktif. Kolom Kelas wajib diisi dan duplikat tidak ditimpa.';
 }
 
-function importTPExcel(event) {
+async function importTPExcel(event) {
+    await window.ensureSIMNIVendors?.("xlsx");
     const input = event.target;
     const file = input.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+        input.value = '';
+        return toast('Ukuran file Excel tidak boleh melebihi 5 MB.', 'error');
+    }
+    const fileName = (file.name || '').toLowerCase();
+    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+        input.value = '';
+        return toast('Format file harus berupa Excel (.xlsx atau .xls).', 'error');
+    }
     if (!window.XLSX?.read) {
         input.value = '';
         return toast('Pustaka Excel belum tersedia.', 'error');
@@ -222,7 +824,7 @@ function importTPExcel(event) {
         try {
             const currentKelas = normalizeClassLabel(state?.activeKelas);
             const userRole = String(window.SIMNICurrentAccess?.role || '');
-            if (!['superuser', 'vip'].includes(userRole)) throw new Error('Role aktif tidak diizinkan melakukan impor TP.');
+            if (!['superuser', 'vip', 'teacher'].includes(userRole)) throw new Error('Role aktif tidak diizinkan melakukan impor TP.');
             if (!currentKelas) throw new Error('Kelas aktif tidak valid. Pilih kelas sebelum melakukan impor.');
             const workbook = XLSX.read(loadEvent.target.result, { type: 'array' });
             const multiClass = workbook.SheetNames.length > 1;
@@ -343,6 +945,8 @@ function updateTPDropdown(resetSelection = false) {
     if (!select) return;
     applyGradeSubjectPolicy();
     const mapel = document.getElementById('filter-mapel-nilai')?.value;
+    const grid = document.getElementById('nilai-table-body');
+    if (!resetSelection && grid?.dataset.draftScope === SIMNIFormDrafts.key('nilai-table-body', `${mapel}|${select.value}`) && SIMNIFormDrafts.dirty(grid)) return;
     const previousValue = resetSelection === true ? '' : select.value;
     const candidates = mapel ? visibleLearningObjectives().filter((tp) => tp.mapel === mapel) : [];
     const fragment = document.createDocumentFragment();
@@ -360,7 +964,7 @@ function updateTPDropdown(resetSelection = false) {
         const status = progress.completed
             ? ' — Sudah dinilai'
             : (progress.graded ? ` — Belum lengkap (${progress.graded}/${progress.total})` : '');
-        option.textContent = `${tp.kode_tp || ''} - ${String(tp.deskripsi_tp || '').substring(0, 70)}${status}`;
+        option.textContent = `${resolveChapterNumber(tp) ? `Bab ${resolveChapterNumber(tp)} · ` : 'Tanpa Bab · '}${tp.kode_tp || ''} - ${String(tp.deskripsi_tp || '').substring(0, 70)}${status}`;
         fragment.appendChild(option);
     });
     select.replaceChildren(fragment);
@@ -381,12 +985,25 @@ function renderNilaiGrid() {
     const tp = getTPById(selectedTpId);
     const body = document.getElementById('nilai-table-body');
     if (!tp || !body || !gradeSubjectAllowed(tp.mapel)) return;
+    if (!SIMNIFormDrafts.prepare(body, `${tp.mapel}|${selectedTpId}`)) return;
 
-    body.innerHTML = activeGradeStudents()
+    const students = activeGradeStudents();
+    if (!students.length) {
+        body.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-slate-400 font-medium">Tidak ada data siswa untuk kelas ini.</td></tr>';
+        return;
+    }
+
+    body.innerHTML = students
         .map((student, index) => {
             const grade = gradeForStudentTP(student, tp);
-        return `<tr class="hover:bg-slate-50 dark:hover:bg-[#111111] transition-colors"><td class="p-4 text-xs font-bold text-slate-400">${index + 1}</td><td class="p-4 font-bold text-sm">${escapeHTML(student['Nama Lengkap'])}<input type="hidden" class="n-nisn" data-student-id="${escapeHTML(student.ID_Siswa || student.NISN)}" value="${escapeHTML(student.NISN)}"><input type="hidden" class="n-nm" value="${escapeHTML(student['Nama Lengkap'])}"></td><td class="p-4 text-center"><input type="number" min="0" max="100" class="n-scr w-20 p-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-black text-center rounded-lg font-bold focus:ring-2 focus:ring-primary focus:outline-none" value="${grade?.nilai !== undefined ? escapeHTML(grade.nilai) : ''}"></td></tr>`;
-    }).join('');
+            const studentId = student.ID_Siswa || student.id_siswa || student.NISN || '';
+            const nama = escapeHTML(student['Nama Lengkap'] || student.nama || student.Nama || 'Siswa');
+            const nisn = escapeHTML(student.NISN || student.id_siswa || '');
+            const baselineScore = academicScore(grade?.nilai) !== null ? escapeHTML(grade.nilai) : '';
+            const recordId = grade?.ID_Nilai || '';
+            return `<tr class="hover:bg-slate-50 dark:hover:bg-[#111111] transition-colors"><td class="p-4 text-xs font-bold text-slate-400">${index + 1}</td><td class="p-4 font-bold text-sm">${nama}<input type="hidden" class="n-nisn" data-student-id="${studentId}" value="${nisn}"><input type="hidden" class="n-nm" value="${nama}"></td><td class="p-4 text-center"><input data-baseline="${baselineScore}" data-record-id="${recordId}" data-draft-key="${studentId}:score" type="number" aria-label="Nilai ${nama}" min="0" max="100" class="n-scr w-20 p-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-black text-center rounded-lg font-bold focus:ring-2 focus:ring-primary focus:outline-none" value="${baselineScore}"></td></tr>`;
+        }).join('');
+    SIMNIFormDrafts.restore(body);
 }
 
 async function saveNilaiBatch() {
@@ -395,6 +1012,8 @@ async function saveNilaiBatch() {
     if (!tp) return toast('Pilih TP terlebih dahulu.', 'warning');
     if (!gradeSubjectAllowed(tp.mapel)) return toast('Role ini hanya diizinkan menyimpan nilai PJOK.', 'error');
 
+    let token;
+    const body = document.getElementById('nilai-table-body');
     try {
         const updates = {};
         const committed = [];
@@ -402,6 +1021,7 @@ async function saveNilaiBatch() {
             const scoreRaw = row.querySelector('.n-scr')?.value;
             if (scoreRaw === '') continue;
             const nisn = row.querySelector('.n-nisn')?.value;
+            if (!/^\d{10}$/.test(academicNisn(nisn))) throw new Error(`NISN ${nisn} harus tepat 10 digit.`);
             const studentId = row.querySelector('.n-nisn')?.dataset.studentId || nisn;
             const student = { ID_Siswa: studentId, NISN: nisn };
             const id = gradeIdFor(student, tp);
@@ -410,14 +1030,14 @@ async function saveNilaiBatch() {
                 const itemKey = String(item?.ID_Siswa || item?.NISN || '');
                 return studentKeys.has(itemKey) && gradeMatchesTP(item, tp);
             });
-            const score = Number(scoreRaw);
-            if (!Number.isFinite(score) || score < 0 || score > 100) throw new Error(`Nilai ${nisn} harus 0-100.`);
+            const score = academicScore(scoreRaw);
+            if (score === null) throw new Error(`Nilai ${nisn} harus 0-100.`);
             const payload = {
                 ID_Nilai: id,
                 ID_Siswa: studentId,
                 NISN: nisn,
                 nama: row.querySelector('.n-nm')?.value || '',
-                learningObjectiveId: tpId(tp),
+                learningObjectiveId: String(tpId(tp)).replace(/[.#$\[\]\/]/g, '_'),
                 mapel: tp.mapel,
                 semester: String(tp.semester),
                 kode_tp: tp.kode_tp,
@@ -429,64 +1049,98 @@ async function saveNilaiBatch() {
             updates[`Nilai_TP/${id}`] = payload;
             committed.push(payload);
             existingList.forEach((existing) => {
-                if (existing?.ID_Nilai && existing.ID_Nilai !== id) updates[`Nilai_TP/${safeFirebaseKey(existing.ID_Nilai, 'ID nilai lama')}`] = null;
+                if (existing?.ID_Nilai && existing.ID_Nilai !== id) {
+                    const cleanOldKey = safeFirebaseKey(String(existing.ID_Nilai).replace(/[.#$\[\]\/]/g, '_'), 'ID nilai lama');
+                    updates[`Nilai_TP/${cleanOldKey}`] = null;
+                }
             });
         }
         if (!Object.keys(updates).length) return toast('Isi sedikitnya satu nilai sebelum menyimpan.', 'warning');
+        token = SIMNIFormDrafts.begin(body);
         const result = await dbUpdate(updates);
         if (!result?.ok) throw result?.error || new Error('Nilai gagal disimpan.');
+        SIMNIFormDrafts.finish(token, true);
+        if (!SIMNIFormDrafts.sameSession(token)) return;
         const committedIds = new Set(committed.map((item) => item.ID_Nilai));
         const committedPairs = new Set(committed.map((item) => `${item.ID_Siswa}|${item.learningObjectiveId}`));
         state.nilaiTP = state.nilaiTP.filter((item) => {
             const pair = `${item.ID_Siswa || item.NISN}|${item.learningObjectiveId || ''}`;
-            return !committedIds.has(item.ID_Nilai) && !committedPairs.has(pair);
+            return !Object.hasOwn(updates, `Nilai_TP/${item.ID_Nilai}`) && !committedIds.has(item.ID_Nilai) && !committedPairs.has(pair);
         }).concat(committed);
-        updateTPDropdown(true);
-        updateRekapTPDropdown();
-        renderBukuInduk();
-        toast('Berhasil disimpan.', 'success');
+        notifyCommittedSave(() => {
+            if (SIMNIFormDrafts.isCurrent(body, token) && !SIMNIFormDrafts.dirty(body)) updateTPDropdown(true);
+            updateRekapTPDropdown(); renderBukuInduk();
+        });
     } catch (error) {
         toast(error.message || String(error), 'error');
+    } finally {
+        SIMNIFormDrafts.finish(token);
     }
 }
 
-function updateRekapTPDropdown() {
+let rekapSelection = null;
+function invalidateRekapNilai() {
+    rekapSelection = null;
+    editingGradeId = '';
+    const result = document.getElementById('rekap-nilai-result');
+    if (result) result.hidden = true;
+    const hint = document.getElementById('rekap-nilai-hint');
+    if (hint) hint.hidden = false;
+}
+function showRekapNilai() {
     const mapel = document.getElementById('rekap-mapel-nilai')?.value;
+    const id = document.getElementById('rekap-tp-nilai')?.value;
+    if (!mapel || !id) return toast('Pilih mata pelajaran dan TP terlebih dahulu.', 'warning');
+    rekapSelection = { mapel, id, nisn: document.getElementById('rekap-siswa-nilai')?.value || '', session: academicSessionKey() };
+    editingGradeId = '';
+    renderRekapNilai();
+}
+function updateRekapTPDropdown() {
     const select = document.getElementById('rekap-tp-nilai');
     if (!select) return;
     applyGradeSubjectPolicy();
-    const visible = visibleLearningObjectives();
-    const candidates = mapel ? visible.filter((tp) => tp.mapel === mapel) : visible;
-    select.innerHTML = '<option value="">Semua TP</option>' + candidates.map((tp) => `<option value="${escapeHTML(tpId(tp))}">${escapeHTML(tp.kode_tp)} · ${escapeHTML(tp.mapel)} · Smt.${escapeHTML(tp.semester)}</option>`).join('');
-    renderRekapNilai();
+    const mapel = document.getElementById('rekap-mapel-nilai')?.value;
+    const previous = select.value;
+    const candidates = visibleLearningObjectives().filter(tp => mapel && tp.mapel === mapel);
+    select.innerHTML = '<option value="">' + (mapel ? 'Pilih TP...' : 'Pilih Mapel Dahulu...') + '</option>' + candidates.map(tp => `<option value="${escapeHTML(tpId(tp))}">${escapeHTML(tp.kode_tp)} · Smt.${escapeHTML(tp.semester)} · ${escapeHTML(tp.deskripsi_tp || '')}</option>`).join('');
+    select.disabled = !mapel;
+    if (candidates.some(tp => tpId(tp) === previous)) select.value = previous;
+    invalidateRekapNilai();
 }
 
 function renderRekapNilai() {
-    const mapel = document.getElementById('rekap-mapel-nilai')?.value;
-    const selectedTpId = document.getElementById('rekap-tp-nilai')?.value;
-    const nisn = document.getElementById('rekap-siswa-nilai')?.value;
+    if (!rekapSelection || rekapSelection.session !== academicSessionKey()) { invalidateRekapNilai(); return; }
+    const { mapel, id: selectedTpId, nisn } = rekapSelection;
+    const selectedTP = visibleLearningObjectives().find(tp => tpId(tp) === selectedTpId && tp.mapel === mapel);
+    if (!selectedTP) { invalidateRekapNilai(); return; }
+    document.getElementById('rekap-nilai-result').hidden = false;
+    document.getElementById('rekap-nilai-hint').hidden = true;
+    document.getElementById('rekap-tp-title').textContent = `${selectedTP.mapel} · ${selectedTP.kode_tp} · Semester ${selectedTP.semester}`;
+    document.getElementById('rekap-tp-description').textContent = selectedTP.deskripsi_tp || 'Deskripsi TP belum tersedia.';
     const body = document.getElementById('rekap-nilai-body');
     if (!body) return;
+    if (body.querySelector('.edit-grade-score') && body.dataset.editScope === SIMNIFormDrafts.key('rekap', editingGradeId)) return;
 
     let targetTPs = mapel ? visibleLearningObjectives().filter((tp) => tp.mapel === mapel) : visibleLearningObjectives();
     if (selectedTpId) targetTPs = targetTPs.filter((tp) => tpId(tp) === selectedTpId);
     const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
     let filteredStudents = state.students;
     if (currentKelas) filteredStudents = filteredStudents.filter(s => s.Kelas === currentKelas);
-    const students = nisn ? filteredStudents.filter((student) => student.NISN === nisn) : filteredStudents;
+    const students = nisn ? filteredStudents.filter((student) => String(student.NISN) === nisn) : filteredStudents;
     const rows = [];
 
     [...students].sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || '')).forEach((student) => {
         targetTPs.forEach((tp) => {
             const grade = gradeForStudentTP(student, tp);
-            if (!grade || grade.nilai === undefined) return;
-            const gradeId = grade.ID_Nilai || gradeIdFor(student, tp);
+
+            const gradeId = grade?.ID_Nilai || gradeIdFor(student, tp);
             const editing = editingGradeId === gradeId;
-            rows.push(`<tr data-grade-id="${escapeHTML(gradeId)}" data-student-id="${escapeHTML(student.ID_Siswa || student.NISN)}" data-tp-id="${escapeHTML(tpId(tp))}"><td class="p-4 font-bold text-sm whitespace-nowrap">${escapeHTML(student['Nama Lengkap'])}</td><td class="p-4 text-xs uppercase font-bold text-slate-500 whitespace-nowrap">${escapeHTML(tp.mapel)}</td><td class="p-4 font-bold text-primary whitespace-nowrap">${escapeHTML(tp.kode_tp)}</td><td class="p-4 text-[10px] italic max-w-xs truncate" title="${escapeHTML(tp.deskripsi_tp)}">${escapeHTML(tp.deskripsi_tp)}</td><td class="p-4 font-bold text-center text-lg">${editing ? `<input type="number" min="0" max="100" value="${escapeHTML(grade.nilai)}" class="edit-grade-score w-20 p-2 border border-primary rounded-lg text-center bg-white dark:bg-black">` : escapeHTML(grade.nilai)}</td><td class="p-4 text-center whitespace-nowrap">${editing ? '<button type="button" class="save-grade-edit px-3 py-2 bg-primary text-white rounded-lg text-xs font-bold mr-1"><i class="fas fa-check"></i> Simpan</button><button type="button" class="cancel-grade-edit px-3 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-xs font-bold">Batal</button>' : '<button type="button" class="start-grade-edit px-3 py-2 border border-primary text-primary rounded-lg text-xs font-bold"><i class="fas fa-pen"></i> Edit Nilai</button>'}</td></tr>`);
+            rows.push(`<tr data-grade-id="${escapeHTML(gradeId)}" data-student-id="${escapeHTML(student.ID_Siswa || student.NISN)}" data-tp-id="${escapeHTML(tpId(tp))}"><td>${escapeHTML(student['Nama Lengkap'])}</td><td>${editing ? `<input aria-label="Nilai ${escapeHTML(student['Nama Lengkap'])}" type="number" min="0" max="100" value="${escapeHTML(grade?.nilai ?? '')}" class="edit-grade-score">` : escapeHTML(grade?.nilai ?? '—')}</td><td>${editing ? '<button type="button" class="save-grade-edit">Simpan</button><button type="button" class="cancel-grade-edit">Batal</button>' : `<button type="button" class="start-grade-edit">${grade ? 'Edit' : 'Isi'} nilai</button>`}</td></tr>`);
         });
     });
 
-    body.innerHTML = rows.join('') || '<tr><td colspan="6" class="p-8 text-center text-slate-400">Tidak ada data nilai sesuai filter.</td></tr>';
+    body.innerHTML = rows.join('') || '<tr><td colspan="3" class="p-8 text-center text-slate-400">Tidak ada siswa sesuai filter.</td></tr>';
+    body.dataset.editScope = SIMNIFormDrafts.key('rekap', editingGradeId);
     body.querySelectorAll('.start-grade-edit').forEach((button) => button.addEventListener('click', () => {
         editingGradeId = button.closest('tr')?.dataset.gradeId || '';
         renderRekapNilai();
@@ -503,33 +1157,80 @@ function renderRekapNilai() {
 let editingGradeId = '';
 
 async function saveEditedGrade(row) {
+    if (row?.dataset.saving === 'true') return;
+    const session = academicSessionKey();
     try {
+        row.dataset.saving = 'true';
         const gradeId = row?.dataset.gradeId || '';
         const tp = getTPById(row?.dataset.tpId || '');
         const studentId = row?.dataset.studentId || '';
         const existing = state.nilaiTP.find((item) => {
             const sameStudent = String(item.ID_Siswa || item.NISN || '') === studentId;
-            return sameStudent && tp && gradeMatchesTP(item, tp);
+            return item.ID_Nilai === gradeId && sameStudent && tp && gradeMatchesTP(item, tp);
         });
-        if (!existing) throw new Error('Data nilai yang akan diedit tidak ditemukan.');
-        const score = Number(row.querySelector('.edit-grade-score')?.value);
-        if (!Number.isFinite(score) || score < 0 || score > 100) throw new Error('Nilai harus berada pada rentang 0-100.');
-        const payload = { ...existing, ID_Nilai: gradeId, nilai: score, tanggal_diperbarui: getJakartaDateString() };
-        const result = await dbSet(`Nilai_TP/${safeFirebaseKey(gradeId, 'ID nilai')}`, payload);
+        if (!tp || !gradeSubjectAllowed(tp.mapel)) throw new Error('TP tidak tersedia untuk akun ini.');
+        const student = state.students.find(item => String(item.ID_Siswa || item.NISN) === studentId && (!state.activeKelas || item.Kelas === state.activeKelas));
+        if (!student) throw new Error('Siswa tidak tersedia di kelas aktif.');
+        if (!existing && !/^\d{10}$/.test(academicNisn(student.NISN))) throw new Error('NISN siswa harus tepat 10 digit.');
+        const score = academicScore(row.querySelector('.edit-grade-score')?.value);
+        if (score === null) throw new Error('Nilai harus berada pada rentang 0-100 dan tidak boleh kosong.');
+        const cleanGradeKey = safeFirebaseKey(String(gradeId).replace(/[.#$\[\]\/]/g, '_'), 'ID nilai');
+        const payload = { ...(existing || {
+            ID_Siswa: studentId, NISN: student.NISN, nama: student['Nama Lengkap'],
+            learningObjectiveId: String(tpId(tp)).replace(/[.#$\[\]\/]/g, '_'),
+            mapel: tp.mapel, semester: String(tp.semester), kode_tp: tp.kode_tp, Deskripsi_TP: tp.kode_tp,
+            tanggal: getJakartaDateString(), Kelas: student.Kelas || state.activeKelas || ''
+        }), ID_Nilai: cleanGradeKey, nilai: score, tanggal_diperbarui: getJakartaDateString() };
+        const result = await dbSet(`Nilai_TP/${cleanGradeKey}`, payload);
         if (!result?.ok) throw result?.error || new Error('Perubahan nilai gagal disimpan.');
-        state.nilaiTP = state.nilaiTP.filter((item) => item !== existing && item.ID_Nilai !== gradeId).concat(payload);
+        if (session !== academicSessionKey()) return;
+        state.nilaiTP = state.nilaiTP.filter((item) => item !== existing && item.ID_Nilai !== gradeId && item.ID_Nilai !== cleanGradeKey).concat(payload);
         editingGradeId = '';
-        renderRekapNilai();
-        updateTPDropdown();
-        renderBukuInduk();
-        toast('Berhasil disimpan.', 'success');
+        notifyCommittedSave(() => { renderRekapNilai(); updateTPDropdown(); renderBukuInduk(); });
     } catch (error) {
         toast(error.message || String(error), 'error');
+    } finally {
+        if (row) row.dataset.saving = 'false';
     }
 }
 
+function populateIndukDropdown() {
+    const el = document.getElementById('induk-siswa-select');
+    if (!el) return;
+    const normalize = typeof normalizeClassLabel === 'function' ? normalizeClassLabel : (v) => String(v || '').trim();
+    const currentKelas = normalize(typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '');
+    let filteredStudents = Array.isArray(state?.students) ? state.students : [];
+    if (currentKelas) {
+        filteredStudents = filteredStudents.filter(s => {
+            const sk = normalize(s.Kelas);
+            return !sk || sk === currentKelas;
+        });
+    }
+    const sortedStudents = [...filteredStudents].sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+    const currentVal = el.value;
+    const fragment = document.createDocumentFragment();
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = '-- Sentuh untuk Pilih Siswa --';
+    fragment.appendChild(empty);
+    sortedStudents.forEach((student) => {
+        const nisn = String(student.NISN || '').trim();
+        if (!/^\d{10}$/.test(nisn)) return;
+        const option = document.createElement('option');
+        option.value = nisn;
+        option.textContent = String(student['Nama Lengkap'] || '');
+        fragment.appendChild(option);
+    });
+    el.replaceChildren(fragment);
+    if (currentVal) el.value = currentVal;
+}
+
 function renderBukuInduk() {
-    const nisn = document.getElementById('induk-siswa-select')?.value;
+    const select = document.getElementById('induk-siswa-select');
+    if (select && select.options.length <= 1 && Array.isArray(state?.students) && state.students.length > 0) {
+        populateIndukDropdown();
+    }
+    const nisn = select?.value;
     const container = document.getElementById('induk-content-area');
     if (!container) return;
     if (!nisn) {
@@ -537,16 +1238,19 @@ function renderBukuInduk() {
         return;
     }
 
-    const student = state.students.find((item) => item.NISN === nisn);
-    if (!student) return;
-    const attendance = state.presensi.filter((item) => item.NISN === nisn);
+    const student = state.students.find((item) => String(item.NISN || '').trim() === String(nisn).trim());
+    if (!student) {
+        container.innerHTML = '<div class="p-8 text-center text-slate-400 absolute inset-0 flex flex-col items-center justify-center"><i class="fas fa-user-slash text-6xl opacity-50 mb-4"></i><p class="font-bold">Data siswa tidak ditemukan.</p></div>';
+        return;
+    }
+    const attendance = state.presensi.filter((item) => String(item.NISN || '').trim() === String(nisn).trim());
     const count = (status) => attendance.filter((item) => String(item.Status || '').toUpperCase() === status).length;
     const rows = [];
 
     const mapelList = [...new Set(visibleLearningObjectives().map((tp) => tp.mapel).filter(Boolean))];
     mapelList.forEach((mapel) => {
         const objectives = visibleLearningObjectives().filter((tp) => tp.mapel === mapel);
-        const grades = objectives.map((tp) => ({ tp, grade: state.nilaiTP.find((item) => (item.ID_Siswa || item.NISN) === (student.ID_Siswa || student.NISN) && gradeMatchesTP(item, tp)) })).filter((item) => item.grade?.nilai !== undefined);
+        const grades = objectives.map((tp) => ({ tp, grade: gradeForStudentTP(student, tp) })).filter((item) => academicScore(item.grade?.nilai) !== null);
         if (!grades.length) return;
         const average = Math.round(grades.reduce((sum, item) => sum + Number(item.grade.nilai || 0), 0) / grades.length);
         const sorted = [...grades].sort((a, b) => Number(b.grade.nilai) - Number(a.grade.nilai));
@@ -561,11 +1265,13 @@ function renderBukuInduk() {
 }
 
 async function cetakBukuInduk() {
+    const nisn = document.getElementById('induk-siswa-select')?.value;
+    if (!nisn) return toast('Pilih siswa terlebih dahulu untuk mengunduh Buku Induk.', 'warning');
+    await window.ensureSIMNIVendors?.("pdf");
     const content = document.getElementById('cetak-induk-area');
     if (!content) return toast('Data profil induk tidak ditemukan!', 'error');
     if (typeof html2pdf !== 'function') return toast('Pustaka PDF belum tersedia. Muat ulang saat online.', 'error');
-    const nisn = document.getElementById('induk-siswa-select')?.value;
-    const student = state.students.find((item) => item.NISN === nisn);
+    const student = state.students.find((item) => String(item.NISN || '').trim() === String(nisn).trim());
     showLoad('Membuat PDF Buku Induk...');
     try {
         await html2pdf().set({
@@ -581,4 +1287,99 @@ async function cetakBukuInduk() {
     } finally {
         hideLoad();
     }
+}
+
+async function unduhRekapNilai() {
+    const mapel = document.getElementById('rekap-mapel-nilai')?.value;
+    if (!mapel) return toast('Pilih mata pelajaran terlebih dahulu.', 'warning');
+
+    await window.ensureSIMNIVendors?.("xlsx");
+    if (!window.XLSX?.utils) return toast('Pustaka Excel belum siap. Muat ulang saat online.', 'error');
+
+    const selectedTpId = document.getElementById('rekap-tp-nilai')?.value;
+    const filterNisn = document.getElementById('rekap-siswa-nilai')?.value;
+    const normalize = typeof normalizeClassLabel === 'function' ? normalizeClassLabel : (v) => String(v || '').trim();
+    const currentKelas = normalize(typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '');
+
+    let targetTPs = visibleLearningObjectives().filter(tp => tp.mapel === mapel);
+    if (selectedTpId) targetTPs = targetTPs.filter(tp => tpId(tp) === selectedTpId);
+    if (!targetTPs.length) return toast('Tidak ada TP untuk mata pelajaran yang dipilih.', 'warning');
+
+    let students = (state.students || []).filter(s => {
+        const k = normalize(s.Kelas);
+        return !currentKelas || !k || k === currentKelas;
+    });
+    if (filterNisn) students = students.filter(s => String(s.NISN || '').trim() === filterNisn);
+    students.sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+
+    if (!students.length) return toast('Tidak ada data siswa untuk diunduh.', 'warning');
+
+    showLoad('Menyusun file Rekap Nilai Excel...');
+    try {
+        const rows = [];
+        let no = 1;
+        students.forEach(student => {
+            targetTPs.forEach(tp => {
+                const grade = gradeForStudentTP(student, tp);
+                const score = (grade && academicScore(grade.nilai) !== null) ? Number(grade.nilai) : '';
+                rows.push({
+                    'No': no++,
+                    'NISN': String(student.NISN || ''),
+                    'Nama Siswa': student['Nama Lengkap'] || '',
+                    'Kelas': student.Kelas || currentKelas || '',
+                    'Mata Pelajaran': tp.mapel || mapel,
+                    'Semester': tp.semester || '',
+                    'Kode TP': tp.kode_tp || '',
+                    'Deskripsi TP': tp.deskripsi_tp || '',
+                    'Nilai': score,
+                    'Status': score === '' ? 'Belum Dinilai' : (score >= 75 ? 'Tuntas' : 'Perlu Bimbingan')
+                });
+            });
+        });
+
+        const workbook = XLSX.utils.book_new();
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        const safeSheetName = `${mapel.slice(0, 25)}`.replace(/[:\\/?*[\]]/g, '_');
+        XLSX.utils.book_append_sheet(workbook, sheet, safeSheetName);
+
+        const activeTP = selectedTpId ? targetTPs[0] : null;
+        const tpSuffix = activeTP ? `_${activeTP.kode_tp}` : '_Semua_TP';
+        const filename = `Rekap_Nilai_${safeFilename(mapel)}${safeFilename(tpSuffix)}_${safeFilename(currentKelas || 'Kelas')}.xlsx`;
+
+        XLSX.writeFile(workbook, filename);
+        toast('Rekap nilai berhasil diunduh.', 'success');
+    } catch (err) {
+        console.error(err);
+        toast(`Gagal mengunduh rekap nilai: ${err.message || err}`, 'error');
+    } finally {
+        hideLoad();
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.openEditTPModal = openEditTPModal;
+    window.submitEditTP = submitEditTP;
+    window.deleteTPEditModal = deleteTPEditModal;
+    window.openSIMNILens = openSIMNILens;
+    window.closeSIMNILens = closeSIMNILens;
+    window.rotateLens90 = rotateLens90;
+    window.restartLensCapture = restartLensCapture;
+    window.captureLensFrameToRAM = captureLensFrameToRAM;
+    window.handleLensGalleryFile = handleLensGalleryFile;
+    window.batchInsertScannedTP = batchInsertScannedTP;
+    window.smartParseTP = smartParseTP;
+    window.updateTPListModal = updateTPListModal;
+    window.submitTP = submitTP;
+    window.hapusTP = hapusTP;
+    window.saveNilaiBatch = saveNilaiBatch;
+    window.updateTPDropdown = updateTPDropdown;
+    window.renderNilaiGrid = renderNilaiGrid;
+    window.renderNilaiTPControls = renderNilaiTPControls;
+    window.setNilaiTab = setNilaiTab;
+    window.showRekapNilai = showRekapNilai;
+    window.unduhRekapNilai = unduhRekapNilai;
+    window.invalidateRekapNilai = invalidateRekapNilai;
+    window.populateIndukDropdown = populateIndukDropdown;
+    window.renderBukuInduk = renderBukuInduk;
+    window.cetakBukuInduk = cetakBukuInduk;
 }

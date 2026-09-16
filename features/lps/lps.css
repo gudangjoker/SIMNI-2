@@ -5,7 +5,9 @@ UI responsif Form/Builder/Preview dan
 layout cetak A4 LPS/BLP.
 ========================================== */
 
-.lps-module {
+.lps-module,
+#modal-pengaturan-lps,
+.lps-preview-modal {
     --lps-accent: #d97706;
     --lps-accent-strong: #b45309;
     --lps-accent-soft: #fffbeb;
@@ -16,14 +18,18 @@ layout cetak A4 LPS/BLP.
     --lps-text: #0f172a;
     --lps-danger: #b91c1c;
     --lps-success: #047857;
+}
 
+.lps-module {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     min-width: 0;
 }
 
-.dark .lps-module {
+.dark .lps-module,
+.dark #modal-pengaturan-lps,
+.dark .lps-preview-modal {
     --lps-accent-soft: rgba(120, 53, 15, 0.16);
     --lps-border: #27272a;
     --lps-muted: #94a3b8;
@@ -36,6 +42,10 @@ layout cetak A4 LPS/BLP.
 .lps-preview-modal *,
 #modal-pengaturan-lps * {
     box-sizing: border-box;
+}
+
+#lps-builder-scope-label {
+    color: var(--lps-muted);
 }
 
 .lps-module [hidden],
@@ -1195,6 +1205,20 @@ REPORT FOOTER / INTEGRITY
     user-select: none;
 }
 
+/* In the screen preview, show the draft state without covering report text.
+   Print retains the existing watermark layout. */
+@media screen {
+    .lps-draft-watermark {
+        position: static;
+        transform: none;
+        margin: 0 0 12px;
+        color: #991b1b;
+        font-size: 16px;
+        letter-spacing: 2px;
+        text-align: center;
+    }
+}
+
 /* ==========================================
 RESPONSIVE
 ========================================== */
@@ -1460,3 +1484,9 @@ ACCESSIBILITY / MOTION
     pointer-events: none !important;
     display: none !important;
 }
+
+.lps-module .lps-button, .lps-module input, .lps-module select { min-height:44px; }
+.lps-module .lps-button-primary, .lps-preview-modal .lps-button-primary { background:#047857; color:#fff; }
+.dark .lps-module .lps-button-primary { background:#065f46; color:#fff; }
+.lps-aspect-item { min-width:0; }
+.lps-preview-content { min-width:0; }

@@ -49,8 +49,7 @@ const sourceFiles = [
     'index.html',
     ...collect('js', new Set(['.js', '.mjs'])),
     ...collect('features', new Set(['.html', '.js', '.mjs'])),
-    ...collect('chat', new Set(['.html', '.js', '.mjs']))
-];
+    ];
 const combinedSource = sourceFiles.map((file) => read(file)).join('\n');
 const combinedMarkup = sourceFiles
     .filter((file) => path.extname(file).toLowerCase() === '.html')
@@ -92,7 +91,6 @@ assert(!/profileCacheKey|firebase-authority-or-cache|validated-cache/.test(authS
 
 const stateSource = read('js/core/state.js');
 assert(/simniActiveKelas:\$\{access\.uid\}:\$\{access\.workspaceId\}/.test(stateSource), 'STORE-001', 'Preferensi kelas diisolasi per UID dan workspace.');
-assert(/identity:\$\{uid\}/.test(read('chat/js/chat-crypto.js')), 'STORE-002', 'Identitas kriptografi chat diisolasi per UID.');
 assert(/stateHash/.test(read('js/database/local-cache.js')) && /scopeMatches/.test(read('js/database/local-cache.js')), 'STORE-003', 'Cache IndexedDB diverifikasi hash dan scope sebelum digunakan.');
 
 const policy = require(path.join(root, 'js/auth/access-policy-core.js'));
@@ -133,38 +131,11 @@ assert(!realtimeRules.includes('workspaceMigrations') && !read('js/database/repo
     'ROLE-001', 'Mesin migrasi lama tidak menjadi dependensi runtime.');
 assert(Object.keys(policy.ROLES).length === 2 && policy.normalizeRole('teacher') === null,
     'ROLE-002', 'Policy menerima tepat dua role dan menolak role lain.');
-assert(/state:\s*'ready'[\s\S]*?academicYears\/\$\{currentYearId\}`\] = null[\s\S]*?state`] = 'completed'/.test(read('js/database/repository.js')),
-    'YEAR-004', 'Rollover memakai readiness gate dan commit atomik.');
+assert(/state:\s*'ready'[\s\S]*?commitAdministrativeOperation/.test(read('js/database/repository.js')) && /academicYears\/\$\{current\}`\] = null/.test(read('edge/admin-operations.js')) && /await io.patchUser/.test(read('edge/admin-operations.js')),
+    'YEAR-004', 'Rollover memakai readiness gate dan PATCH data atomik melalui server.');
 assert(/Tahun Pelajaran tidak dapat diubah dari Identitas Kelas/.test(read('features/settings/settings.js')),
     'YEAR-005', 'Perubahan tahun langsung dari Identitas Kelas ditolak.');
 
-const firestoreRules = read('chat/firestore.rules');
-assert(/match \/chatMembers\/\{uid\}[\s\S]*?allow write:\s*if false;/.test(firestoreRules), 'RULE-001', 'Klien tidak dapat menulis membership chat.');
-assert(/resource\.data\.senderUid == request\.auth\.uid[\s\S]*?resource\.data\.recipientUid == request\.auth\.uid/.test(firestoreRules), 'RULE-002', 'Pesan chat dibatasi untuk pengirim dan penerima.');
-assert(!/\bor\s*\(/.test(read('chat/js/chat-db.js')) && !/orderBy\s*\(/.test(read('chat/js/chat-db.js')), 'RULE-004', 'Listener Chat tidak bergantung pada composite index.');
-assert(/bind\('sent', 'senderUid'\)[\s\S]*?bind\('received', 'recipientUid'\)/.test(read('chat/js/chat-db.js')), 'RULE-005', 'Listener index-free memakai dua query UID-scoped.');
-assert(/projectId:\s*'admin-kelas-3a'[\s\S]*?authorityRole:\s*'superuser'/.test(read('chat/js/chat-config.js')), 'SCOPE-009', 'Database Chat dikunci ke Firebase project Superuser.');
-const membershipWriter = /async function upsertMembership[\s\S]*?\n}/.exec(read('chat/edge/worker.js'))?.[0] || '';
-assert(!/workspaceId:\s*fsString|classId:\s*fsString/.test(membershipWriter), 'SCOPE-010', 'Membership Chat tidak menyimpan scope workspace akademik.');
-assert(/createMessageDocumentId\(\)/.test(read('chat/js/chat-db.js')), 'DB-CHAT-001', 'Pesan baru memakai ID kronologis untuk limit query index-free.');
-assert(/senderPublicJwk/.test(firestoreRules) && /recipientPublicJwk/.test(firestoreRules) && /recipientFingerprint/.test(read('chat/js/chat-db.js')),
-    'CHAT-CRYPTO-001', 'Pesan baru menyimpan snapshot public key kedua pihak untuk ketahanan rotasi identity.');
-assert(/decryptionContexts/.test(read('chat/js/chat-ui-handler.js')) && /Pesan lama memerlukan kunci pemulihan/.test(read('chat/js/chat-ui-handler.js')),
-    'CHAT-CRYPTO-002', 'Dekripsi mencoba konteks legacy dan gagal dengan jalur pemulihan eksplisit.');
-assert(!/saveOwnKeyBackup\([^\n]*created\.recoveryPhrase/.test(read('chat/js/chat-ui-handler.js'))
-    && /restoreIdentityFromAccount/.test(read('chat/js/chat-ui-handler.js'))
-    && /createAccountBackupForIdentity/.test(read('chat/js/chat-ui-handler.js')),
-    'CHAT-CRYPTO-003', 'Frasa pemulihan tidak disimpan plaintext dan identity dipulihkan melalui kunci akun Firebase.');
-assert(/request\.resource\.data\.autoRecovery == null/.test(firestoreRules),
-    'CHAT-CRYPTO-004', 'Firestore Rules menolak penyimpanan frasa pemulihan plaintext baru.');
-assert(/PBKDF2_ITERATIONS\s*=\s*600000/.test(read('js/auth/chat-unlock.js'))
-    && /instanceof CryptoKey/.test(read('js/auth/chat-unlock.js'))
-    && !/password["']?\s*:/.test(read('js/auth/chat-unlock.js')),
-    'CHAT-CRYPTO-005', 'Kunci akun Chat diturunkan dari login dan disimpan sebagai CryptoKey non-exportable tanpa password plaintext.');
-assert(/authPersistenceReady/.test(read('js/database/firebase-client.js'))
-    && /await authPersistenceReady/.test(read('js/auth/auth.js'))
-    && /authPersistenceReady\.then/.test(read('chat/js/chat-auth.js')),
-    'AUTH-009', 'Dashboard dan Chat menunggu satu authority persistence Firebase sebelum mengamati sesi.');
 assert(/if \(!terminalAccessFailure\) return;[\s\S]*?signOut\(auth\)/.test(read('js/auth/auth.js')),
     'AUTH-010', 'Kegagalan profil sementara mempertahankan sesi lokal; hanya pelanggaran identitas terminal yang melakukan sign-out fail-closed.');
 assert(/resumeAuthenticatedSession/.test(read('js/auth/auth.js'))
@@ -172,24 +143,6 @@ assert(/resumeAuthenticatedSession/.test(read('js/auth/auth.js'))
     && /visibilitychange/.test(read('js/auth/auth.js'))
     && !/function unlockScreen\(\)[\s\S]{0,400}setTimeout/.test(read('js/ui/navigation.js')),
     'AUTH-011', 'Resume PWA memulihkan sesi aktif dan transisi layar login tidak memakai timer yang dapat saling menyalip.');
-assert(/match \/chatReadStates\/\{uid\}[\s\S]*?isSelf\(uid\)[\s\S]*?lastReadAt == request\.time/.test(firestoreRules),
-    'CHAT-READ-001', 'Status baca Chat disimpan server-side dan hanya dapat ditulis pemilik UID.');
-assert(/data-chat-unread-badge/.test(read('index.html')) && /startChatNotifications/.test(read('js/auth/auth.js')),
-    'CHAT-NOTIFY-001', 'Dashboard memulai listener unread dan menyediakan badge Chat pada dua navigasi.');
-assert(/CHAT_NOTIFICATION_KIND/.test(read('sw.js')) && /notificationclick/.test(read('sw.js')),
-    'CHAT-NOTIFY-002', 'Service Worker menangani push terselubung dan membuka Chat tanpa logout.');
-assert(!/target="_blank"[\s\S]{0,160}data-requires-feature="chat"/.test(read('index.html')),
-    'CHAT-NAV-001', 'Chat menggunakan alur tab yang sama agar navigasi kembali mempertahankan sesi SIMNI.');
-assert(/resizeComposer\(\);[\s\S]*?input\.focus/.test(read('chat/js/chat-ui-handler.js')),
-    'CHAT-COMPOSER-001', 'Composer direset setelah pesan berhasil dikirim.');
-assert(/startVoiceRecording/.test(read('chat/js/chat-platform.js')) && !/SIMNIChatVoiceRecorder/.test(read('chat/js/chat-platform.js')),
-    'CHAT-VOICE-001', 'Lifecycle recorder voice note tidak memakai global mutable state.');
-assert(/createPlayableAudioBlob/.test(read('chat/js/chat-platform.js'))
-    && /createVoicePlayer/.test(read('chat/js/chat-ui-handler.js'))
-    && /downloadAndDecryptMedia[\s\S]*?createPlayableAudioBlob/.test(read('chat/js/chat-ui-handler.js')),
-    'CHAT-VOICE-002', 'Player inline hanya memutar payload audio setelah unduh dan dekripsi terautentikasi.');
-assert(/media-src 'self' blob:/.test(csp),
-    'CHAT-VOICE-003', 'CSP produksi mengizinkan playback blob audio hasil dekripsi lokal.');
 assert(!/\.className\s*=/.test(read('js/ui/navigation.js')) && /applyAccessUI/.test(read('js/ui/navigation.js')), 'UI-003', 'Switch view mempertahankan class semantik dan otorisasi elemen navigasi.');
 assert(!/id="view-lps"/.test(read('index.html'))
     && /id !== 'lps'[\s\S]*?SIMNILPS\?\.unmount/.test(read('js/ui/navigation.js'))
@@ -199,25 +152,9 @@ assert(/const shellBrand = 'SIMNI'/.test(read('js/ui/render.js')), 'UI-004', 'Br
 assert(/--simni-primary/.test(read('js/ui/shell.css')) && /--simni-active-canvas/.test(read('js/ui/shell.css')), 'UI-005', 'Tema global mencakup warna aksi dan canvas aplikasi.');
 assert(/simni-logo\.png/.test(read('index.html')) && /school-logo\.png/.test(read('features/lps/lps-core.js')),
     'UI-006', 'Logo shell SIMNI dipisahkan dari logo sekolah LPS/BLP.');
-assert(/\.chat-unread-badge\.hidden\s*\{\s*display:\s*none/.test(read('js/ui/shell.css'))
-    && /mobile-app-identity[\s\S]*?<\/div>\s*<div\s+id="sync-status-mobile"/.test(read('index.html')),
-    'UI-008', 'Badge nol benar-benar tersembunyi dan status mobile menjadi elemen sejajar yang terpisah dari nama SIMNI.');
-assert(/location\.assign\(new URL\('\.\.\/index\.html'/.test(read('chat/js/chat-ui-handler.js'))
-    && !/chat-back[\s\S]{0,240}signOut|chat-back[\s\S]{0,240}clearAccessContext/.test(read('chat/js/chat-ui-handler.js')),
-    'CHAT-NAV-002', 'Tombol kembali hanya menavigasi dan tidak melakukan teardown atau logout sebelum pindah halaman.');
-assert(!/lockScreen|unlockScreen/.test(read('js/database/sync.js')),
-    'CHAT-NAV-003', 'Gangguan sinkronisasi tidak dapat menutup dashboard pengguna yang masih terautentikasi.');
-assert(!/setDoc\s*\(\s*memberRef/.test(read('chat/js/chat-auth.js')), 'RULE-003', 'Klien chat tidak memiliki bypass self-membership.');
 
-const edgeWorker = read('chat/edge/worker.js');
+const edgeWorker = read('edge/worker.js');
 assert(/SIMNI_ALLOWED_ORIGINS/.test(edgeWorker), 'EDGE-001', 'Origin Edge API menggunakan allowlist eksplisit.');
-assert(/descriptor\.senderUid !== identity\.claims\.sub/.test(edgeWorker) && /verifyFirebaseIdToken/.test(edgeWorker), 'EDGE-002', 'Penghapusan media chat terikat kepada pengirim terautentikasi.');
-assert(/deleteEncryptedMedia/.test(read('chat/js/chat-ui-handler.js')), 'EDGE-003', 'Upload media memiliki compensating delete ketika commit pesan gagal.');
-const uploadMediaWorker = /async function uploadMedia[\s\S]*?\n}/.exec(edgeWorker)?.[0] || '';
-const readMediaWorker = /async function readMedia[\s\S]*?\n}/.exec(edgeWorker)?.[0] || '';
-assert(/requireChatMediaBucket/.test(uploadMediaWorker) && /requireChatMediaBucket/.test(readMediaWorker)
-    && !/requireCloudinary/.test(uploadMediaWorker) && !/requireCloudinary/.test(readMediaWorker),
-    'EDGE-004', 'Media terenkripsi Chat hanya melewati binding R2.');
 assert(/createCloudinarySignature[\s\S]*?Hanya Superuser yang dapat mengunggah aset dokumen\./.test(edgeWorker),
     'EDGE-005', 'Cloudinary tetap terpisah untuk aset LKPD dan Dokumen SIMNI.');
 assert(edgeWorker.includes('https://www.googleapis.com/auth/userinfo.email')
@@ -246,7 +183,7 @@ assert(/RUNTIME_FAILURE_LIMIT/.test(platformSource), 'ASYNC-002', 'Runtime diagn
 
 const remoteFirebaseImport = /from\s+['"]https:\/\/www\.gstatic\.com\/firebasejs\//;
 assert(!remoteFirebaseImport.test(combinedSource), 'PWA-001', 'Firebase Web SDK dimuat dari vendor lokal untuk cold-start offline.');
-assert(/firebase-auth\.js/.test(read('sw.js')) && /firebase-firestore\.js/.test(read('sw.js')), 'PWA-002', 'Firebase modules masuk precache Service Worker.');
+assert(/firebase-auth\.js/.test(read('sw.js')) && /firebase-database\.js/.test(read('sw.js')), 'PWA-002', 'Firebase Auth dan RTDB masuk precache Service Worker.');
 
 const packageJson = JSON.parse(read('package.json'));
 const manifest = JSON.parse(read('manifest.json'));

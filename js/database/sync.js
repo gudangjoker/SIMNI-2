@@ -8,8 +8,15 @@
 
 import {
     ref,
-    onValue
+    onValue,
+    query,
+    orderByKey,
+    limitToFirst,
+    startAfter,
+    endAt
 } from '../../vendor/firebase/firebase-database.js';
+
+import { subscribeLivePages } from './live-pages.js';
 
 import {
     database,
@@ -37,6 +44,13 @@ const DEFAULT_LPS_SETTINGS =
             ])
         })
     ]);
+
+// Scalars remain bounded. Collections are published only after all live key
+// ranges are complete, rather than rejecting a healthy, growing year.
+const MAX_BINDING_BYTES = 16 * 1024 * 1024;
+function collectionBinding(binding) {
+    return !binding.logicalPath.startsWith('Pengaturan/');
+}
 
 const NODE_BINDINGS =
     Object.freeze([
@@ -98,10 +112,39 @@ const NODE_BINDINGS =
                 'students',
 
             apply(data) {
-                window.state.students =
-                    valuesOf(
-                        data
-                    );
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    window.state.students = Object.entries(data)
+                        .filter(([_, item]) => item !== undefined && item !== null)
+                        .map(([key, item]) => {
+                            if (typeof item === 'object') {
+                                const nisn = window.academicNisn(item.NISN || (/^\d{10}$/.test(String(item.id_siswa || '')) ? item.id_siswa : '') || (/^\d{10}$/.test(key) ? key : ''));
+                                return {
+                                    ...item,
+                                    NISN: nisn,
+                                    ID_Siswa: item.ID_Siswa || item.id_siswa || `stu_${nisn}`,
+                                    'Nama Lengkap': item['Nama Lengkap'] || item.nama || item.Nama || '',
+                                    'Nama Panggilan': item['Nama Panggilan'] || item.nama_panggilan || '',
+                                    Kelas: item.Kelas || item.kelas || item.id_kelas || ''
+                                };
+                            }
+                            return item;
+                        });
+                } else {
+                    window.state.students = valuesOf(data).map((item) => {
+                        if (item && typeof item === 'object') {
+                            const nisn = window.academicNisn(item.NISN || (/^\d{10}$/.test(String(item.id_siswa || '')) ? item.id_siswa : ''));
+                            return {
+                                ...item,
+                                NISN: nisn,
+                                ID_Siswa: item.ID_Siswa || item.id_siswa || (nisn ? `stu_${nisn}` : ''),
+                                'Nama Lengkap': item['Nama Lengkap'] || item.nama || item.Nama || '',
+                                'Nama Panggilan': item['Nama Panggilan'] || item.nama_panggilan || '',
+                                Kelas: item.Kelas || item.kelas || item.id_kelas || ''
+                            };
+                        }
+                        return item;
+                    });
+                }
             }
         }),
 
@@ -116,10 +159,25 @@ const NODE_BINDINGS =
                 'presensi',
 
             apply(data) {
-                window.state.presensi =
-                    valuesOf(
-                        data
-                    );
+                window.state.presensi = valuesOf(data).map((item) => {
+                    if (!item || typeof item !== 'object') return item;
+                    const rawDate = item.Tanggal || item.tanggal || '';
+                    let tanggal = String(rawDate).trim();
+                    if (tanggal.includes('T')) {
+                        tanggal = tanggal.split('T')[0];
+                    }
+                    const rawStatus = item.Status || item.status || 'Hadir';
+                    const statusFormatted = String(rawStatus).charAt(0).toUpperCase() + String(rawStatus).slice(1).toLowerCase();
+                    return {
+                        ...item,
+                        Tanggal: tanggal,
+                        NISN: String(item.NISN || item.nisn || '').trim(),
+                        Nama: item.Nama || item.nama || '',
+                        Status: ['Hadir', 'Sakit', 'Izin', 'Alpa'].includes(statusFormatted) ? statusFormatted : 'Hadir',
+                        Keterangan: item.Keterangan || item.keterangan || '',
+                        Kelas: item.Kelas || item.kelas || item.id_kelas || ''
+                    };
+                });
             }
         }),
 
@@ -134,10 +192,38 @@ const NODE_BINDINGS =
                 'mapelTP',
 
             apply(data) {
-                window.state.mapelTP =
-                    valuesOf(
-                        data
-                    );
+                const normalizeTPItem = (item, fallbackKey = '') => {
+                    let ch = null;
+                    if (item.chapterNumber != null) {
+                        const n = Number(item.chapterNumber);
+                        if (n >= 1 && n <= 10) ch = n;
+                    } else if (!item.chapterDefined && item.bab_id) {
+                        const n = Number(item.bab_id);
+                        if (n >= 1 && n <= 10) ch = n;
+                    }
+                    if (ch === null && !item.chapterDefined) {
+                        const match = String(item.bab_nama || item.bab || '').match(/\bBab\s+(\d{1,2})\b/i);
+                        if (match) {
+                            const m = Number(match[1]);
+                            if (m >= 1 && m <= 10) ch = m;
+                        }
+                    }
+                    const canonicalId = fallbackKey || String(item.ID_mapel || item.learningObjectiveId || item.kode_tp || '').trim().replace(/[.#$\[\]\/]/g, '_');
+                    return {
+                        ...item,
+                        ID_mapel: canonicalId,
+                        kelas: item.kelas || item.Kelas || item.id_kelas || '',
+                        chapterNumber: ch
+                    };
+                };
+
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    window.state.mapelTP = Object.entries(data)
+                        .filter(([_, item]) => item !== undefined && item !== null)
+                        .map(([key, item]) => (typeof item === 'object' ? normalizeTPItem(item, key) : item));
+                } else {
+                    window.state.mapelTP = valuesOf(data).map((item) => (item && typeof item === 'object' ? normalizeTPItem(item) : item));
+                }
             }
         }),
 
@@ -152,10 +238,22 @@ const NODE_BINDINGS =
                 'nilaiTP',
 
             apply(data) {
-                window.state.nilaiTP =
-                    valuesOf(
-                        data
-                    );
+                window.state.nilaiTP = Object.entries(data || {}).filter(([, item]) => item && typeof item === 'object').map(([key, item]) => {
+                    if (!item || typeof item !== 'object') return item;
+                    const nisn = String(item.NISN || item.nisn || '').trim();
+                    const learningObjectiveId = String(item.learningObjectiveId || item.ID_mapel || '').trim();
+                    const idNilai = key;
+                    return {
+                        ...item,
+                        NISN: nisn,
+                        learningObjectiveId: learningObjectiveId,
+                        ID_Nilai: idNilai,
+                        mapel: item.mapel || item.Mapel || '',
+                        semester: String(item.semester || item.Semester || '1'),
+                        nilai: window.academicScore(item.nilai ?? item.Nilai),
+                        Kelas: item.Kelas || item.kelas || item.id_kelas || ''
+                    };
+                });
             }
         }),
 
@@ -206,10 +304,11 @@ const NODE_BINDINGS =
                 'jurnal',
 
             apply(data) {
-                window.state.jurnal =
-                    valuesOf(
-                        data
-                    );
+                window.state.jurnal = Object.entries(data || {}).filter(([, item]) => item && typeof item === 'object').map(([key, item]) => ({
+                    ...item, ID_Jurnal: key,
+                    Tanggal: window.normalizeDate(item.Tanggal || item.tanggal || ''),
+                    Kelas: item.Kelas || item.kelas || item.id_kelas || ''
+                }));
             }
         }),
 
@@ -390,37 +489,9 @@ function valuesOf(data) {
 function normalizeSchedule(
     data
 ) {
-    if (
-        Array.isArray(
-            data
-        )
-    ) {
-        return data.filter(
-            (item) =>
-                item !==
-                    undefined &&
-                item !==
-                    null
-        );
-    }
-
-    if (
-        data &&
-        typeof data ===
-            'object'
-    ) {
-        return Object.values(
-            data
-        ).filter(
-            (item) =>
-                item !==
-                    undefined &&
-            item !==
-                null
-        );
-    }
-
-    return [];
+    return Object.entries(data || {}).filter(([, item]) => item && typeof item === 'object').map(([key, item]) => ({
+        ...item, ID_Jadwal: key, Kelas: item.Kelas || item.kelas || item.id_kelas || ''
+    }));
 }
 
 function errorMessage(
@@ -432,6 +503,17 @@ function errorMessage(
         error ||
         'Kesalahan sinkronisasi tidak diketahui.'
     );
+}
+
+function hashPayload(val) {
+    if (val === null || val === undefined) return 0;
+    const str = typeof val === 'string' ? val : JSON.stringify(val);
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return hash;
 }
 
 function accessSignature() {
@@ -448,8 +530,11 @@ function accessSignature() {
 
     return [
         access.uid,
+        access.role,
         access.workspaceId,
-        access.activeAcademicYearId
+        access.classId,
+        access.activeAcademicYearId,
+        access.assignmentRevision || 1
     ]
         .map(
             String
@@ -503,7 +588,10 @@ function bindingSnapshot(
             null,
 
         revision:
-            0
+            0,
+
+        lastPayloadHash:
+            null
     };
 }
 
@@ -665,7 +753,7 @@ function publishSyncState(
 
     window.updateSyncUI?.(
         syncState.status ===
-            'ready'
+            'ready' && syncState.connected !== false
     );
 
     return syncState;
@@ -788,10 +876,11 @@ function scheduleRender({
                     );
                 }
             },
-            0
+            40
         );
 }
 
+let cacheRetryCount = 0;
 function scheduleHealthyCachePersistence() {
 
     if (
@@ -803,6 +892,7 @@ function scheduleHealthyCachePersistence() {
 
     cacheRevisionRequested =
         syncState.revision;
+    const requestedGeneration = activeGeneration;
 
     if (
         cacheTimer !==
@@ -838,10 +928,17 @@ function scheduleHealthyCachePersistence() {
                                     return;
                                 }
 
-                                await saveLocalBackup();
-
-                                cacheRevisionPersisted =
-                                    requestedRevision;
+                                const result = await saveLocalBackup();
+                                if (requestedGeneration !== activeGeneration) return;
+                                if (!result?.ok) {
+                                    cacheRetryCount += 1;
+                                    window.SIMNICacheHealth = { status: 'degraded', revision: requestedRevision, message: result?.error?.message || 'Cache lokal gagal disimpan.' };
+                                    if (cacheRetryCount === 1) window.toast?.('Data cloud tetap tersimpan; salinan offline belum dapat diperbarui.', 'warning');
+                                    return;
+                                }
+                                cacheRetryCount = 0;
+                                window.SIMNICacheHealth = { status: 'ready', revision: requestedRevision };
+                                cacheRevisionPersisted = requestedRevision;
                             }
                         )
                         .catch(
@@ -857,15 +954,16 @@ function scheduleHealthyCachePersistence() {
                                 if (
                                     cacheRevisionRequested >
                                         cacheRevisionPersisted &&
+                                    requestedGeneration === activeGeneration &&
                                     syncState.status ===
-                                        'ready'
+                                        'ready' && cacheRetryCount < 3
                                 ) {
                                     scheduleHealthyCachePersistence();
                                 }
                             }
                         );
             },
-            120
+            cacheRetryCount ? Math.min(30000, 1000 * 2 ** cacheRetryCount) : 800
         );
 }
 
@@ -907,7 +1005,7 @@ function announceInitialResult() {
     ) {
         window.toast?.(
             'Workspace database terhubung lengkap.',
-            'success'
+            'info'
         );
 
         return;
@@ -1245,10 +1343,54 @@ function handleBindingSuccess({
     const previousGlobalStatus =
         syncState.status;
 
+    const val = snapshot.val();
+    if ((collectionBinding(binding) && snapshot.pagedComplete !== true) ||
+        (!collectionBinding(binding) && new TextEncoder().encode(JSON.stringify(val)).byteLength > MAX_BINDING_BYTES)) {
+        handleBindingFailure({ binding, physicalPath, generation, signature,
+            error: new Error(`Data ${binding.logicalPath} belum lengkap atau satu nilai melebihi 16 MiB. Data parsial tidak digunakan.`) });
+        return;
+    }
+    const payloadHash = hashPayload(val);
+    const existingBinding = syncState.bindings?.[binding.logicalPath];
+    const isUnchanged = Boolean(
+        existingBinding &&
+        existingBinding.status === 'ready' &&
+        existingBinding.lastPayloadHash === payloadHash
+    );
+
+    if (isUnchanged) {
+        if (!syncState.initialComplete) {
+            publishSyncState();
+            finalizeInitialSync(generation, signature);
+        }
+        return;
+    }
+
     try {
         binding.apply(
-            snapshot.val()
+            val
         );
+
+        const recordCount = Object.keys(val || {}).length;
+        const activeClass = window.state?.activeKelas || window.SIMNICurrentAccess?.classId || '';
+        const scopeMeta = {
+            logicalPath: binding.logicalPath,
+            scope: 'all',
+            classId: activeClass,
+            isComplete: true,
+            isClassComplete: true,
+            recordCount,
+            lastUpdated: new Date().toISOString()
+        };
+        window.SIMNIDataScope = window.SIMNIDataScope || {};
+        window.SIMNIDataScope[binding.logicalPath] = scopeMeta;
+        if (binding.logicalPath === 'Presensi' && window.state) {
+            window.state.presensiScope = { ...scopeMeta };
+        } else if (binding.logicalPath === 'Nilai_TP' && window.state) {
+            window.state.nilaiScope = { ...scopeMeta };
+        } else if (binding.logicalPath === 'Jurnal' && window.state) {
+            window.state.jurnalScope = { ...scopeMeta };
+        }
 
         setBindingStatus(
             binding.logicalPath,
@@ -1259,6 +1401,10 @@ function handleBindingSuccess({
                     null
             }
         );
+
+        if (syncState.bindings?.[binding.logicalPath]) {
+            syncState.bindings[binding.logicalPath].lastPayloadHash = payloadHash;
+        }
     } catch (error) {
         console.error(
             '[SIMNI Sync] Apply listener gagal:',
@@ -1437,19 +1583,36 @@ export function initFirebaseListener() {
 
     cacheRevisionPersisted =
         0;
+    cacheRetryCount = 0;
+    syncState.connected = null;
+    activeUnsubscribers.push(onValue(ref(database, '.info/connected'), snapshot => {
+        if (!generationIsCurrent(generation, signature)) return;
+        syncState.connected = snapshot.val() === true;
+        publishSyncState();
+    }));
 
     window.isFirebaseListening =
         true;
 
-    window.isInitialLoad =
-        true;
+    const hasHydratedCache = Boolean(
+        (Array.isArray(window.state?.students) && window.state.students.length > 0) ||
+        (Array.isArray(window.state?.mapelTP) && window.state.mapelTP.length > 0) ||
+        Boolean(window.state?.pengaturan?.nama_aplikasi) ||
+        Boolean(window.SIMNILocalCacheState?.loaded)
+    );
+
+    if (hasHydratedCache) {
+        window.isInitialLoad = false;
+        initialLoadingVisible = false;
+    } else {
+        window.isInitialLoad = true;
+        showInitialLoader();
+    }
 
     publishSyncState({
         status:
             'loading'
     });
-
-    showInitialLoader();
 
     for (
         const binding
@@ -1491,8 +1654,10 @@ export function initFirebaseListener() {
             continue;
         }
 
-        const listener = onValue;
         const reference = ref(database, physicalPath);
+        const listener = collectionBinding(binding)
+            ? (target, success, failure) => subscribeLivePages({ onValue, query, orderByKey, limitToFirst, startAfter, endAt }, target, success, failure)
+            : onValue;
         const unsubscribe =
             listener(
                 reference,

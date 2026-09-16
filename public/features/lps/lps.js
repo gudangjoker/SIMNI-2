@@ -23,6 +23,8 @@
     const printEngine =
         window.SIMNILPSPrint;
 
+    const createReferenceTemplate = (settings, periodId) => window.SIMNILPSExcel.createTemplate(settings, periodId);
+
     if (
         !core ||
         !printEngine
@@ -1467,6 +1469,8 @@
             placeholder
         );
 
+
+
         for (
             const option
             of options
@@ -1784,6 +1788,7 @@
                         aspect.id
                     );
 
+                input.setAttribute('aria-label', aspect.title + ' — hasil pengamatan');
                 input.className =
                     'lps-response-overall-text';
 
@@ -1799,6 +1804,7 @@
                         ''
                     );
 
+                select.setAttribute('aria-label', aspect.title + ' — hasil pengamatan');
                 select.className =
                     'lps-response-overall';
 
@@ -1872,6 +1878,7 @@
                             item.id
                         );
 
+                    input.setAttribute('aria-label', aspect.title + ' — ' + item.label);
                     input.className =
                         'lps-response-item-text';
 
@@ -1892,6 +1899,7 @@
                             ''
                         );
 
+                    select.setAttribute('aria-label', aspect.title + ' — ' + item.label);
                     select.className =
                         'lps-response-item';
 
@@ -2169,6 +2177,9 @@
             byId(
                 'lps-parent-note'
             );
+
+        const secondaryNote = byId('lps-teacher-note-secondary');
+        if (secondaryNote) secondaryNote.value = report.teacherNoteSecondary || '';
 
         if (parentNote) {
             parentNote.value =
@@ -2715,8 +2726,7 @@
                             getActiveTemplate(
                                 period.id
                             ) ||
-                            core
-                                .createDefaultTemplate(
+                            createReferenceTemplate(
                                     settings,
                                     period.id
                                 ),
@@ -3118,6 +3128,8 @@
             )?.value
                 .trim() ||
             '';
+
+        report.teacherNoteSecondary = byId('lps-teacher-note-secondary')?.value.trim() || '';
 
         report.reportDate =
             byId(
@@ -4136,6 +4148,16 @@
             placeholder
         );
 
+        const builtins = createElement('optgroup', { label: 'Template bawaan siap pakai' });
+        builtins.label = 'Template bawaan siap pakai';
+        for (const type of ['LPS', 'BLP']) {
+            const option = createElement('option', { textContent: `Template ${type} — sesuai contoh${currentPeriod()?.type !== type ? ' (pilih jenis '+type+')' : ''}` });
+            option.value = 'builtin:' + type;
+            option.disabled = currentPeriod()?.type !== type;
+            builtins.appendChild(option);
+        }
+        select.appendChild(builtins);
+
         const templates =
             templateCollection()
                 .sort(
@@ -4193,8 +4215,7 @@
                         getActiveTemplate(
                             periodId
                         ) ||
-                        core
-                            .createDefaultTemplate(
+                        createReferenceTemplate(
                                 settings,
                                 periodId
                             ),
@@ -5074,36 +5095,23 @@
                                             Boolean
                                         );
 
-                                aspect.items =
-                                    labels.map(
-                                        (
-                                            label,
-                                            itemIndex
-                                        ) => {
-                                            const exact =
-                                                oldItems
-                                                    .find(
-                                                        (item) =>
-                                                            item.label ===
-                                                            label
-                                                    );
-
-                                            return {
-                                                id:
-                                                    exact
-                                                        ?.id ||
-                                                    oldItems[
-                                                        itemIndex
-                                                    ]?.id ||
-                                                    core
-                                                        .randomId(
-                                                            `${aspect.id}_item`
-                                                        ),
-
-                                                label
-                                            };
-                                        }
-                                    );
+                                // Reserve IDs of retained/reordered labels first. A new
+                                // item must not steal an ID already assigned elsewhere.
+                                const reserved = new Set();
+                                const matched = labels.map(label => {
+                                    const item = oldItems.find(item => item.label === label && !reserved.has(item.id));
+                                    if (item) reserved.add(item.id);
+                                    return item?.id || null;
+                                });
+                                aspect.items = labels.map((label, index) => {
+                                    let id = matched[index];
+                                    if (!id) {
+                                        const candidate = oldItems[index]?.id;
+                                        id = candidate && !reserved.has(candidate) ? candidate : core.randomId(`${aspect.id}_item`);
+                                        reserved.add(id);
+                                    }
+                                    return { id, label };
+                                });
                             }
                         );
                 }
@@ -5394,6 +5402,18 @@
             )?.value ||
             '';
 
+        if (sourceId.startsWith('builtin:')) {
+            if (sourceId !== 'builtin:' + currentPeriod()?.type) {
+                notify('Pilih jenis laporan yang sesuai sebelum menggunakan template.', 'warning');
+                return false;
+            }
+            runtime.builderDraft = createReferenceTemplate(currentSettings(), currentPeriodId());
+            runtime.builderSourceTemplateId = sourceId;
+            renderBuilder();
+            notify('Template bawaan siap diedit. Simpan Versi Template untuk menerapkannya.', 'success');
+            return true;
+        }
+
         const source =
             core.getTemplateById(
                 templateCollection(),
@@ -5440,7 +5460,7 @@
         }
 
         runtime.builderDraft =
-            core.createDefaultTemplate(
+            createReferenceTemplate(
                 currentSettings(),
                 currentPeriodId()
             );
@@ -5676,224 +5696,6 @@
         }
     }
 
-    function normalizeExcelText(value) {
-        return String(value || '')
-            .normalize('NFKC')
-            .toLocaleLowerCase('id-ID')
-            .replace(/[^a-z0-9]+/g, '');
-    }
-
-    function excelCellText(cell) {
-        const value = cell?.value;
-        if (value === null || value === undefined) return '';
-        if (typeof value === 'object') {
-            if (Array.isArray(value.richText)) return value.richText.map((part) => part.text || '').join('');
-            if (value.text !== undefined) return String(value.text);
-            if (value.result !== undefined) return String(value.result);
-        }
-        return String(value);
-    }
-
-    function findExcelCellByText(worksheet, text) {
-        const target = normalizeExcelText(text);
-        if (!target) return null;
-        let partialMatch = null;
-        worksheet.eachRow({ includeEmpty: false }, (row) => {
-            row.eachCell({ includeEmpty: false }, (cell) => {
-                if (partialMatch?.exact) return;
-                if (cell.isMerged && cell.master.address !== cell.address) return;
-                const candidate = normalizeExcelText(excelCellText(cell));
-                if (!candidate) return;
-                if (candidate === target) {
-                    partialMatch = { exact: true, cell };
-                    return;
-                }
-                if (!partialMatch && candidate.includes(target)) {
-                    partialMatch = { exact: false, cell };
-                }
-            });
-        });
-        return partialMatch?.cell || null;
-    }
-
-    function setExcelCellValue(cell, value) {
-        if (!cell) return;
-        const writableCell = cell.isMerged ? cell.master : cell;
-        writableCell.value = value;
-    }
-
-    function writeExcelIdentity(worksheet, report) {
-        const student = report.studentSnapshot || {};
-        const school = report.schoolSnapshot || {};
-        [
-            ['A1', school.nama_yayasan || ''],
-            ['A2', school.jenjang_sekolah || ''],
-            ['A3', school.nama_sekolah || ''],
-            ['A4', school.status_akreditasi || ''],
-            ['A5', school.nomor_izin || '']
-        ].forEach(([address, value]) => setExcelCellValue(worksheet.getCell(address), value));
-        const identityMappings = [
-            ['Nama Siswa', 3, student.name || ''],
-            ['No. Induk', 3, student.studentId || ''],
-            ['Kelas', 4, report.classLabel || ''],
-            ['Semester', 4, String(report.semester || '')]
-        ];
-        identityMappings.forEach(([label, offset, value]) => {
-            const labelCell = findExcelCellByText(worksheet, label);
-            if (!labelCell) return;
-            setExcelCellValue(worksheet.getCell(labelCell.row, labelCell.col + offset), value);
-        });
-        const yearCell = findExcelCellByText(worksheet, 'Tahun Pelajaran');
-        if (!yearCell) throw new Error('Template Excel tidak memiliki anchor Tahun Pelajaran.');
-        setExcelCellValue(yearCell, `Tahun Pelajaran ${report.academicYearLabel || ''}`);
-    }
-
-    function optionColumnForAspect(worksheet, aspectRow, itemRow, value) {
-        const selected = normalizeExcelText(value);
-        if (!selected) return null;
-        const lastHeaderRow = Math.max(aspectRow, itemRow - 1);
-        for (let columnIndex = 1; columnIndex <= worksheet.columnCount; columnIndex += 1) {
-            const fragments = [];
-            for (let rowIndex = aspectRow; rowIndex <= lastHeaderRow; rowIndex += 1) {
-                const cell = worksheet.getCell(rowIndex, columnIndex);
-                if (cell.isMerged && cell.master.address !== cell.address) continue;
-                const fragment = normalizeExcelText(excelCellText(cell));
-                if (fragment && !fragments.includes(fragment)) fragments.push(fragment);
-            }
-            const candidate = fragments.join('');
-            if (fragments.includes(selected) || candidate === selected) return columnIndex;
-        }
-        return null;
-    }
-
-    function clearExcelCheckmarks(worksheet, rowIndex) {
-        for (let columnIndex = 6; columnIndex <= 24; columnIndex += 1) {
-            const cell = worksheet.getCell(rowIndex, columnIndex);
-            const raw = excelCellText(cell).trim();
-            if (['✓', 'ü', '√'].includes(raw)) setExcelCellValue(cell, '');
-        }
-    }
-
-    function findExcelHeaderColumn(worksheet, rowIndex, label, lookback = 16) {
-        const target = normalizeExcelText(label);
-        for (let row = rowIndex; row >= Math.max(1, rowIndex - lookback); row -= 1) {
-            for (let column = 1; column <= worksheet.columnCount; column += 1) {
-                const cell = worksheet.getCell(row, column);
-                if (cell.isMerged && cell.master.address !== cell.address) continue;
-                const candidate = normalizeExcelText(excelCellText(cell));
-                if (
-                    candidate === target ||
-                    (target === 'deskripsi' && candidate.startsWith(target))
-                ) return cell.master.col;
-            }
-        }
-        return null;
-    }
-
-    function writeExcelDirectGrade(worksheet, rowIndex, value) {
-        const gradeColumn = findExcelHeaderColumn(worksheet, rowIndex, 'NILAI', 4);
-        if (gradeColumn === null) throw new Error(`Kolom nilai template tidak ditemukan pada baris ${rowIndex}.`);
-        setExcelCellValue(worksheet.getCell(rowIndex, gradeColumn), value || '');
-    }
-
-    function writeExcelResponseRow(worksheet, aspectRow, rowIndex, aspect, itemValue) {
-        clearExcelCheckmarks(worksheet, rowIndex);
-        const selected = itemValue || '';
-        if (!selected) return;
-        const optionColumn = optionColumnForAspect(worksheet, aspectRow, rowIndex, selected);
-        if (optionColumn === null) {
-            throw new Error(`Kolom pilihan "${selected}" untuk ${aspect.title} tidak ditemukan pada template.`);
-        }
-        setExcelCellValue(worksheet.getCell(rowIndex, optionColumn), '✓');
-    }
-
-    function writeExcelDescription(worksheet, rowIndex, value) {
-        const descriptionColumn = findExcelHeaderColumn(worksheet, rowIndex, 'DESKRIPSI', 32);
-        if (descriptionColumn === null) throw new Error(`Kolom deskripsi template tidak ditemukan pada baris ${rowIndex}.`);
-        setExcelCellValue(worksheet.getCell(rowIndex, descriptionColumn), value || '');
-    }
-
-    function writeExcelClosing(worksheet, report) {
-        const cityCell = findExcelCellByText(worksheet, 'Cicalengka');
-        if (cityCell) setExcelCellValue(cityCell, `${report.schoolSnapshot?.kota || ''}${report.schoolSnapshot?.kota ? ',' : ''}`);
-
-        const signatureAnchors = [];
-        worksheet.eachRow({ includeEmpty: false }, (row) => {
-            row.eachCell({ includeEmpty: false }, (cell) => {
-                if (cell.isMerged && cell.master.address !== cell.address) return;
-                if (normalizeExcelText(excelCellText(cell)) === 'classmaster') signatureAnchors.push(cell.master);
-            });
-        });
-        signatureAnchors.sort((left, right) => left.row - right.row || left.col - right.col);
-        const teacherName = report.schoolSnapshot?.nama_wali_kelas || '';
-        const teacherNumber = report.schoolSnapshot?.nuptk_wali_kelas || '';
-        signatureAnchors.forEach((anchor, index) => {
-            const isPrincipalSlot = report.reportType === 'LPS' && signatureAnchors.length > 1 && index === 0;
-            setExcelCellValue(anchor, isPrincipalSlot ? 'Kepala Sekolah' : 'Wali Kelas');
-            setExcelCellValue(worksheet.getCell(anchor.row + 5, anchor.col), isPrincipalSlot ? '' : teacherName);
-            setExcelCellValue(
-                worksheet.getCell(anchor.row + 6, anchor.col),
-                isPrincipalSlot ? 'NUPTK. -' : `NUPTK. ${teacherNumber || '-'}`
-            );
-        });
-
-        const dateRow = report.reportType === 'BLP' ? 72 : 96;
-        setExcelCellValue(worksheet.getCell(dateRow, 24), core.formatGregorianIndonesian(report.reportDate));
-        setExcelCellValue(worksheet.getCell(dateRow + 1, 24), report.hijriDate || '');
-    }
-
-    function writeExcelReport(worksheet, report) {
-        writeExcelIdentity(worksheet, report);
-        const template = core.normalizeTemplate(
-            report.templateSnapshot || {},
-            report.schoolSnapshot || currentSettings(),
-            report.periodId
-        );
-        (template.sections || []).forEach((section) => {
-            (section.aspects || []).forEach((aspect) => {
-                const response = report.responses?.[aspect.id] || {};
-                const optionSignature = (aspect.options || [])
-                    .map((option) => String(option).toLocaleUpperCase('id-ID'))
-                    .join('|');
-                const inputType = optionSignature === 'A|B|C|D'
-                    ? 'select'
-                    : ((aspect.options || []).length ? 'checklist' : 'text');
-                const aspectCell = findExcelCellByText(worksheet, aspect.title);
-                if (!aspectCell) {
-                    throw new Error(`Aspek "${aspect.title}" tidak ditemukan pada template Excel.`);
-                }
-                if (inputType === 'select' && !(aspect.items || []).length) {
-                    writeExcelDirectGrade(worksheet, aspectCell.row, response.overall || '');
-                }
-                if (inputType === 'text' && !(aspect.items || []).length) {
-                    writeExcelDescription(worksheet, aspectCell.row, response.description || response.overall || '');
-                } else {
-                    const description = String(
-                        response.description || ''
-                    ).trim();
-                    writeExcelDescription(worksheet, aspect.detailLabel ? aspectCell.row + 2 : aspectCell.row, description);
-                }
-                const detail = String(response.detail || '').trim();
-                if (aspect.detailLabel) setExcelCellValue(worksheet.getCell(aspectCell.row + 2, aspectCell.col), detail);
-                (aspect.items || []).forEach((item) => {
-                    const itemCell = findExcelCellByText(worksheet, item.label);
-                    if (!itemCell) throw new Error(`Butir "${item.label}" tidak ditemukan pada template Excel.`);
-                    const itemValue = response.items?.[item.id] || '';
-                    if (inputType === 'text') {
-                        writeExcelDescription(worksheet, itemCell.row, itemValue);
-                    } else {
-                        writeExcelResponseRow(worksheet, aspectCell.row, itemCell.row, aspect, itemValue);
-                    }
-                });
-            });
-        });
-        const noteCell = findExcelCellByText(worksheet, 'Catatan:');
-        if (noteCell) setExcelCellValue(worksheet.getCell(noteCell.row + 1, noteCell.col), report.teacherNote || '');
-        const parentNoteCell = findExcelCellByText(worksheet, 'Catatan Orang tua');
-        if (parentNoteCell) setExcelCellValue(worksheet.getCell(parentNoteCell.row + 1, parentNoteCell.col), report.parentNote || '');
-        writeExcelClosing(worksheet, report);
-    }
-
     function uniqueExcelSheetName(workbook, student, index) {
         const base = String(student['Nama Lengkap'] || `Siswa ${index + 1}`)
             .replace(/[\\/?*\[\]:]/g, '')
@@ -5909,145 +5711,46 @@
         return candidate;
     }
 
-    function cloneExcelValue(value) {
-        if (typeof structuredClone === 'function') return structuredClone(value);
-        return JSON.parse(JSON.stringify(value));
-    }
-
-    function excelLayoutFingerprint(worksheet) {
-        const model = worksheet.model;
-        const cellStyles = [];
-        worksheet.eachRow({ includeEmpty: true }, (row) => {
-            row.eachCell({ includeEmpty: true }, (cell) => {
-                if (cell.isMerged && cell.master.address !== cell.address) return;
-                if (cell.hasStyle) cellStyles.push([cell.address, cloneExcelValue(cell.style)]);
-            });
-        });
-        return JSON.stringify({
-            columns: (model.cols || []).map((column) => ({
-                min: column.min,
-                max: column.max,
-                width: column.width,
-                hidden: column.hidden || false,
-                outlineLevel: column.outlineLevel || 0,
-                style: column.style || null
-            })),
-            rows: (model.rows || []).map((row) => ({
-                number: row.number,
-                height: row.height,
-                hidden: row.hidden || false,
-                outlineLevel: row.outlineLevel || 0,
-                style: row.style || null
-            })),
-            merges: [...(model.merges || [])].sort(),
-            pageSetup: model.pageSetup || null,
-            pageMargins: model.pageMargins || null,
-            headerFooter: model.headerFooter || null,
-            views: model.views || null,
-            properties: model.properties || null,
-            images: worksheet.getImages().map((image) => ({
-                imageId: image.imageId,
-                tl: image.range?.tl ? {
-                    col: image.range.tl.col,
-                    row: image.range.tl.row,
-                    nativeCol: image.range.tl.nativeCol,
-                    nativeRow: image.range.tl.nativeRow,
-                    nativeColOff: image.range.tl.nativeColOff,
-                    nativeRowOff: image.range.tl.nativeRowOff
-                } : null,
-                br: image.range?.br ? {
-                    col: image.range.br.col,
-                    row: image.range.br.row,
-                    nativeCol: image.range.br.nativeCol,
-                    nativeRow: image.range.br.nativeRow,
-                    nativeColOff: image.range.br.nativeColOff,
-                    nativeRowOff: image.range.br.nativeRowOff
-                } : null,
-                ext: image.range?.ext ? cloneExcelValue(image.range.ext) : null,
-                editAs: image.range?.editAs || null
-            })),
-            cellStyles
-        });
-    }
-
-    function duplicateExcelWorksheet(workbook, templateModel, sheetName) {
-        const worksheet = workbook.addWorksheet(sheetName);
-        const model = cloneExcelValue(templateModel);
-        model.id = worksheet.id;
-        model.name = sheetName;
-        model.mergeCells = [...(model.merges || [])];
-        worksheet.model = model;
-        return worksheet;
-    }
-
     async function exportExcelLPS() {
         if (runtime.busy.print) return false;
         runtime.busy.print = true;
         renderBusyState();
         showProgress('Menyiapkan workbook LPS/BLP...');
         try {
-            if (!window.ExcelJS?.Workbook) throw new Error('Pustaka ExcelJS belum tersedia.');
             const period = currentPeriod();
             if (!period) throw new Error('Jenis laporan belum dipilih.');
             const group = byId('lps-filter-kelompok')?.value || 'Semua';
             const currentClass = String(window.state?.activeKelas || '').trim();
             const students = [...(window.state?.students || [])]
-                .filter((student) => !currentClass || String(student.Kelas || '') === currentClass)
-                .filter((student) => group === 'Semua' || student.Kelompok === group)
-                .sort((left, right) => String(left['Nama Lengkap'] || '').localeCompare(String(right['Nama Lengkap'] || ''), 'id'));
+                .filter(student => !currentClass || String(student.Kelas || '') === currentClass)
+                .filter(student => group === 'Semua' || student.Kelompok === group)
+                .sort((a,b) => String(a['Nama Lengkap'] || '').localeCompare(String(b['Nama Lengkap'] || ''),'id'));
             if (!students.length) throw new Error('Tidak ada siswa pada filter aktif.');
-            const template = core.normalizeTemplate(
-                getActiveTemplate(period.id) || core.createDefaultTemplate(currentSettings(), period.id),
-                currentSettings(),
-                period.id
-            );
-            const templateFilename = period.type === 'BLP' ? 'BLP contoh.xlsx' : 'LPS KLS 2 contoh.xlsx';
-            const response = await fetch(`templates/${encodeURIComponent(templateFilename)}`);
-            if (!response.ok) throw new Error('Template Excel LPS/BLP tidak dapat dimuat.');
-            const workbook = new window.ExcelJS.Workbook();
-            await workbook.xlsx.load(await response.arrayBuffer());
-            const master = workbook.worksheets[0];
-            if (!master) throw new Error('Sheet acuan LPS/BLP tidak tersedia.');
-            const templateModel = cloneExcelValue(master.model);
-            const templateFingerprint = excelLayoutFingerprint(master);
-            workbook.worksheets.slice().forEach((worksheet) => workbook.removeWorksheet(worksheet.id));
-            const currentReport = reportForOutput();
-            students.forEach((student, index) => {
-                const reportId = core.reportId(currentSettings(), period.id, student.NISN);
-                let report = getSavedReport(reportId);
-                if (currentReport?.reportId === reportId) report = currentReport;
-                if (!report) report = makeDraftReport(student, template);
-                const sheetName = uniqueExcelSheetName(workbook, student, index);
-                const worksheet = duplicateExcelWorksheet(workbook, templateModel, sheetName);
-                if (excelLayoutFingerprint(worksheet) !== templateFingerprint) {
-                    throw new Error(`Duplikasi layout template tidak presisi pada sheet ${sheetName}.`);
-                }
-                writeExcelReport(worksheet, report);
-                if (excelLayoutFingerprint(worksheet) !== templateFingerprint) {
-                    throw new Error(`Layout template berubah saat mengisi sheet ${sheetName}.`);
-                }
+            const template = core.normalizeTemplate(getActiveTemplate(period.id) || createReferenceTemplate(currentSettings(),period.id),currentSettings(),period.id);
+            const current = reportForOutput(), names=[], used=new Set(), reports=[];
+            students.forEach((student,index) => {
+                const id=core.reportId(currentSettings(),period.id,student.NISN);
+                let report=current?.reportId===id ? current : getSavedReport(id);
+                if(!report) report=makeDraftReport(student,template);
+                reports.push(report);
+                const name=uniqueExcelSheetName({getWorksheet:name=>used.has(name)},student,index);
+                names.push(name);used.add(name);
             });
-            if (workbook.worksheets.length !== students.length) throw new Error('Jumlah sheet hasil tidak sama dengan jumlah siswa.');
-            const data = await workbook.xlsx.writeBuffer({ useStyles: true, useSharedStrings: true });
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${period.type}_${safeFilename(currentSettings().nama_kelas || 'SIMNI')}_${safeFilename(currentSettings().tahun_pelajaran || '')}.xlsx`;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-            notify(`Berhasil disimpan: workbook ${period.type} berisi ${students.length} sheet siswa.`, 'success');
+            const result=await window.SIMNILPSExcel.createWorkbook(reports,names);
+            const url=URL.createObjectURL(result.blob),link=document.createElement('a');
+            link.href=url;
+            link.download=period.type+'_'+safeFilename(currentSettings().nama_kelas || 'SIMNI')+'_'+safeFilename(currentSettings().tahun_pelajaran || '')+'.xlsx';
+            document.body.appendChild(link);link.click();link.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),1000);
+            runtime.lastOperation={type:'export-excel',status:'success',sheets:result.modes.map(({sheet,mode})=>({sheet,mode})),completedAt:nowISO()};
+            notify('Berhasil disimpan: workbook '+period.type+' berisi '+students.length+' sheet siswa.','success');
             return true;
-        } catch (error) {
-            console.error('[SIMNI LPS] Ekspor Excel gagal:', error);
-            notify(`Ekspor Excel gagal: ${error?.message || error}`, 'error');
+        } catch(error) {
+            console.error('[SIMNI LPS] Ekspor Excel gagal:',error);
+            notify('Ekspor Excel gagal: '+(error?.message || error),'error');
             return false;
         } finally {
-            runtime.busy.print = false;
-            renderBusyState();
-            hideProgress();
+            runtime.busy.print=false;renderBusyState();hideProgress();
         }
     }
 
@@ -6182,6 +5885,7 @@
             modal.classList.add(
                 'is-open'
             );
+            window.SIMNIDialog?.open(modal, closeLPSPreview);
 
             modal.setAttribute(
                 'aria-hidden',
@@ -6239,6 +5943,7 @@
             return false;
         }
 
+        window.SIMNIDialog?.close(modal);
         modal.classList.remove(
             'is-open'
         );
@@ -6696,7 +6401,7 @@
                                 '[data-lps-action]'
                             );
 
-                    if (!button) {
+                    if (!button || button.hasAttribute('data-simni-action') || (button.type === 'submit' && button.form?.hasAttribute('data-simni-action'))) {
                         return;
                     }
 
@@ -6720,7 +6425,7 @@
                             ?.dataset
                             ?.lpsChange;
 
-                    if (!action) {
+                    if (!action || target.hasAttribute('data-simni-action')) {
                         return;
                     }
 
@@ -6755,6 +6460,7 @@
             .addEventListener(
                 'submit',
                 (event) => {
+                    if (event.target?.hasAttribute('data-simni-action')) return;
                     if (
                         event.target
                             ?.id ===

@@ -17,27 +17,36 @@ function setPresensiTab(tab) {
 let attendanceEditDate = '';
 
 function activeAttendanceStudents() {
-    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
     return [...state.students]
-        .filter((student) => currentKelas === '' || student.Kelas === currentKelas)
-        .sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+        .filter((student) => {
+            return Boolean(currentKelas && academicRecordClass(student) === currentKelas && student.status !== 'inactive');
+        })
+        .sort((a, b) => (a['Nama Lengkap'] || a?.nama || '').localeCompare(b['Nama Lengkap'] || b?.nama || ''));
 }
 
 function attendanceCompleteForDate(date, students = activeAttendanceStudents()) {
     return Boolean(date && students.length && students.every((student) => state.presensi.some(
-        (item) => normalizeDate(item.Tanggal) === date && item.NISN === student.NISN
+        (item) => normalizeDate(item.Tanggal) === date && academicNisn(item.NISN) === academicNisn(student.NISN) && academicRecordClass(item) === academicRecordClass(student) && ['Hadir', 'Sakit', 'Izin', 'Alpa'].includes(item.Status)
     )));
 }
 
 function renderPresensiManual() {
-    const date = document.getElementById('presensi-date')?.value;
+    let date = document.getElementById('presensi-date')?.value;
+    if (!date) {
+        date = typeof getJakartaDateString === 'function' ? getJakartaDateString() : new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('presensi-date');
+        if (dateInput) dateInput.value = date;
+    }
     const body = document.getElementById('presensi-table-body');
-    if (!date || !body) return;
-    if (attendanceEditDate && attendanceEditDate !== date) attendanceEditDate = '';
+    if (!body) return;
+    if (!SIMNIFormDrafts.prepare(body, date)) return;
+    const editKey = SIMNIFormDrafts.key('attendance-edit', date);
+    if (attendanceEditDate && attendanceEditDate !== editKey) attendanceEditDate = '';
 
     const students = activeAttendanceStudents();
     const completed = attendanceCompleteForDate(date, students);
-    const editing = completed && attendanceEditDate === date;
+    const editing = completed && (attendanceEditDate === editKey || SIMNIFormDrafts.dirty(body));
     const table = document.getElementById('presensi-entry-table');
     const completedState = document.getElementById('presensi-completed-state');
     const action = document.getElementById('presensi-primary-action');
@@ -53,112 +62,291 @@ function renderPresensiManual() {
 
     body.innerHTML = students
         .map((student, index) => {
-            const existing = state.presensi.find((item) => normalizeDate(item.Tanggal) === date && item.NISN === student.NISN);
+            const existing = state.presensi.find((item) => normalizeDate(item.Tanggal) === date && academicNisn(item.NISN) === academicNisn(student.NISN) && academicRecordClass(item) === academicRecordClass(student));
             const status = existing?.Status || 'Hadir';
-            const nisn = escapeHTML(student.NISN);
+            const nisn = escapeHTML(academicNisn(student.NISN));
             return `<tr>
                 <td class="p-4"><p class="font-bold text-sm">${index + 1}. ${escapeHTML(student['Nama Lengkap'])}</p><p class="text-[10px] text-slate-500">${nisn}</p><input type="hidden" class="p-nisn" value="${nisn}"><input type="hidden" class="p-nm" value="${escapeHTML(student['Nama Lengkap'])}"></td>
-                ${['Hadir', 'Sakit', 'Izin', 'Alpa'].map((value) => `<td class="p-4 text-center"><input type="radio" name="s_${nisn}" value="${value}" ${status === value ? 'checked' : ''} class="w-4 h-4 cursor-pointer"></td>`).join('')}
-                <td class="p-4"><input type="text" class="p-ket w-full border border-slate-200 dark:border-[#222222] rounded text-xs p-2 bg-slate-50 dark:bg-[#000000]" value="${escapeHTML(existing?.Keterangan || '')}" placeholder="..."></td>
+                ${['Hadir', 'Sakit', 'Izin', 'Alpa'].map((value) => `<td class="p-4 text-center"><input data-baseline="${status === value}" data-record-id="${date}_${nisn}" data-draft-key="${nisn}:${value}" type="radio" aria-label="${value} — ${escapeHTML(student['Nama Lengkap'])}" name="s_${nisn}" value="${value}" ${status === value ? 'checked' : ''} class="w-4 h-4 cursor-pointer"></td>`).join('')}
+                <td class="p-4"><input data-baseline="${escapeHTML(existing?.Keterangan || '')}" data-record-id="${date}_${nisn}" data-draft-key="${nisn}:ket" type="text" aria-label="Keterangan presensi ${escapeHTML(student['Nama Lengkap'])}" class="p-ket w-full border border-slate-200 dark:border-[#222222] rounded text-xs p-2 bg-slate-50 dark:bg-[#000000]" value="${escapeHTML(existing?.Keterangan || '')}" placeholder="..."></td>
             </tr>`;
         }).join('');
+    SIMNIFormDrafts.restore(body);
 }
 
 function editPresensiManual() {
     const date = document.getElementById('presensi-date')?.value || '';
     if (!attendanceCompleteForDate(date)) return;
-    attendanceEditDate = date;
+    attendanceEditDate = SIMNIFormDrafts.key('attendance-edit', date);
     renderPresensiManual();
 }
 
 async function savePresensiManual() {
-    const date = document.getElementById('presensi-date')?.value;
-    if (!date) return toast('Pilih tanggal!', 'warning');
+    let date = document.getElementById('presensi-date')?.value;
+    if (!date) {
+        date = typeof getJakartaDateString === 'function' ? getJakartaDateString() : new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('presensi-date');
+        if (dateInput) dateInput.value = date;
+    }
+    if (!document.querySelectorAll('#presensi-table-body tr').length) {
+        renderPresensiManual();
+    }
     const updates = {};
     const committed = [];
+    const invalid = activeAttendanceStudents().filter(student => !/^\d{10}$/.test(academicNisn(student.NISN)));
+    if (invalid.length) return toast(`NISN harus tepat 10 digit: ${invalid.map(student => student['Nama Lengkap']).join(', ')}. Periksa data siswa.`, 'error');
+    const currentKelas = normalizeClassLabel(state.activeKelas);
+    const roster = activeAttendanceStudents();
+    const displayedNisns = [...document.querySelectorAll('#presensi-table-body .p-nisn')].map(input => academicNisn(input.value));
+    if (displayedNisns.length !== roster.length || roster.some(student => !displayedNisns.includes(academicNisn(student.NISN)))) return toast('Daftar siswa berubah saat form diisi. Draft dipertahankan; periksa daftar siswa sebelum menyimpan.', 'error');
+    if (new Set(roster.map(student => academicNisn(student.NISN))).size !== roster.length) return toast('NISN ganda pada daftar siswa. Presensi ditahan.', 'error');
+    if (state.presensi.some(item => normalizeDate(item.Tanggal) === date && roster.some(student => academicNisn(student.NISN) === academicNisn(item.NISN)) && academicRecordClass(item) !== currentKelas)) return toast('Riwayat siswa pada tanggal ini tercatat di kelas lain. Presensi ditahan agar riwayat tidak tertimpa.', 'error');
     document.querySelectorAll('#presensi-table-body tr').forEach((row) => {
-        const nisn = row.querySelector('.p-nisn')?.value;
-        if (!/^\d{10}$/.test(nisn || '')) return;
+        const nisnRaw = row.querySelector('.p-nisn')?.value;
+        const nisn = String(nisnRaw || '').trim();
+        if (!nisn) return;
+        const validNisn = academicNisn(nisn);
         const status = row.querySelector('input[type="radio"]:checked')?.value || 'Hadir';
         const payload = {
             Tanggal: date,
-            NISN: nisn,
+            NISN: validNisn,
             Nama: row.querySelector('.p-nm')?.value || '',
             Status: status,
             Keterangan: row.querySelector('.p-ket')?.value.trim() || '',
-            Kelas: typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : ''
+            Kelas: currentKelas
         };
-        updates[`Presensi/${date}_${nisn}`] = payload;
+        updates[`Presensi/${date}_${validNisn}`] = payload;
         committed.push(payload);
     });
     if (!Object.keys(updates).length) return toast('Tidak ada data presensi untuk disimpan.', 'info');
+    const body = document.getElementById('presensi-table-body');
+    const token = SIMNIFormDrafts.begin(body);
     const result = await dbUpdate(updates);
-    if (!result?.ok) return;
+    SIMNIFormDrafts.finish(token, result?.ok === true);
+    if (!result?.ok) {
+        toast(result?.error?.message || 'Gagal menyimpan presensi.', 'error');
+        return;
+    }
+    if (!SIMNIFormDrafts.sameSession(token)) return;
     const committedNisn = new Set(committed.map((item) => item.NISN));
     state.presensi = state.presensi
         .filter((item) => normalizeDate(item.Tanggal) !== date || !committedNisn.has(item.NISN))
         .concat(committed);
-    attendanceEditDate = '';
-    renderPresensiManual();
-    renderRekapPresensi();
-    renderDashboard();
-    toast('Berhasil disimpan.', 'success');
+    notifyCommittedSave(() => {
+        if (SIMNIFormDrafts.isCurrent(body, token)) { attendanceEditDate = ''; renderPresensiManual(); }
+        renderRekapPresensi();
+        renderDashboard();
+    });
 }
 
-function openQRScanner() {
+let scannerTeardownPromise = null;
+let scannerUIObserver = null;
+
+function disconnectScannerUI() {
+    scannerUIObserver?.disconnect();
+    scannerUIObserver = null;
+}
+
+// Translate rendered controls without replacing library-owned elements/listeners.
+function localizeScannerUI() {
+    disconnectScannerUI();
+    const reader = document.getElementById('reader');
+    if (!reader) return;
+    const labels = new Map([
+        ['Request Camera Permissions', 'Aktifkan Kamera'],
+        ['Requesting camera permissions...', 'Menunggu izin kamera…'],
+        ['Start Scanning', 'Mulai Pindai'],
+        ['Stop Scanning', 'Hentikan Kamera'],
+        ['Launching Camera...', 'Membuka kamera…'],
+        ['Scan an Image File', 'Pilih Foto QR'],
+        ['Scan using camera directly', 'Gunakan Kamera'],
+        ['Choose Image', 'Pilih Foto QR'],
+        ['Choose Another', 'Pilih Foto Lain'],
+        ['No image choosen', 'Belum ada foto dipilih'],
+        ['No image chosen', 'Belum ada foto dipilih'],
+        ['No camera found', 'Kamera tidak ditemukan'],
+        ['Switch On Torch', 'Nyalakan Senter'],
+        ['Switch Off Torch', 'Matikan Senter'],
+        ['Requesting camera permissions', 'Menunggu izin kamera']
+    ]);
+    const refresh = () => {
+        const walker = document.createTreeWalker(reader, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+            const original = node.nodeValue.trim();
+            const translated = labels.get(original) || (original.startsWith('Select Camera') ? original.replace('Select Camera', 'Pilih Kamera') : null);
+            if (translated && translated !== original) node.nodeValue = node.nodeValue.replace(original, translated);
+        }
+        const select = reader.querySelector('select');
+        if (select) select.setAttribute('aria-label', 'Pilih kamera');
+        const toggle = reader.querySelector('#html5-qrcode-anchor-scan-type-change');
+        if (toggle) {
+            toggle.setAttribute('role', 'button');
+            toggle.tabIndex = 0;
+            toggle.onkeydown = event => {
+                if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle.click(); }
+            };
+        }
+    };
+    refresh();
+    scannerUIObserver = new MutationObserver(refresh);
+    scannerUIObserver.observe(reader, { childList: true, subtree: true, characterData: true });
+}
+
+function stopQRScannerMediaTracks() {
+    const reader = document.getElementById('reader');
+    if (!reader) return;
+
+    reader.querySelectorAll('video').forEach((video) => {
+        const stream = video.srcObject;
+        if (stream && typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach((track) => {
+                try { track.stop(); } catch (_) {}
+            });
+        }
+        try {
+            video.pause?.();
+            video.srcObject = null;
+        } catch (_) {}
+    });
+}
+
+async function teardownQRScanner({ closeUi = true, rerender = true } = {}) {
+    disconnectScannerUI();
+    if (closeUi) closeModal('modal-scanner');
+
+    // Stop browser media tracks immediately. Html5QrcodeScanner.clear() is
+    // asynchronous and can reject/hang during page backgrounding or teardown.
+    stopQRScannerMediaTracks();
+
+    if (scannerTeardownPromise) {
+        try { await scannerTeardownPromise; } catch (_) {}
+        if (rerender) renderPresensiManual();
+        return;
+    }
+
+    const scanner = state.scannerInstance;
+    state.scannerInstance = null;
+
+    scannerTeardownPromise = (async () => {
+        if (scanner?.clear) {
+            try {
+                await scanner.clear();
+            } catch (error) {
+                console.warn('Scanner gagal ditutup bersih:', error);
+            }
+        }
+
+        // clear() normally stops the stream, but enforce it once more as a
+        // defensive fallback for mobile Chromium/WebView lifecycle races.
+        stopQRScannerMediaTracks();
+    })();
+
+    try {
+        await scannerTeardownPromise;
+    } finally {
+        scannerTeardownPromise = null;
+    }
+
+    if (rerender) renderPresensiManual();
+}
+
+async function openQRScanner() {
+    await window.ensureSIMNIVendors?.("scanner");
     if (typeof Html5QrcodeScanner !== 'function') return toast('Pustaka pemindai QR belum tersedia. Muat ulang saat online.', 'error');
+
+    // A stale scanner from a previous modal/session must never retain camera
+    // ownership when a new scanner is opened.
+    if (state.scannerInstance || scannerTeardownPromise) {
+        await teardownQRScanner({ closeUi: false, rerender: false });
+    }
+
     openModal('modal-scanner');
+    const status = document.getElementById('scan-result-text');
+    if (status) status.textContent = 'Siap memindai QR siswa.';
     const dateLabel = document.getElementById('scan-date-label');
     const dateInput = document.getElementById('presensi-date');
     if (dateLabel && dateInput) dateLabel.innerText = dateInput.value;
+
     try {
-        if (state.scannerInstance?.clear) state.scannerInstance.clear().catch?.(() => {});
-        state.scannerInstance = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 250 }, false);
-        state.scannerInstance.render(onScanSuccess, () => {});
+        const scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: (width, height) => { const side = Math.min(250, Math.floor(Math.min(width, height) * 0.75)); return { width: side, height: side }; } }, false);
+        state.scannerInstance = scanner;
+        scanner.render(onScanSuccess, () => {});
+        localizeScannerUI();
     } catch (error) {
         state.scannerInstance = null;
+        stopQRScannerMediaTracks();
+        closeModal('modal-scanner');
+        disconnectScannerUI();
         toast(`Gagal memuat kamera: ${error.message || error}`, 'error');
     }
 }
 
 async function closeQRScanner() {
+    await teardownQRScanner({ closeUi: true, rerender: true });
+}
+
+function teardownQRScannerForPageLifecycle() {
+    disconnectScannerUI();
     closeModal('modal-scanner');
+    stopQRScannerMediaTracks();
+
     const scanner = state.scannerInstance;
     state.scannerInstance = null;
+
+    // pagehide/visibilitychange cannot rely on awaited cleanup. Start clear()
+    // best-effort after synchronously stopping every MediaStreamTrack.
     if (scanner?.clear) {
-        try { await scanner.clear(); } catch (error) { console.warn('Scanner gagal ditutup bersih:', error); }
+        try {
+            const result = scanner.clear();
+            result?.catch?.((error) => console.warn('Scanner lifecycle cleanup gagal:', error));
+        } catch (error) {
+            console.warn('Scanner lifecycle cleanup gagal:', error);
+        }
     }
-    renderPresensiManual();
+}
+
+if (typeof window !== 'undefined' && !window.__SIMNIAttendanceScannerLifecycleInstalled) {
+    window.__SIMNIAttendanceScannerLifecycleInstalled = true;
+    window.addEventListener('pagehide', teardownQRScannerForPageLifecycle);
+    window.addEventListener('beforeunload', teardownQRScannerForPageLifecycle);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && state.scannerInstance) {
+            teardownQRScannerForPageLifecycle();
+        }
+    });
 }
 
 let lastScan = null;
 let lastScanTime = 0;
 async function onScanSuccess(decodedText) {
-    const nisn = String(decodedText || '').trim();
+    const nisn = academicNisn(decodedText);
     if (nisn === lastScan && Date.now() - lastScanTime < 3000) return;
     lastScan = nisn;
     lastScanTime = Date.now();
 
-    const student = state.students.find((item) => item.NISN === nisn);
+    const student = activeAttendanceStudents().find((item) => academicNisn(item.NISN) === nisn);
     const date = document.getElementById('presensi-date')?.value;
     const resultText = document.getElementById('scan-result-text');
     if (!student || !/^\d{10}$/.test(nisn)) {
         if (resultText) resultText.textContent = 'NISN TIDAK DIKENAL';
         return;
     }
-    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
-    if (student.Kelas !== currentKelas) {
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
+    if (currentKelas && academicRecordClass(student) !== currentKelas) {
         if (resultText) resultText.textContent = `NISN BUKAN KELAS ${currentKelas}`;
         return;
     }
     if (!date) return toast('Tanggal presensi belum dipilih.', 'warning');
 
     if (state.presensi.some((item) => normalizeDate(item.Tanggal) === date && item.NISN === nisn)) {
-        if (resultText) resultText.textContent = 'SUDAH ABSEN HARI INI';
+        if (resultText) resultText.textContent = `${student['Nama Lengkap']} sudah tercatat pada ${date}.`;
         playBeep();
         return;
     }
 
+    if (resultText) resultText.textContent = `Menyimpan presensi ${student['Nama Lengkap']}…`;
+    try {
     const result = await dbSet(`Presensi/${date}_${nisn}`, {
         Tanggal: date,
         NISN: nisn,
@@ -168,8 +356,14 @@ async function onScanSuccess(decodedText) {
         Kelas: currentKelas
     });
     if (result?.ok) {
-        if (resultText) resultText.textContent = `${student['Nama Lengkap']} HADIR`;
+        if (resultText) resultText.textContent = `${student['Nama Lengkap']} — presensi hadir tersimpan.`;
         playBeep();
+    } else {
+        if (resultText) resultText.textContent = 'Presensi belum tersimpan. Coba pindai kembali.';
+    }
+    } catch (error) {
+        if (resultText) resultText.textContent = 'Gagal menyimpan presensi. Periksa koneksi lalu coba kembali.';
+        toast(error.message || 'Gagal menyimpan presensi.', 'error');
     }
 }
 
@@ -178,9 +372,9 @@ function filteredAttendance() {
     const nisn = document.getElementById('filter-presensi-siswa')?.value || '';
     const specificDate = document.getElementById('filter-presensi-tanggal')?.value || getJakartaDateString();
     const currentMonth = getJakartaMonthString();
-    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
     let items = state.presensi.filter((item) => {
-        if (currentKelas && item.Kelas && item.Kelas !== currentKelas) return false;
+        if (!currentKelas || academicRecordClass(item) !== currentKelas) return false;
         const date = normalizeDate(item.Tanggal);
         if (period === 'hari') return date === specificDate;
         if (period === 'bulan') return date.startsWith(currentMonth);
@@ -203,7 +397,7 @@ function renderRekapPresensi() {
         if (status in counts) counts[status] += 1;
         return `<tr><td class="p-4 text-xs font-bold">${escapeHTML(normalizeDate(item.Tanggal))}</td><td class="p-4 font-bold">${escapeHTML(item.Nama)}</td><td class="p-4 text-[10px] font-bold text-center">${escapeHTML(status)}</td><td class="p-4 text-xs italic opacity-80">${escapeHTML(item.Keterangan || '-')}</td></tr>`;
     });
-    body.innerHTML = rows.join('') || '<tr><td colspan="4" class="p-6 text-center text-slate-400">Tidak ada data untuk filter ini.</td></tr>';
+    body.innerHTML = rows.join('') || '<tr><td colspan="4" class="p-6 text-center text-slate-400 font-medium"><i class="fas fa-info-circle mr-1"></i> Tidak ada data untuk filter ini.<br><span class="text-xs text-slate-500 mt-1 block">Buka tab <b>Pencatatan</b> untuk mengisi kehadiran siswa.</span></td></tr>';
 
     const mapping = { 'rekap-hadir': 'HADIR', 'rekap-sakit': 'SAKIT', 'rekap-izin': 'IZIN', 'rekap-alpa': 'ALPA' };
     Object.entries(mapping).forEach(([id, key]) => {
@@ -213,6 +407,7 @@ function renderRekapPresensi() {
 }
 
 async function cetakRekapPresensiPDF() {
+    await window.ensureSIMNIVendors?.("pdf");
     const { items, period, specificDate, currentMonth } = filteredAttendance();
     if (!items.length) return toast('Tidak ada data yang bisa dicetak pada filter ini.', 'error');
     if (typeof html2pdf !== 'function') return toast('Pustaka PDF belum tersedia. Muat ulang saat online.', 'error');
@@ -237,4 +432,15 @@ async function cetakRekapPresensiPDF() {
     } finally {
         hideLoad();
     }
+}
+
+if (typeof window !== 'undefined') {
+    window.setPresensiTab = setPresensiTab;
+    window.renderPresensiManual = renderPresensiManual;
+    window.savePresensiManual = savePresensiManual;
+    window.editPresensiManual = editPresensiManual;
+    window.openQRScanner = openQRScanner;
+    window.closeQRScanner = closeQRScanner;
+    window.renderRekapPresensi = renderRekapPresensi;
+    window.cetakRekapPresensiPDF = cetakRekapPresensiPDF;
 }

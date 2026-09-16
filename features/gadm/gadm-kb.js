@@ -1299,6 +1299,27 @@ export const GADM_KB = {
         "tidak boleh dihasilkan final tanpa evidence",
         "tidak boleh menggunakan klaim psikologis atau perbandingan sosial tanpa data sah"
       ]
+    },
+
+    lkpdRubrik: {
+      id: "lkpd_rubrik",
+      requiredInputs: [
+        "kelasAtauFase",
+        "mataPelajaran",
+        "materiAtauUnit"
+      ],
+      recommendedInputs: [
+        "tujuanPembelajaran",
+        "lkpdAktivitas",
+        "lkpdAlatBahan",
+        "lkpdPetunjuk",
+        "rubrikModel",
+        "rubrikKriteria"
+      ],
+      hardRules: [
+        "aktivitas LKPD harus kontekstual dan sesuai dengan fase peserta didik",
+        "rubrik penilaian harus memiliki kriteria yang terukur dan objektif"
+      ]
     }
   },
 

@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -41,11 +42,10 @@ console.log('\nSIMNI PRODUCTION STATIC CONTRACT\n');
 
 const required = [
     'index.html', 'manifest.json', 'sw.js', 'firebase.json', 'package.json', 'package-lock.json',
-    'firebase/database.rules.production.json', 'chat/firestore.rules', 'chat/firestore.indexes.json',
-    'chat/edge/worker.js', 'chat/edge/wrangler.jsonc', 'chat/js/chat-query-core.mjs', 'qa/chat-audio-regression.mjs', 'scripts/build-hosting.mjs',
-    'js/services/chat-notifications.js',
-    'js/platform/bootstrap.js', 'js/platform/main.js', 'js/services/edge-service.js',
-    'js/auth/access-context.js', 'js/auth/access-policy-core.js', 'js/auth/chat-unlock.js', 'js/auth/auth.js',
+    'firebase/database.rules.production.json', 'scripts/build-hosting.mjs',
+    'js/platform/bootstrap.js', 'js/platform/main.js', 'js/platform/permission-service.js',
+    'js/platform/native-back-button.js', 'js/platform/download-service.js', 'js/services/edge-service.js',
+    'js/auth/access-context.js', 'js/auth/access-policy-core.js', 'js/auth/auth.js',
     'js/database/firebase-client.js', 'js/database/local-cache.js', 'js/database/repository.js',
     'js/database/cloudinary-client.js', 'js/database/workspace-paths-core.js',
     'features/backup/backup-core.js', 'features/backup/backup.js', 'features/archive/archive.js',
@@ -60,13 +60,13 @@ assert(!existsSync(absolute('functions')), 'SRC-002', 'Firebase Functions/Blaze 
 assert(!existsSync(absolute('js/services/backend-service.js')), 'SRC-003', 'Backend Cloud Functions lama telah dieliminasi');
 assert(!existsSync(absolute('js/auth/invitations.js')), 'SRC-004', 'Modul invitation deprecated telah dieliminasi');
 
-for (const relativePath of ['manifest.json', 'firebase.json', 'package.json', 'package-lock.json', 'firebase/database.rules.production.json', 'chat/firestore.indexes.json', 'chat/edge/wrangler.jsonc']) {
+for (const relativePath of ['manifest.json', 'firebase.json', 'package.json', 'package-lock.json', 'firebase/database.rules.production.json', ]) {
     let valid = true;
     try { json(relativePath); } catch (_) { valid = false; }
     assert(valid, 'JSON-001', `${relativePath} valid JSON`);
 }
 
-const javascript = [...files('js', new Set(['.js', '.mjs'])), ...files('features', new Set(['.js', '.mjs'])), ...files('chat', new Set(['.js', '.mjs'])), ...files('qa', new Set(['.js', '.mjs'])), ...files('scripts', new Set(['.js', '.mjs'])), 'sw.js'];
+const javascript = [...files('js', new Set(['.js', '.mjs'])), ...files('features', new Set(['.js', '.mjs'])), ...files('qa', new Set(['.js', '.mjs'])), ...files('scripts', new Set(['.js', '.mjs'])), 'sw.js'];
 for (const relativePath of javascript) {
     const result = spawnSync(process.execPath, ['--check', absolute(relativePath)], { encoding: 'utf8' });
     assert(result.status === 0, 'JS-001', `${relativePath} lolos syntax check`);
@@ -84,7 +84,7 @@ for (const [name, expected] of Object.entries({ exceljs: '4.4.0', firebase: '12.
 }
 
 const index = read('index.html');
-const allMarkup = [index, ...files('features', new Set(['.html'])).map(read), ...files('chat', new Set(['.html'])).map(read)].join('\n');
+const allMarkup = [index, ...files('features', new Set(['.html'])).map(read), ].join('\n');
 const runtimeJavaScript = javascript.filter((file) => !file.startsWith('qa') && !file.startsWith('scripts'));
 const allSource = [allMarkup, ...runtimeJavaScript.map((file) => read(file))].join('\n');
 assert(!allSource.includes('window.SIMNIActions'), 'UI-012', 'Fitur memanggil fungsi modal runtime yang nyata, bukan facade yang tidak didefinisikan');
@@ -151,15 +151,6 @@ assert(/verifyAuthoritativeSession/.test(read('js/auth/auth.js'))
     && /context\.stale === true/.test(read('js/auth/auth.js'))
     && /resumeSIMNIAuthSession/.test(read('js/core/app.js')),
     'AUTH-BOOT-004', 'Dashboard lokal pulih tanpa menunggu profil jaringan dan verifikasi dilanjutkan saat online/resume');
-assert(/createVoicePlayer/.test(read('chat/js/chat-ui-handler.js'))
-    && /createPlayableAudioBlob/.test(read('chat/js/chat-ui-handler.js'))
-    && /className = 'voice-timeline'/.test(read('chat/js/chat-ui-handler.js'))
-    && /\.voice-player/.test(read('chat/css/chat-style.css')),
-    'CHAT-AUDIO-001', 'Pesan suara memiliki player inline, timeline, dan normalisasi format');
-assert(/audio\/wav/.test(read('chat/js/chat-platform.js'))
-    && /downsampleMono/.test(read('chat/js/chat-platform.js'))
-    && /encodeMonoPcm16Wav/.test(read('chat/js/chat-platform.js')),
-    'CHAT-AUDIO-002', 'Recorder menghasilkan WAV PCM mono portabel dengan fallback codec browser');
 assert(/COMMON_RUNTIME_ASSETS/.test(read('js/core/feature-loader.js')), 'PERF-002', 'Feature/vendor runtime dimuat setelah otorisasi');
 assert(/new URL\(url, document\.baseURI\)\.href[\s\S]*?import\(resolvedURL\)/.test(read('js/core/feature-loader.js')),
     'PERF-003', 'Dynamic feature module di-resolve dari root dokumen, bukan direktori internal loader');
@@ -173,23 +164,12 @@ const headers = firebase.hosting?.headers?.find((entry) => entry.source === '**'
 const csp = headers.find((header) => String(header.key).toLowerCase() === 'content-security-policy')?.value || '';
 assert(firebase.hosting?.public === 'public', 'HOST-001', 'Firebase Hosting dibatasi ke public/');
 assert(!firebase.functions, 'FREE-001', 'Deploy Firebase tidak mengaktifkan Cloud Functions/Blaze');
-assert(firebase.firestore?.indexes === 'chat/firestore.indexes.json', 'HOST-002', 'Firestore indexes masuk deployment contract');
 assert(csp.includes("script-src-attr 'none'") && csp.includes("object-src 'none'") && csp.includes("frame-ancestors 'none'"), 'CSP-001', 'CSP menutup inline attributes, object, dan framing');
 assert(csp.includes("media-src 'self' blob:"), 'CSP-002', 'CSP mengizinkan media hasil dekripsi lokal tanpa membuka origin eksternal');
 assert(!csp.includes('cloudfunctions.net'), 'FREE-002', 'CSP tidak menyisakan endpoint Cloud Functions');
 
-const edgeConfig = json('chat/edge/wrangler.jsonc');
-const edge = read('chat/edge/worker.js');
-assert(json('chat/firestore.indexes.json').indexes?.length === 0, 'CHAT-INDEX-001', 'Listener Chat tidak membutuhkan composite index');
-assert(edgeConfig.r2_buckets?.length === 1
-    && edgeConfig.r2_buckets[0].binding === 'CHAT_MEDIA_BUCKET'
-    && edgeConfig.r2_buckets[0].bucket_name === 'simni-chat-media',
-'FREE-003', 'Media Chat memakai tepat satu bucket Cloudflare R2');
-const uploadMediaSource = /async function uploadMedia[\s\S]*?\n}/.exec(edge)?.[0] || '';
-const readMediaSource = /async function readMedia[\s\S]*?\n}/.exec(edge)?.[0] || '';
-assert(uploadMediaSource.includes('requireChatMediaBucket') && readMediaSource.includes('requireChatMediaBucket')
-    && !uploadMediaSource.includes('requireCloudinary') && !readMediaSource.includes('requireCloudinary'),
-'FREE-004', 'Media Chat memakai R2 dan tidak memakai Cloudinary');
+const edgeConfig = json('edge/wrangler.jsonc');
+const edge = read('edge/worker.js');
 assert(edge.includes('CLOUDINARY_POLICY') && edge.includes('Hanya Superuser yang dapat mengunggah aset dokumen.'),
 'FREE-005', 'Cloudinary dibatasi untuk aset LKPD dan Dokumen SIMNI');
 assert(edge.includes('verifyFirebaseIdToken') && edge.includes('SIMNI_ALLOWED_ORIGINS'), 'EDGE-001', 'Worker memverifikasi token dan origin');
@@ -204,50 +184,27 @@ assert(!rules.includes('workspaceMigrations') && !read('js/database/repository.j
 assert(!existsSync(absolute('scripts/execute-live-workspace-migration.mjs')) && !read('features/settings/settings.html').includes('workspace-migration-panel'), 'ROLE-002', 'Skrip dan UI migrasi tidak tersisa');
 assert(rules.includes('rollovers') && rules.includes('assignments') && rules.includes('archiveHash'), 'YEAR-001', 'Rules menyediakan readiness arsip dan assignment per tahun');
 assert(/verifyAnnualArchiveFile[\s\S]*?dbMarkRolloverArchiveReady/.test(read('features/backup/backup.js')), 'YEAR-002', 'Arsip JSON wajib diverifikasi ulang sebelum reset');
-assert(/dbCommitAcademicYearRollover[\s\S]*?academicYears\/\$\{currentYearId\}`\] = null/.test(read('js/database/repository.js')), 'YEAR-003', 'Rollover mengosongkan namespace tahun lama secara eksplisit');
+assert(/academicYears\/\$\{current\}`\] = null/.test(read('edge/admin-operations.js')), 'YEAR-003', 'Rollover server mengosongkan namespace tahun lama secara eksplisit');
 assert(/role'\)\.val\(\) != 'vip' \|\| newData\.child\('mapel'\)\.val\(\) == 'PJOK'/.test(rules), 'RULE-002', 'VIP dibatasi ke mata pelajaran PJOK');
 assert(rules.includes('workspaces') && rules.includes('academicYears') && rules.includes('attendance'), 'RULE-003', 'Data attendance berada dalam workspace/year namespace');
-assert(/"invites": \{ "\.read": false, "\.write": false \}/.test(rules), 'RULE-004', 'Legacy invitation root ditutup');
+assert(JSON.parse(rules).rules.invites['.read'] === false && JSON.parse(rules).rules.invites['.write'] === false, 'RULE-004', 'Legacy invitation root ditutup');
 
 assert(manifest.display === 'standalone', 'PWA-001', 'Manifest display standalone');
 assert(manifest.icons?.some((icon) => icon.sizes === '512x512' && String(icon.purpose).includes('maskable')), 'PWA-002', 'Maskable icon 512 tersedia');
 const sw = read('sw.js');
-for (const asset of ['./index.html', './manifest.json', './icons/simni-logo.png', './icons/favicon-32.png', './js/platform/bootstrap.js', './js/auth/chat-unlock.js', './js/database/mock-adapter.js', './vendor/firebase/firebase-auth.js', './features/backup/backup-core.js', './features/gadm/gadm.html', './features/gadm/gadm.js']) {
+for (const asset of ['./index.html', './manifest.json', './icons/simni-logo.png', './icons/favicon-32.png', './js/platform/bootstrap.js', './js/database/local-cache.js', './vendor/firebase/firebase-auth.js', './features/backup/backup-core.js', './features/gadm/gadm.html', './features/gadm/gadm.js']) {
     assert(sw.includes(`'${asset}'`), 'SW-001', `${asset} masuk precache`);
 }
 const installHandler = sw.slice(sw.indexOf("'install'"), sw.indexOf('ACTIVATE EVENT'));
-assert(installHandler.includes('await installAppCache()') && installHandler.includes('await self.skipWaiting()'), 'SW-002', 'Service Worker aktif otomatis hanya setelah precache terverifikasi');
+assert(installHandler.includes('await installAppCache()') && !installHandler.includes('self.skipWaiting()'), 'SW-002', 'Service Worker menunggu tab lama selesai setelah precache terverifikasi');
 
-const build = spawnSync(process.execPath, ['scripts/build-hosting.mjs'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    env: {
-        ...process.env,
-        SIMNI_CHAT_EDGE_URL: 'https://simni-chat-media-gateway.qa.workers.dev',
-        SIMNI_CHAT_FCM_VAPID_KEY: 'BAbCdEfGhIjKlMnOpQrStUvWxYz0123456789_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_AbCdEfGhI'
-    }
-});
-assert(build.status === 0, 'BUILD-001', 'Deterministic hosting build berhasil');
-for (const relativePath of ['public/index.html', 'public/sw.js', 'public/js/platform/bootstrap.js', 'public/js/services/edge-service.js', 'public/chat/chat.html']) {
+const builtManifest = json('public/build-manifest.json');
+assert(Object.entries(builtManifest.files).every(([file, expected]) =>
+    createHash('sha256').update(readFileSync(absolute('public/' + file))).digest('hex') === expected),
+    'BUILD-001', 'Artefak yang sudah dibangun cocok dengan manifest tanpa dimutasi QA');
+for (const relativePath of ['public/index.html', 'public/sw.js', 'public/js/platform/bootstrap.js', 'public/js/services/edge-service.js', ]) {
     assert(existsSync(absolute(relativePath)) && statSync(absolute(relativePath)).size > 0, 'BUILD-002', `${relativePath} tersedia pada output`);
 }
-assert(
-    !existsSync(absolute('public/functions'))
-    && !existsSync(absolute('public/qa'))
-    && !existsSync(absolute('public/chat/edge'))
-    && !existsSync(absolute('public/chat/firestore.rules'))
-    && !existsSync(absolute('public/chat/firestore.indexes.json')),
-    'BUILD-003',
-    'Source internal tidak terekspos pada hosting output'
-);
-assert(/simni-chat-edge-url/.test(read('public/chat/chat.html')) && /simni-chat-fcm-vapid-key/.test(read('public/chat/chat.html')),
-    'BUILD-004', 'Build menyuntikkan kontrak deployment Chat tanpa hard-coded secret/source placeholder');
-
-const qaChatBuildPath = absolute('public/chat/chat.html');
-const qaChatBuild = readFileSync(qaChatBuildPath, 'utf8')
-    .replace(/^\s*<meta name="simni-chat-edge-url"[^>]*>\r?\n/m, '')
-    .replace(/^\s*<meta name="simni-chat-fcm-vapid-key"[^>]*>\r?\n/m, '');
-writeFileSync(qaChatBuildPath, qaChatBuild, 'utf8');
 
 console.log(`\nSTATIC CONTRACT: ${passed} PASS, ${failures.length} FAIL`);
 if (failures.length) {

@@ -29,8 +29,17 @@
         let onlineReads = 0;
 
         const databaseReachable = navigator.onLine || window.SIMNIDatabaseTarget?.mode === 'emulator';
-        if (databaseReachable && window.isUserLoggedIn && typeof window.dbGet === 'function') {
-            const results = await Promise.all(allowedPaths.map(async (path) => ({ path, result: await window.dbGet(path) })));
+        if (databaseReachable && window.isUserLoggedIn && (typeof window.dbFetchCompleteCollection === 'function' || typeof window.dbGet === 'function')) {
+            const results = await Promise.all(allowedPaths.map(async (path) => {
+                let result;
+                if (typeof window.dbFetchCompleteCollection === 'function') {
+                    result = await window.dbFetchCompleteCollection(path);
+                }
+                if (!result?.ok && typeof window.dbGet === 'function') {
+                    result = await window.dbGet(path);
+                }
+                return { path, result };
+            }));
             results.forEach(({ path, result }) => {
                 if (result?.ok) {
                     onlineReads += 1;
@@ -51,6 +60,10 @@
     }
 
     function downloadBlob(blob, filename) {
+        if (typeof window.SIMNIDownloadService?.downloadBlob === 'function') {
+            void window.SIMNIDownloadService.downloadBlob(blob, filename);
+            return;
+        }
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
@@ -63,8 +76,16 @@
     }
 
     function downloadEnvelope(envelope, prefix) {
+        window.SIMNIAccess.assertFeature('backup', 'export');
         const filename = core.createFilename(envelope, prefix);
-        const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json;charset=utf-8' });
+        const json = JSON.stringify(envelope);
+        const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+        const maxBytes = core.MAX_FILE_BYTES || (25 * 1024 * 1024);
+        if (blob.size > maxBytes) {
+            const sizeMb = (blob.size / (1024 * 1024)).toFixed(2);
+            const limitMb = (maxBytes / (1024 * 1024)).toFixed(0);
+            throw new Error(`Ukuran berkas backup (${sizeMb} MB) melampaui batas aman pemulihan (${limitMb} MB). Harap arsipkan sebagian data terlebih dahulu.`);
+        }
         downloadBlob(blob, filename);
         return filename;
     }
@@ -166,7 +187,7 @@
         if (!safetyBackup?.envelope || safetyBackup.envelope.incompletePaths?.length) throw new Error('Rollback package tidak lengkap.');
         const rollbackDatabase = core.filterDatabaseToPaths(safetyBackup.envelope.database, allowedPaths);
         const rollbackUpdates = core.buildReplaceUpdates(rollbackDatabase, allowedPaths);
-        const result = await window.dbUpdate(rollbackUpdates);
+        const result = await window.dbAuditedUpdate('backup_restore', 'rollback', rollbackUpdates);
         if (!result?.ok) throw result?.error || new Error('Rollback write gagal.');
         const readBack = await readDatabasePaths(allowedPaths);
         const [expectedHash, actualHash] = await Promise.all([core.sha256(rollbackDatabase), core.sha256(readBack)]);
@@ -199,15 +220,12 @@
             : core.flattenForMerge(inspected.database, inspected.allowedPaths);
         if (!Object.keys(updates).length) throw new Error('Tidak ada data yang dapat dipulihkan.');
 
-        const result = await window.dbUpdate(updates);
+        const result = await window.dbAuditedUpdate('backup_restore', mode, updates);
         if (!result?.ok) throw result?.error || new Error('Target database menolak restore.');
         try {
             const verification = await verifyRestore(mode, inspected, updates);
-            await window.logSIMNIAuditEvent?.('backup_restore_verified', mode, {
-                hash: verification.actualHash || '',
-                pathCount: inspected.allowedPaths.length
-            });
-            return { ok: true, mode, safetyBackup, verification, ...inspected };
+            const auditResult = result;
+            return { ok: true, mode, safetyBackup, verification, auditLogged: auditResult?.ok === true, auditResult, ...inspected };
         } catch (verificationError) {
             if (!safetyBackup?.envelope) throw verificationError;
             try {
@@ -228,12 +246,24 @@
         if (!file) return;
 
         try {
-            if (file.size > core.MAX_FILE_BYTES) throw new Error('Ukuran backup melebihi batas 25 MB.');
+            const fileName = (file.name || '').toLowerCase();
+            if (!fileName.endsWith('.json')) {
+                throw new Error('Format file backup harus berupa JSON (.json).');
+            }
+            const maxImportBytes = core.MAX_IMPORT_BYTES || (32 * 1024 * 1024);
+            const maxPayloadBytes = core.MAX_FILE_BYTES || (25 * 1024 * 1024);
+            if (file.size > maxImportBytes) {
+                throw new Error(`Ukuran berkas backup (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas baca ${(maxImportBytes / (1024 * 1024)).toFixed(0)} MB.`);
+            }
             const databaseReachable = navigator.onLine || window.SIMNIDatabaseTarget?.mode === 'emulator';
             if (!databaseReachable || !window.isUserLoggedIn) throw new Error('Restore ke target database memerlukan koneksi dan login aktif.');
 
             showProgress('Memeriksa isi dan integritas backup...');
             const parsed = JSON.parse(await file.text());
+            const payloadBytes = new TextEncoder().encode(JSON.stringify(parsed.database || parsed)).byteLength;
+            if (payloadBytes > maxPayloadBytes) {
+                throw new Error(`Ukuran data backup (${(payloadBytes / (1024 * 1024)).toFixed(2)} MB) melebihi batas muat ${(maxPayloadBytes / (1024 * 1024)).toFixed(0)} MB.`);
+            }
             const inspected = await inspectBackupPayload(parsed);
             const mode = document.getElementById('restore-mode')?.value || 'merge';
             hideProgress();
@@ -278,6 +308,8 @@
     }
 
     async function exportArsipTotalExcel() {
+        window.SIMNIAccess.assertFeature('archive', 'export');
+    await window.ensureSIMNIVendors?.("xlsx");
         if (!window.XLSX?.utils) return notify('Pustaka Excel belum tersedia. Pastikan aplikasi online lalu muat ulang.', 'error');
         showProgress('Menyusun arsip Excel dan JSON lossless...');
         try {
@@ -335,8 +367,20 @@
         if (!file) return { ok: false, cancelled: true };
         showProgress('Memverifikasi ulang arsip JSON dan scope tahun buku...');
         try {
-            if (file.size > core.MAX_FILE_BYTES) throw new Error('Ukuran arsip melebihi batas 25 MB.');
+            const fileName = (file.name || '').toLowerCase();
+            if (!fileName.endsWith('.json')) {
+                throw new Error('Format arsip tahunan harus berupa JSON (.json).');
+            }
+            const maxImportBytes = core.MAX_IMPORT_BYTES || (32 * 1024 * 1024);
+            const maxPayloadBytes = core.MAX_FILE_BYTES || (25 * 1024 * 1024);
+            if (file.size > maxImportBytes) {
+                throw new Error(`Ukuran berkas arsip (${(file.size / (1024 * 1024)).toFixed(2)} MB) melebihi batas baca ${(maxImportBytes / (1024 * 1024)).toFixed(0)} MB.`);
+            }
             const parsed = JSON.parse(await file.text());
+            const payloadBytes = new TextEncoder().encode(JSON.stringify(parsed.database || parsed)).byteLength;
+            if (payloadBytes > maxPayloadBytes) {
+                throw new Error(`Ukuran data arsip (${(payloadBytes / (1024 * 1024)).toFixed(2)} MB) melebihi batas muat ${(maxPayloadBytes / (1024 * 1024)).toFixed(0)} MB.`);
+            }
             const integrity = await core.verifyEnvelope(parsed);
             if (!integrity.ok) throw new Error('SHA-256 arsip tidak cocok.');
             core.validateRestoreScope(parsed, currentAccess());
@@ -358,13 +402,64 @@
         }
     }
 
-    Object.assign(window, { exportDataLokal, importDataLokal, exportArsipTotalExcel, verifyAnnualArchiveFile });
+    function openSubsystemRecoveryGuide() {
+        document.getElementById('simni-subsystem-recovery-dialog')?.remove();
+        const manifest = core.getSubsystemRecoveryManifest(currentAccess());
+        const dialog = document.createElement('dialog');
+        dialog.id = 'simni-subsystem-recovery-dialog';
+        dialog.style.cssText = 'max-width:680px;width:92%;max-height:85vh;overflow:auto;padding:24px;border-radius:16px;border:1px solid #e2e8f0;';
+
+        const esc = (str) => typeof window.escapeHTML === 'function' ? window.escapeHTML(str) : String(str ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+
+        const title = document.createElement('h3');
+        title.className = 'font-bold text-base mb-2 text-slate-800 dark:text-white';
+        title.innerHTML = '<i class="fas fa-shield-alt text-primary mr-2"></i>Panduan Pemulihan Lintas Subsistem SIMNI';
+
+        const intro = document.createElement('p');
+        intro.className = 'text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed';
+        intro.textContent = 'SIMNI terdiri atas beberapa subsistem penyimpanan terisolasi. Backup JSON mencakup data Akademik & LPS. Subsistem lain (GADM, berkas Cloudinary, dan Draf lokal) memiliki jalur pencadangan dan pemulihan masing-masing.';
+
+        const listContainer = document.createElement('div');
+        listContainer.className = 'space-y-3 mb-4';
+
+        for (const [id, sub] of Object.entries(manifest.subsystems)) {
+            const card = document.createElement('div');
+            card.className = 'p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#151515] text-xs space-y-1.5';
+
+            const badgeClass = sub.backupIncluded ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
+            const badgeText = sub.backupIncluded ? 'Termasuk di Backup JSON' : 'Pemulihan Terpisah';
+
+            card.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">${esc(sub.name)}</h4>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="text-slate-500 dark:text-slate-400 text-[11px]"><span class="font-semibold">Lokasi:</span> ${esc(sub.storageLocation)}</div>
+                <div class="text-slate-600 dark:text-slate-300"><span class="font-semibold">Mekanisme:</span> ${esc(sub.backupMechanism)}</div>
+                <div class="text-slate-700 dark:text-slate-200 bg-white dark:bg-black p-2 rounded-lg border border-slate-200 dark:border-slate-800"><span class="font-semibold text-primary">Prosedur Pemulihan:</span> ${esc(sub.recoveryProcedure)}</div>
+            `;
+            listContainer.append(card);
+        }
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'w-full py-2.5 bg-slate-800 dark:bg-[#222222] hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer';
+        closeBtn.textContent = 'Tutup Panduan';
+        closeBtn.onclick = () => { dialog.close(); dialog.remove(); };
+
+        dialog.append(title, intro, listContainer, closeBtn);
+        document.body.append(dialog);
+        dialog.showModal();
+    }
+
+    Object.assign(window, { exportDataLokal, importDataLokal, exportArsipTotalExcel, verifyAnnualArchiveFile, openSubsystemRecoveryGuide });
     window.SIMNIBackup = Object.freeze({
         buildCurrentEnvelope,
         gatherDatabase,
         inspectBackupPayload,
         restoreParsedBackup,
         readDatabasePaths,
-        verifyRestore
+        verifyRestore,
+        openSubsystemRecoveryGuide
     });
 }());

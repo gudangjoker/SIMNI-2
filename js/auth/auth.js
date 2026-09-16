@@ -16,8 +16,6 @@ import { auth, authPersistenceReady, runtime } from '../database/firebase-client
 import { establishAccessContext, verifyAccessContext, clearAccessContext } from './access-context.js';
 import { loadLocalBackup, migrateLegacyCacheIfNeeded, purgeCurrentLocalCache } from '../database/local-cache.js';
 import { loadFeatureFragments, resetFeatureFragments } from '../core/feature-loader.js';
-import { startChatNotifications, stopChatNotifications } from '../services/chat-notifications.js';
-import { establishChatAccountUnlock, clearChatAccountUnlock } from './chat-unlock.js';
 
 const AUTH_PHASE = Object.freeze({
     RESTORING_SESSION: 'restoring-session',
@@ -101,6 +99,10 @@ function isTerminalAccessError(error) {
         'account_identity_invalid',
         'account_not_allowed',
         'profile_missing',
+        'profile_scope_invalid',
+        'assignment_missing',
+        'assignment_scope_invalid',
+        'account_inactive',
         'owner_already_claimed',
         'permission-denied'
     ].some((terminalCode) => code.includes(terminalCode));
@@ -203,7 +205,7 @@ function resetProtectedFeatureSurfaces(reason) {
 }
 
 function teardownSession({ clearContext = true, clearState = true, reason = 'session-teardown' } = {}) {
-    stopChatNotifications();
+
     window.stopFirebaseListener?.();
     window.isInitialLoad = true;
     window.isUserLoggedIn = false;
@@ -410,13 +412,18 @@ async function hydrateAuthorizedSession(user, context, generation) {
     window.unlockScreen
         ?.();
 
+    let targetView = 'dashboard';
+    try { targetView = sessionStorage.getItem('simni:active-view') || 'dashboard'; } catch (_) {}
     window.switchView
-        ?.('dashboard');
+        ?.(targetView);
+
+    // Minta persistensi IndexedDB/Storage ke browser/Android WebView
+    if (typeof navigator !== 'undefined' && typeof navigator.storage?.persist === 'function') {
+        navigator.storage.persist().catch(() => {});
+    }
 
     if (runtime.mode !== 'mock') {
-        void startChatNotifications().catch((error) => {
-            console.warn('[SIMNI Auth] Notifikasi Chat dashboard gagal dimulai:', error);
-        });
+
     }
 
     if (
@@ -482,9 +489,7 @@ async function rejectAuthenticatedSession(user, error, generation) {
     if (!terminalAccessFailure) return;
 
     try {
-        await clearChatAccountUnlock(user.uid).catch((clearError) => {
-            console.warn('[SIMNI Auth] Kunci akun Chat lokal tidak dapat dibersihkan:', clearError);
-        });
+
         if (runtime.mode === 'mock') auth.currentUser = null;
         else await signOut(auth);
     } catch (signOutError) {
@@ -521,7 +526,8 @@ async function verifyAuthoritativeSession(user, generation, initialContext) {
     } catch (error) {
         if (!transitionIsCurrent(generation, user.uid)) return false;
         if (isTerminalAccessError(error)) {
-            await rejectAuthenticatedSession(user, error, generation);
+            if (error?.code === 'ACCOUNT_PENDING') { window.location.replace('./register.html'); return; }
+        await rejectAuthenticatedSession(user, error, generation);
         } else {
             console.warn(
                 '[SIMNI Auth] Verifikasi profil Firebase tertunda; dashboard lokal tetap aktif:',
@@ -558,6 +564,7 @@ async function handleAuthenticatedUser(user, generation) {
         if (!transitionIsCurrent(generation, user.uid)) {
             return;
         }
+        if (error?.code === 'ACCOUNT_PENDING') { window.location.replace('./register.html'); return; }
         await rejectAuthenticatedSession(user, error, generation);
     }
 }
@@ -566,14 +573,8 @@ function handleSignedOut(generation) {
     if (!transitionIsCurrent(generation)) {
         return;
     }
-    const previousUid = authState.uid;
     const preservedMessage = authState.phase === AUTH_PHASE.ERROR ? authState.message : '';
     teardownSession({ reason: 'signed-out' });
-    if (previousUid) {
-        void clearChatAccountUnlock(previousUid).catch((error) => {
-            console.warn('[SIMNI Auth] Kunci akun Chat lokal tidak dapat dibersihkan setelah sign-out:', error);
-        });
-    }
     window.lockScreen?.();
     setAuthState({
         phase: AUTH_PHASE.SIGNED_OUT,
@@ -639,6 +640,15 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+function mockUserForEmail(email) {
+    const isVip = String(email || '').toLowerCase() === 'anur.auliya01@gmail.com';
+    return Object.freeze({
+        uid: isVip ? 'mock-vip-uid' : 'mock-superuser-uid',
+        email: isVip ? 'anur.auliya01@gmail.com' : 'unggaran.sditbm@gmail.com',
+        displayName: isVip ? 'Guru PJOK' : 'Superuser SDIT BM'
+    });
+}
+
 if (runtime.firebaseEmulator) {
     signInAnonymously(auth).catch((error) => {
         console.error('[SIMNI Auth] Autentikasi emulator gagal:', error);
@@ -648,11 +658,29 @@ if (runtime.firebaseEmulator) {
             loginBusy: false
         });
     });
+} else if (runtime.mode === 'mock') {
+    const requestedAccount = new URLSearchParams(window.location.search).get('account') || 'superuser';
+    const mockUser = requestedAccount === 'vip'
+        ? mockUserForEmail('anur.auliya01@gmail.com')
+        : mockUserForEmail('unggaran.sditbm@gmail.com');
+    authTransitionGeneration += 1;
+    void handleAuthenticatedUser(mockUser, authTransitionGeneration);
 }
 
 window.loginAuth = async function loginAuth(event) {
     event?.preventDefault?.();
     if (authState.loginBusy) return false;
+
+    if (runtime.mode === 'mock') {
+        const emailInput = document.getElementById('auth-email')?.value?.trim() || '';
+        const requestedAccount = new URLSearchParams(window.location.search).get('account') || (emailInput.toLowerCase().includes('anur') ? 'vip' : 'superuser');
+        const mockUser = requestedAccount === 'vip'
+            ? mockUserForEmail('anur.auliya01@gmail.com')
+            : mockUserForEmail('unggaran.sditbm@gmail.com');
+        authTransitionGeneration += 1;
+        await handleAuthenticatedUser(mockUser, authTransitionGeneration);
+        return window.isUserLoggedIn === true;
+    }
 
     if (runtime.firebaseEmulator) {
         try {
@@ -678,13 +706,13 @@ window.loginAuth = async function loginAuth(event) {
             auth.currentUser?.uid
             && String(auth.currentUser.email || '').toLowerCase() === email.toLowerCase()
         ) {
-            await establishChatAccountUnlock(auth.currentUser, password);
+
             authTransitionGeneration += 1;
             await handleAuthenticatedUser(auth.currentUser, authTransitionGeneration);
             return window.isUserLoggedIn === true;
         }
         const credential = await signInWithEmailAndPassword(auth, email, password);
-        await establishChatAccountUnlock(credential.user, password);
+
         const pass = document.getElementById('auth-password');
         if (pass) pass.value = '';
         return true;
@@ -759,7 +787,7 @@ window.updateCredentials = async function updateCredentials(event) {
         await reauthenticateWithCredential(user, credential);
         if (newPassword) {
             await updatePassword(user, newPassword);
-            await establishChatAccountUnlock(user, newPassword);
+
         }
         window.toast?.('Berhasil disimpan: kredensial diperbarui. Silakan login ulang.', 'success');
         event?.target?.reset?.();
@@ -783,15 +811,22 @@ window.logoutAuth = async function logoutAuth() {
         window.toast?.('Keluar dinonaktifkan selama emulator.', 'warning');
         return false;
     }
-    if (!window.confirm('Apakah Anda yakin ingin keluar dari sistem keamanan?')) return false;
+    if (window.SIMNIFormDrafts?.hasUnsaved?.()) {
+        const keepDrafts = window.confirm(
+            'PERHATIAN: Terdapat draf formulir yang tersimpan di perangkat namun belum dikirim ke database.\n\n' +
+            '• Tekan OK untuk TETAP MENYIMPAN draf di perangkat (hanya dapat diakses kembali oleh akun ini saat masuk lagi).\n' +
+            '• Tekan BATAL untuk membatalkan keluar dan kembali mengerjakan formulir.'
+        );
+        if (!keepDrafts) return false;
+    } else {
+        if (!window.confirm('Apakah Anda yakin ingin keluar dari sistem keamanan?')) return false;
+    }
     try {
         window.stopFirebaseListener?.();
         await purgeCurrentLocalCache().catch((error) => {
             console.warn('[SIMNI Auth] Cache sesi tidak dapat dipurge sepenuhnya:', error);
         });
-        await clearChatAccountUnlock(auth.currentUser?.uid).catch((error) => {
-            console.warn('[SIMNI Auth] Kunci akun Chat lokal tidak dapat dipurge:', error);
-        });
+
         await signOut(auth);
         window.closeModal?.('modal-pengaturan');
         window.toast?.('Berhasil keluar.', 'success');

@@ -4,10 +4,14 @@
 // ==========================================
 
 function populateAllDropdowns() {
-    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
-    let filteredStudents = state.students;
+    const normalize = typeof normalizeClassLabel === 'function' ? normalizeClassLabel : (v) => String(v || '').trim();
+    const currentKelas = normalize(typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '');
+    let filteredStudents = Array.isArray(state?.students) ? state.students : [];
     if (currentKelas) {
-        filteredStudents = filteredStudents.filter(s => s.Kelas === currentKelas);
+        filteredStudents = filteredStudents.filter(s => {
+            const sk = normalize(s.Kelas);
+            return !sk || sk === currentKelas;
+        });
     }
     const sortedStudents = [...filteredStudents].sort((a,b) => (a['Nama Lengkap']||'').localeCompare(b['Nama Lengkap']||''));
     const selects = [
@@ -42,26 +46,76 @@ function populateAllDropdowns() {
     });
 }
 function renderIdentitas() {
-    const normalized = window.SIMNILPSCore ? window.SIMNILPSCore.normalizeSettings(state.pengaturan) : state.pengaturan;
+    const normalized = window.SIMNILPSCore
+        ? window.SIMNILPSCore.normalizeSettings(state.pengaturan)
+        : (state.pengaturan || {});
+
     const shellBrand = 'SIMNI';
     const access = window.SIMNICurrentAccess || null;
-    const activeAcademicYearId = access?.activeAcademicYearId || normalized.tahun_pelajaran;
-    const identityRequiresConfirmation = normalized.tahun_pelajaran !== activeAcademicYearId;
-    const p = identityRequiresConfirmation ? {
-        ...normalized,
-        nama_kelas: access?.role === 'vip' ? 'PJOK' : `Kelas ${access?.classId || ''}`.trim(),
+    const institution = window.SIMNIInstitutionIdentity || {
+        nama_aplikasi: 'SIMNI Administrasi Kelas',
+        nama_yayasan: 'Yayasan Sosial dan Pendidikan Bina Muda',
+        jenjang_sekolah: 'Sekolah Dasar',
+        nama_sekolah: 'SDIT Bina Muda Cicalengka',
+        status_akreditasi: 'A',
+        kota: 'Cicalengka',
+        nomor_izin: 'No.421.2/1143-Disdikbud/2011'
+    };
+
+    const activeAcademicYearId =
+        access?.activeAcademicYearId ||
+        normalized.tahun_pelajaran ||
+        '2026-2027';
+
+    const identityRequiresConfirmation =
+        normalized.tahun_pelajaran !== activeAcademicYearId;
+
+    const dynamicIdentity = identityRequiresConfirmation
+        ? {
+            ...normalized,
+            nama_kelas:
+                access?.role === 'vip'
+                    ? 'PJOK'
+                    : (`Kelas ${access?.classId || ''}`.trim() || normalized.nama_kelas || ''),
+            tahun_pelajaran: activeAcademicYearId,
+            nama_wali_kelas: '',
+            nuptk_wali_kelas: ''
+        }
+        : {
+            ...normalized,
+            tahun_pelajaran: activeAcademicYearId
+        };
+
+    const p = {
+        ...dynamicIdentity,
+        ...institution,
         tahun_pelajaran: activeAcademicYearId,
-        nama_wali_kelas: '',
-        nuptk_wali_kelas: ''
-    } : normalized;
+        ikon_kelas: 'fa-school',
+        logo_url: './icons/school-logo.png',
+        logo_public_id: null,
+        logo_resource_type: null
+    };
+
     state.pengaturan = { ...state.pengaturan, ...p };
-    document.title = `${shellBrand} - ${p.nama_kelas}`;
-    if (document.getElementById('ui-nama-kelas')) document.getElementById('ui-nama-kelas').innerText = shellBrand; 
-    if (document.getElementById('ui-mobile-nama-kelas')) document.getElementById('ui-mobile-nama-kelas').innerText = shellBrand; 
-    if (document.getElementById('ui-nama-aplikasi')) document.getElementById('ui-nama-aplikasi').innerText = p.nama_aplikasi; 
-    if (document.getElementById('ui-dash-title')) document.getElementById('ui-dash-title').innerText = `Dashboard ${shellBrand}`; 
-    if (document.getElementById('ui-dash-subtitle')) document.getElementById('ui-dash-subtitle').innerText = "Tapel " + activeAcademicYearId; 
-    
+
+    document.title = `${shellBrand} - ${p.nama_kelas || ''}`;
+
+    if (document.getElementById('ui-nama-kelas')) {
+        document.getElementById('ui-nama-kelas').innerText = shellBrand;
+    }
+    if (document.getElementById('ui-mobile-nama-kelas')) {
+        document.getElementById('ui-mobile-nama-kelas').innerText = shellBrand;
+    }
+    if (document.getElementById('ui-nama-aplikasi')) {
+        document.getElementById('ui-nama-aplikasi').innerText = p.nama_aplikasi;
+    }
+    if (document.getElementById('ui-dash-title')) {
+        document.getElementById('ui-dash-title').innerText = `Dashboard ${shellBrand}`;
+    }
+    if (document.getElementById('ui-dash-subtitle')) {
+        document.getElementById('ui-dash-subtitle').innerText = `Tapel ${activeAcademicYearId}`;
+    }
+
     const shellLogo = './icons/simni-logo.png';
     const drawLogo = (container, rounding) => {
         if (!container) return;
@@ -74,29 +128,36 @@ function renderIdentitas() {
         image.height = image.width;
         container.appendChild(image);
     };
+
     drawLogo(document.getElementById('icon-sidebar-container'), 'rounded-xl');
     drawLogo(document.getElementById('icon-mobile-container'), 'rounded-lg');
-    if (document.getElementById('set-nama-app')) document.getElementById('set-nama-app').value = p.nama_aplikasi; 
-    if (document.getElementById('set-nama-kelas')) document.getElementById('set-nama-kelas').value = p.nama_kelas; 
-    if (document.getElementById('set-tapel')) document.getElementById('set-tapel').value = activeAcademicYearId; 
-    if (document.getElementById('set-ikon-kelas')) document.getElementById('set-ikon-kelas').value = p.ikon_kelas || 'fa-school';
-    if (document.getElementById('set-nama-yayasan')) document.getElementById('set-nama-yayasan').value = p.nama_yayasan || '';
-    if (document.getElementById('set-jenjang-sekolah')) document.getElementById('set-jenjang-sekolah').value = p.jenjang_sekolah || '';
-    if (document.getElementById('set-nama-sekolah')) document.getElementById('set-nama-sekolah').value = p.nama_sekolah || '';
-    if (document.getElementById('set-akreditasi')) document.getElementById('set-akreditasi').value = p.status_akreditasi || '';
-    if (document.getElementById('set-nomor-izin')) document.getElementById('set-nomor-izin').value = p.nomor_izin || '';
-    if (document.getElementById('set-kota')) document.getElementById('set-kota').value = p.kota || '';
-    if (document.getElementById('set-nama-wali-kelas')) document.getElementById('set-nama-wali-kelas').value = p.nama_wali_kelas || '';
-    if (document.getElementById('set-nuptk-wali-kelas')) document.getElementById('set-nuptk-wali-kelas').value = p.nuptk_wali_kelas || '';
+
+    const setValue = (id, value) => {
+        const target = document.getElementById(id);
+        if (target) target.value = value ?? '';
+    };
+
+    setValue('set-nama-app', p.nama_aplikasi);
+    setValue('set-nama-kelas', p.nama_kelas);
+    setValue('set-tapel', activeAcademicYearId);
+    setValue('set-nama-yayasan', p.nama_yayasan);
+    setValue('set-jenjang-sekolah', p.jenjang_sekolah);
+    setValue('set-nama-sekolah', p.nama_sekolah);
+    setValue('set-akreditasi', p.status_akreditasi);
+    setValue('set-nomor-izin', p.nomor_izin);
+    setValue('set-kota', p.kota);
+    setValue('set-nama-wali-kelas', p.nama_wali_kelas);
+    setValue('set-nuptk-wali-kelas', p.nuptk_wali_kelas);
 }
+
 function renderAllViews() {
-    if (window.SIMNIAccess?.canAccess('dashboard')) renderDashboard();
-    if (window.SIMNIAccess?.canAccess('students')) renderSiswaList();
-    if (window.SIMNIAccess?.canAccess('attendance')) { renderPresensiManual(); renderRekapPresensi(); }
-    if (window.SIMNIAccess?.canAccess('grades')) { renderNilaiTPControls(); renderBukuInduk(); }
-    if (window.SIMNIAccess?.canAccess('documents')) renderDokumenList();
-    if (window.SIMNIAccess?.canAccess('notes')) renderCatatanList();
-    if (window.SIMNIAccess?.canAccess('journal')) { renderJadwalSetting(); renderRekapJurnal(); }
+    if (window.SIMNIAccess?.canAccess('dashboard') && typeof renderDashboard === 'function') renderDashboard();
+    if (window.SIMNIAccess?.canAccess('students') && typeof renderSiswaList === 'function') renderSiswaList();
+    if (window.SIMNIAccess?.canAccess('attendance') && typeof renderPresensiManual === 'function') { renderPresensiManual(); renderRekapPresensi?.(); }
+    if (window.SIMNIAccess?.canAccess('grades') && typeof renderNilaiTPControls === 'function') { renderNilaiTPControls(); renderBukuInduk?.(); }
+    if (window.SIMNIAccess?.canAccess('documents') && typeof renderDokumenList === 'function') renderDokumenList();
+    if (window.SIMNIAccess?.canAccess('notes') && typeof renderCatatanList === 'function') renderCatatanList();
+    if (window.SIMNIAccess?.canAccess('journal') && typeof renderJadwalSetting === 'function') { renderJadwalSetting(); renderRekapJurnal?.(); }
 }
 
 function renderCurrentView() {
@@ -104,16 +165,17 @@ function renderCurrentView() {
     const feature = window.SIMNIAccessPolicy?.featureForView(v);
     if (feature && !window.SIMNIAccess?.canAccess(feature)) {
         state.currentView = 'dashboard';
-        if (window.SIMNIAccess?.canAccess('dashboard')) renderDashboard();
+        if (window.SIMNIAccess?.canAccess('dashboard') && typeof renderDashboard === 'function') renderDashboard();
         return;
     }
-    if(v==='dashboard') renderDashboard();
-    else if(v==='siswa') renderSiswaList();
-    else if(v==='presensi'){ renderPresensiManual(); renderRekapPresensi(); }
-    else if(v==='nilai') { renderNilaiTPControls(); renderRekapNilai(); renderBukuInduk(); }
-    else if(v==='dokumen') renderDokumenList();
-    else if(v==='catatan') renderCatatanList();
-    else if(v==='jurnal') { generateFormJurnal(); renderRekapJurnal(); }
-    else if(v==='lps') { populateLPSFilter(); loadSiswaLPS(); }
-    else if(v==='gadm') { void window.SIMNIGADM?.ensureReady?.(); }
+    if (v === 'dashboard') { if (typeof renderDashboard === 'function') renderDashboard(); }
+    else if (v === 'siswa') { if (typeof renderSiswaList === 'function') renderSiswaList(); }
+    else if (v === 'presensi') { if (typeof renderPresensiManual === 'function') { renderPresensiManual(); renderRekapPresensi?.(); } }
+    else if (v === 'nilai') { if (typeof renderNilaiTPControls === 'function') { renderNilaiTPControls(); renderRekapNilai?.(); renderBukuInduk?.(); } }
+    else if (v === 'dokumen') { if (typeof renderDokumenList === 'function') renderDokumenList(); }
+    else if (v === 'catatan') { if (typeof renderCatatanList === 'function') renderCatatanList(); }
+    else if (v === 'jurnal') { if (typeof generateFormJurnal === 'function') generateFormJurnal(); if (typeof renderJadwalSetting === 'function') renderJadwalSetting(); if (typeof renderRekapJurnal === 'function') renderRekapJurnal(); }
+    else if (v === 'lps') { if (typeof populateLPSFilter === 'function') populateLPSFilter(); if (typeof loadSiswaLPS === 'function') loadSiswaLPS(); }
+    else if (v === 'gadm') { void window.SIMNIGADM?.ensureReady?.(); }
+    else if (v === 'pengaturan') { window.renderSIMNISettingsActionState?.(); }
 }

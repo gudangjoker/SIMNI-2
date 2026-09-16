@@ -48,6 +48,11 @@ const FEATURE_DEFINITIONS = Object.freeze([
         id: 'settings',
         feature: 'settings',
         url: './features/settings/settings.html'
+    }),
+    Object.freeze({
+        id: 'accounts',
+        feature: 'accounts',
+        url: './features/accounts/accounts.html'
     })
 ]);
 
@@ -56,35 +61,92 @@ const ROOT_IDS = Object.freeze({
     modals: 'simni-modal-fragment-root'
 });
 
+const VIEW_TO_FEATURE_MAP = Object.freeze({
+    dashboard: 'dashboard',
+    siswa: 'students',
+    students: 'students',
+    presensi: 'attendance',
+    attendance: 'attendance',
+    jurnal: 'journal',
+    journal: 'journal',
+    nilai: 'grades',
+    grades: 'grades',
+    catatan: 'notes',
+    notes: 'notes',
+    dokumen: 'documents',
+    documents: 'documents',
+    pengaturan: 'settings',
+    settings: 'settings',
+    'kelola-akun': 'accounts',
+    accounts: 'accounts',
+    gadm: 'gadm',
+    lps: 'lps',
+    archive: 'archive',
+    reset: 'reset'
+});
+
+export function resolveFeatureId(featureOrViewId) {
+    const key = String(featureOrViewId || '').trim();
+    return VIEW_TO_FEATURE_MAP[key] || key;
+}
+
 const COMMON_RUNTIME_ASSETS = Object.freeze([
-    './vendor/qrcodejs/qrcode.min.js',
-    './vendor/html5-qrcode/html5-qrcode.min.js',
-    './vendor/xlsx/xlsx.full.min.js',
-    './vendor/exceljs/exceljs.min.js',
-    './vendor/html2pdf/html2pdf.bundle.min.js',
-    './features/dashboard/dashboard.js',
-    './features/settings/settings.js',
-    './features/students/students.js',
-    './features/attendance/attendance.js',
-    './features/journal/journal.js',
-    './features/grades/grades.js',
-    './features/backup/backup-core.js',
-    './features/backup/backup.js'
+    './features/dashboard/dashboard.js'
 ]);
 
 const FEATURE_RUNTIME_ASSETS = Object.freeze({
+    dashboard: Object.freeze(['./features/dashboard/dashboard.js']),
+    students: Object.freeze(['./features/students/students.js']),
+    attendance: Object.freeze(['./features/attendance/attendance.js']),
+    journal: Object.freeze(['./features/journal/journal.js']),
+    grades: Object.freeze(['./features/grades/grades.js']),
+    settings: Object.freeze([
+        './features/settings/settings.js',
+        './features/backup/backup-core.js',
+        './features/backup/backup.js'
+    ]),
     notes: Object.freeze(['./features/notes/notes.js']),
     documents: Object.freeze(['./features/documents/documents.js']),
     archive: Object.freeze(['./features/archive/archive.js']),
     reset: Object.freeze(['./features/reset/reset.js']),
     lps: Object.freeze([
         './features/lps/lps-core.js',
+        './features/lps/lps-reference-data.js',
+        './features/lps/lps-excel.js',
         './features/lps/lps-print.js',
         './features/lps/lps.js'
     ])
 });
 
+const FEATURE_MODULES = Object.freeze({
+    gadm: Object.freeze(['./features/gadm/gadm.js']),
+    accounts: Object.freeze(['./features/accounts/accounts.js'])
+});
+
+const FEATURE_STYLESHEETS = Object.freeze({
+    lps: './features/lps/lps.css',
+    gadm: './features/gadm/gadm.css'
+});
+
 const loadedRuntimeAssets = new Map();
+const loadedFeatureSet = new Set();
+const inFlightFeaturePromises = new Map();
+
+const VENDOR_GROUPS = Object.freeze({
+    scanner: ['./vendor/html5-qrcode/html5-qrcode.min.js'],
+    xlsx: ['./vendor/xlsx/xlsx.full.min.js'],
+    excel: ['./vendor/exceljs/exceljs.min.js'],
+    pdf: ['./vendor/html2pdf/html2pdf.bundle.min.js'],
+    zip: ['./vendor/jszip/jszip.min.js']
+});
+// Scripts remain in the offline release cache, but are only parsed when used.
+window.ensureSIMNIVendors = async (...groups) => {
+    const urls = [...new Set(groups.flatMap(group => {
+        if (!VENDOR_GROUPS[group]) throw new Error('Pustaka fitur tidak dikenal: ' + group);
+        return VENDOR_GROUPS[group];
+    }))];
+    await Promise.all(urls.map(loadScript));
+};
 
 function loadScript(url) {
     if (loadedRuntimeAssets.has(url)) return loadedRuntimeAssets.get(url);
@@ -143,7 +205,6 @@ async function loadAuthorizedRuntimeAssets(context) {
     if (canAccessFeature('gadm', context)) await loadStylesheet('./features/gadm/gadm.css');
     for (const asset of assets) await loadScript(asset);
     if (canAccessFeature('gadm', context)) await loadModule('./features/gadm/gadm.js');
-    window.validateSIMNIVendorRuntime?.();
 }
 
 let activeLoad = null;
@@ -167,7 +228,9 @@ function accessSignature(context = accessContext()) {
         context.uid,
         context.role,
         context.workspaceId,
-        context.activeAcademicYearId
+        context.classId,
+        context.activeAcademicYearId,
+        context.assignmentRevision || 1
     ].map(String).join('|');
 }
 
@@ -432,6 +495,8 @@ export function resetFeatureFragments(
     }
 
     activeLoad = null;
+    loadedFeatureSet.clear();
+    inFlightFeaturePromises.clear();
 
     clearFragmentRoots();
     setFragmentState('idle');
@@ -455,7 +520,74 @@ export function resetFeatureFragments(
     });
 }
 
-export function loadFeatureFragments() {
+export function ensureFeatureLoaded(featureOrViewId) {
+    const feature = resolveFeatureId(featureOrViewId);
+    if (!feature) return Promise.resolve({ ok: false, error: 'Fitur tidak ditentukan.' });
+
+    const context = accessContext();
+    if (context && !canAccessFeature(feature, context)) {
+        return Promise.reject(new Error(`Akses ditolak: role Anda tidak memiliki izin untuk fitur ${feature}.`));
+    }
+
+    if (loadedFeatureSet.has(feature)) {
+        return Promise.resolve({ ok: true, feature, cached: true });
+    }
+
+    if (inFlightFeaturePromises.has(feature)) {
+        return inFlightFeaturePromises.get(feature);
+    }
+
+    const loadPromise = (async () => {
+        // 1. Stylesheet if defined
+        if (FEATURE_STYLESHEETS[feature]) {
+            await loadStylesheet(FEATURE_STYLESHEETS[feature]);
+        }
+
+        // 2. HTML template fragment if defined and not already in DOM
+        const definition = FEATURE_DEFINITIONS.find((d) => d.feature === feature);
+        if (definition) {
+            const roots = resolveRoots();
+            const existingView = roots.viewRoot.querySelector(`[id^="view-${feature}"], [id^="view-${featureOrViewId}"]`);
+            if (!existingView) {
+                const parsedDoc = await fetchFragment(definition);
+                mountParsedFragment(definition, parsedDoc, roots);
+            }
+        }
+
+        // 3. Runtime scripts
+        const scriptAssets = FEATURE_RUNTIME_ASSETS[feature] || [];
+        for (const asset of scriptAssets) {
+            await loadScript(asset);
+        }
+
+        // 4. Runtime ES modules
+        const moduleAssets = FEATURE_MODULES[feature] || [];
+        for (const mod of moduleAssets) {
+            await loadModule(mod);
+        }
+
+        loadedFeatureSet.add(feature);
+        window.SIMNIAccess?.applyAccessUI?.();
+        window.populateAllDropdowns?.();
+        return { ok: true, feature, cached: false };
+    })()
+        .catch((error) => {
+            inFlightFeaturePromises.delete(feature);
+            throw error;
+        })
+        .finally(() => {
+            inFlightFeaturePromises.delete(feature);
+        });
+
+    inFlightFeaturePromises.set(feature, loadPromise);
+    return loadPromise;
+}
+
+export function isFeatureLoaded(featureOrViewId) {
+    return loadedFeatureSet.has(resolveFeatureId(featureOrViewId));
+}
+
+export function loadFeatureFragments(options = {}) {
     const context = accessContext();
     const signature = accessSignature(context);
 
@@ -501,7 +633,6 @@ export function loadFeatureFragments() {
             .map((item) => item.id);
 
     const promise = (async () => {
-        await loadAuthorizedRuntimeAssets(context);
         const roots = resolveRoots();
 
         roots.viewRoot.replaceChildren();
@@ -509,9 +640,20 @@ export function loadFeatureFragments() {
 
         setFragmentState('loading');
 
+        // Always load FontAwesome stylesheet and minimal dashboard runtime
+        await loadStylesheet('./vendor/fontawesome/css/all.min.css');
+        for (const asset of COMMON_RUNTIME_ASSETS) {
+            await loadScript(asset);
+        }
+
+        // Minimal by default: only load dashboard at startup, or all if requested
+        const targetDefinitions = options?.all === true
+            ? allowed
+            : allowed.filter((d) => d.feature === 'dashboard');
+
         const settled =
             await Promise.allSettled(
-                allowed.map(
+                targetDefinitions.map(
                     async (definition) => ({
                         definition,
                         parsedDocument:
@@ -543,7 +685,7 @@ export function loadFeatureFragments() {
         settled.forEach(
             (result, index) => {
                 const definition =
-                    allowed[index];
+                    targetDefinitions[index];
 
                 if (
                     result.status ===
@@ -565,7 +707,7 @@ export function loadFeatureFragments() {
 
                 try {
                     mountParsedFragment(
-                        result.value.definition,
+                        definition,
                         result.value
                             .parsedDocument,
                         roots
@@ -573,6 +715,9 @@ export function loadFeatureFragments() {
 
                     loaded.push(
                         definition.id
+                    );
+                    loadedFeatureSet.add(
+                        definition.feature
                     );
                 } catch (error) {
                     failed.push({
@@ -588,6 +733,10 @@ export function loadFeatureFragments() {
                 }
             }
         );
+
+        if (options?.all === true) {
+            await loadAuthorizedRuntimeAssets(context);
+        }
 
         const status =
             failed.length > 0
@@ -697,5 +846,11 @@ window.SIMNIFeatureLoader =
     Object.freeze({
         loadFeatureFragments,
         resetFeatureFragments,
+        ensureFeatureLoaded,
+        isFeatureLoaded,
+        resolveFeatureId,
         getAuthorizedFeatureFragments
     });
+
+window.ensureFeatureLoaded = ensureFeatureLoaded;
+window.isFeatureLoaded = isFeatureLoaded;

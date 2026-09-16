@@ -289,7 +289,6 @@ dan A4 Preview untuk LPS/BLP.
                     <button
                         type="button"
                         class="lps-button lps-button-primary"
-                        style="background-color: #10b981; border-color: #059669;"
                         data-simni-action="exportExcelLPS" data-simni-trigger="click"
                     >
                         <i class="fas fa-file-excel" aria-hidden="true"></i>
@@ -349,6 +348,10 @@ dan A4 Preview untuk LPS/BLP.
                         ></textarea>
                     </div>
 
+                    <div class="lps-field">
+                        <label for="lps-teacher-note-secondary">Catatan Guru Kedua (BLP)</label>
+                        <textarea id="lps-teacher-note-secondary" rows="5" maxlength="4000" autocomplete="off" placeholder="Catatan pada blok kedua BLP"></textarea>
+                    </div>
                     <div class="lps-field">
                         <label for="lps-parent-note">
                             Catatan Orang Tua
@@ -465,7 +468,7 @@ dan A4 Preview untuk LPS/BLP.
             <div class="lps-builder-toolbar">
                 <div class="lps-field">
                     <label for="lps-template-source">
-                        Salin dari template yang sudah ada
+                        Pilih Template
                     </label>
 
                     <select
@@ -489,7 +492,7 @@ dan A4 Preview untuk LPS/BLP.
                         aria-hidden="true"
                     ></i>
 
-                    Salin
+                    Gunakan Template
                 </button>
 
                 <button
@@ -508,10 +511,18 @@ dan A4 Preview untuk LPS/BLP.
             </div>
 
             <p class="mt-3 text-xs text-slate-500">
+                Template LPS dan BLP bawaan sudah terisi sesuai contoh. Pilih
+                jenis laporan LPS atau BLP di halaman utama, lalu pilih template
+                yang sesuai di sini. Salinan guru dapat diedit tanpa mengubah acuan.
                 Nama aspek, butir, jumlah kriteria, dan label kriteria
                 dapat diubah. Setiap penyimpanan membuat versi template
                 baru agar laporan lama tidak ikut berubah.
             </p>
+
+            <div class="flex flex-wrap gap-2 mt-3">
+                <a class="lps-button lps-button-soft" href="templates/LPS%20KLS%202%20contoh.xlsx" download>Unduh Acuan LPS</a>
+                <a class="lps-button lps-button-soft" href="templates/BLP%20contoh.xlsx" download>Unduh Acuan BLP</a>
+            </div>
 
             <div
                 id="lps-builder-container"
@@ -584,7 +595,6 @@ dan A4 Preview untuk LPS/BLP.
                 <button
                     type="button"
                     class="lps-button lps-button-primary"
-                    style="background-color: #10b981; border-color: #059669;"
                     data-simni-action="exportExcelLPS" data-simni-trigger="click"
                 >
                     <i class="fas fa-file-excel" aria-hidden="true"></i>

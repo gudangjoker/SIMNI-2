@@ -6,12 +6,21 @@
 // Operasi privileged/destructive dialihkan ke backend server-authoritative.
 // ==========================================
 
+import { commitAdministrativeOperation, getGlobalRolloverOverview } from '../services/edge-service.js';
+
 import {
     ref,
     get,
     set,
     update,
-    remove
+    remove,
+    runTransaction,
+    query,
+    orderByKey,
+    limitToFirst,
+    limitToLast,
+    startAt,
+    endBefore
 } from '../../vendor/firebase/firebase-database.js';
 
 import { runtime } from './firebase-client.js';
@@ -68,9 +77,9 @@ function currentAccess() {
     return access;
 }
 
-function resolve(path) {
+function resolve(path, action = 'read') {
     assertLogicalPath(
-        path
+        path, action
     );
 
     return paths.resolveLogicalPath(
@@ -89,7 +98,8 @@ function databaseTargetIsEmulator() {
 }
 
 function databaseReference(path = '') {
-    return ref(database, path);
+    const normalizedPath = String(path ?? '').trim();
+    return normalizedPath ? ref(database, normalizedPath) : ref(database);
 }
 
 function readDatabase(path = '') {
@@ -156,6 +166,7 @@ function assertWritableState() {
 
     const sync =
         window.SIMNISyncState;
+    if (sync?.connected === false) throw new Error('Koneksi Firebase terputus. Isian dipertahankan; simpan lagi setelah tersambung.');
 
     if (!sync) {
         throw new Error(
@@ -173,7 +184,7 @@ function assertWritableState() {
         false
     ) {
         throw new Error(
-            'Satu atau lebih binding Firebase wajib belum sehat. Penulisan ditahan untuk mencegah lost update.'
+            `Sinkronisasi belum siap: ${Object.values(sync.bindings || {}).filter(binding => binding.required && binding.status !== 'ready').map(binding => `${binding.logicalPath} (${binding.status}${binding.error ? ': ' + (binding.error.message || binding.error) : ''})`).join(', ')}. Penulisan ditahan; tunggu koneksi pulih.`
         );
     }
 
@@ -182,8 +193,10 @@ function assertWritableState() {
         true
     ) {
         if (
-            sync.status !==
-            'ready'
+            sync.status !== 'ready' &&
+            sync.status !== 'synced' &&
+            !sync.initialComplete &&
+            !sync.hasHydratedCache
         ) {
             throw new Error(
                 `Sinkronisasi database belum READY (${sync.status || 'unknown'}). Penulisan ditahan.`
@@ -194,17 +207,16 @@ function assertWritableState() {
     }
 
     if (
-        !sync.status ||
-        BAD_SYNC_STATUSES.has(
-            sync.status
-        ) ||
-        sync.status !==
-            'ready'
+        sync.status === 'ready' ||
+        sync.status === 'synced' ||
+        (sync.hasHydratedCache && !['failed', 'stopped'].includes(sync.status))
     ) {
-        throw new Error(
-            `Sinkronisasi database belum sehat (${sync.status || 'unknown'}). Penulisan ditahan agar state parsial tidak menimpa Firebase.`
-        );
+        return;
     }
+
+    throw new Error(
+        `Sinkronisasi database belum sehat (${sync.status || 'unknown'}). Penulisan ditahan agar state parsial tidak menimpa Firebase.`
+    );
 }
 
 function normalizeError(
@@ -326,6 +338,13 @@ function normalizeArchiveCompatibility(
         return archive;
     }
 
+    if (archive.databaseEncoding === 'json-chunks-v1' && archive.database) {
+        const chunks = Object.values(archive.database.chunks || {});
+        if (!chunks.length || chunks.some(chunk => typeof chunk !== 'string') || chunks.reduce((n, chunk) => n + chunk.length, 0) > 25 * 1024 * 1024) throw new Error('Encoding arsip cloud tidak valid.');
+        archive = { ...archive, database: JSON.parse(chunks.join('')) };
+        delete archive.databaseEncoding;
+    }
+
     return {
         ...archive,
 
@@ -418,6 +437,7 @@ function mappedPhysicalUpdates(
         ]
         of entries
     ) {
+        assertLogicalPath(logicalPath, 'manage');
         const physicalPath =
             resolve(
                 logicalPath
@@ -538,6 +558,7 @@ export async function dbSet(
 ) {
     try {
         assertWritableState();
+        assertLogicalPath(logicalPath, 'manage');
 
         const physicalPath =
             resolve(
@@ -582,11 +603,26 @@ export async function dbUpdate(
     }
 }
 
+export async function dbAuditedUpdate(action, targetId, logicalUpdates) {
+    try {
+        assertWritableState();
+        if (!['backup_restore', 'annual_reset'].includes(action)) throw new Error('Aksi administratif tidak valid.');
+        assertFeature(action === 'backup_restore' ? 'backup' : 'reset');
+        mappedPhysicalUpdates(logicalUpdates); // Validate local path/scope before any request.
+        const access = currentAccess();
+        const result = await commitAdministrativeOperation({ action, targetId, expectedYear: access.activeAcademicYearId, updates: logicalUpdates });
+        return successfulResult({ receipt: result.receipt, replayed: result.replayed });
+    } catch (error) { return failedResult(error); }
+}
+
+window.dbAuditedUpdate = dbAuditedUpdate;
+
 export async function dbRemove(
     logicalPath
 ) {
     try {
         assertWritableState();
+        assertLogicalPath(logicalPath, 'manage');
 
         const physicalPath =
             resolve(
@@ -603,6 +639,34 @@ export async function dbRemove(
             error
         );
     }
+}
+
+// Compare only the edited records, atomically. Unrelated slots are preserved.
+export async function dbCompareRecords(logicalRoot, changes, expected) {
+    try {
+        assertWritableState();
+        assertLogicalPath(logicalRoot, 'manage');
+        if (!['Jadwal', 'Jurnal'].includes(logicalRoot)) throw new Error('Koleksi transaksi tidak diizinkan.');
+        const physicalPath = resolve(logicalRoot);
+        const keys = Object.keys(changes);
+        if (!keys.length || keys.some(key => /[.#$\[\]\/]/.test(key) || !Object.hasOwn(expected, key))) throw new Error('Kontrak transaksi tidak lengkap.');
+        const transaction = await runTransaction(databaseReference(physicalPath), current => {
+            const source = current || {};
+            for (const key of keys) {
+                const baseline = expected[key];
+                const actual = source[key] ?? null;
+                if (baseline === null ? actual !== null : (!actual || Object.entries(baseline).some(([field, value]) => (actual[field] ?? '') !== value))) return;
+            }
+            const next = { ...source };
+            for (const key of keys) {
+                if (changes[key] === null) delete next[key];
+                else next[key] = changes[key];
+            }
+            return next;
+        }, { applyLocally: false });
+        if (!transaction.committed) throw new Error('Data ini telah berubah di perangkat lain. Buka ulang setelah menyalin isian Anda.');
+        return successfulResult({ physicalPath });
+    } catch (error) { return failedResult(error); }
 }
 
 export async function dbGet(
@@ -632,16 +696,76 @@ export async function dbGet(
     }
 }
 
-export async function dbGetAnnualArchives() {
+export async function dbFetchPagedCollection(logicalPath, {
+    pageSize = 2000,
+    cursor = null
+} = {}) {
+    try {
+        const physicalPath = resolve(logicalPath);
+        const pagedModule = window.SIMNIPagedQuery;
+        if (!pagedModule) throw new Error('Modul paged query belum dimuat.');
+
+        const dbRefFn = (path, opts) => {
+            const constraints = [orderByKey(), limitToFirst(opts.limit)];
+            if (opts.cursor) constraints.push(startAt(opts.cursor));
+            return query(databaseReference(path), ...constraints);
+        };
+
+        const result = await pagedModule.fetchPagedQuery(dbRefFn, physicalPath, {
+            pageSize,
+            cursor,
+            getFn: (ref) => get(ref)
+        });
+
+        return successfulResult(result);
+    } catch (error) {
+        return failedResult(error);
+    }
+}
+
+export async function dbFetchCompleteCollection(logicalPath, {
+    pageSize = 2000,
+    maxRecords = 100000,
+    onProgress = null
+} = {}) {
+    try {
+        const physicalPath = resolve(logicalPath);
+        const pagedModule = window.SIMNIPagedQuery;
+        if (!pagedModule) throw new Error('Modul paged query belum dimuat.');
+
+        const dbRefFn = (path, opts) => {
+            const constraints = [orderByKey(), limitToFirst(opts.limit)];
+            if (opts.cursor) constraints.push(startAt(opts.cursor));
+            return query(databaseReference(path), ...constraints);
+        };
+
+        const result = await pagedModule.fetchCompleteCollectionPaged(dbRefFn, physicalPath, {
+            pageSize,
+            maxRecords,
+            onProgress,
+            getFn: (ref) => get(ref)
+        });
+
+        return successfulResult(result);
+    } catch (error) {
+        return failedResult(error);
+    }
+}
+
+export async function dbGetAnnualArchives({ before = null, metadataOnly = false } = {}) {
     try {
         assertFeature(
             'archive'
         );
 
-        const physicalPath =
-            archiveBasePath();
-
-        const snapshot = await readDatabase(physicalPath);
+        const access = currentAccess();
+        const physicalPath = metadataOnly
+            ? `workspaces/${access.workspaceId}/archives/_index/${access.activeAcademicYearId}`
+            : archiveBasePath();
+        const pageSize = metadataOnly ? 20 : 1;
+        const constraints = [orderByKey(), limitToLast(pageSize)];
+        if (before) constraints.push(endBefore(safeArchiveId(before)));
+        const snapshot = await get(query(databaseReference(physicalPath), ...constraints));
 
         const raw =
             snapshot.val() ||
@@ -666,7 +790,9 @@ export async function dbGetAnnualArchives() {
 
         return successfulResult({
             value,
-            physicalPath
+            physicalPath,
+            nextCursor: Object.keys(value).length === pageSize ? Object.keys(value).sort()[0] : null,
+            metadataOnly
         });
     } catch (error) {
         return failedResult(
@@ -701,11 +827,13 @@ export async function dbGetAnnualArchiveStatus() {
             'archive'
         );
 
-        const archives = await dbGetAnnualArchives();
+        const archives = await dbGetAnnualArchives({ metadataOnly: true });
         if (!archives.ok) throw archives.error;
         const verified = Object.values(archives.value || {}).filter((item) => item?.verified === true);
         verified.sort((left, right) => String(right.verifiedAt || right.createdAt || '').localeCompare(String(left.verifiedAt || left.createdAt || '')));
-        return successfulResult({ count: verified.length, latest: verified[0] || null });
+        return successfulResult({ count: verified.length, latest: verified[0] || null,
+            partial: Boolean(archives.nextCursor), nextCursor: archives.nextCursor,
+            legacyUnindexed: true });
     } catch (error) {
         return failedResult(
             error
@@ -808,12 +936,32 @@ export async function dbPutAnnualArchive(
             role: access.role,
             createdBy: access.uid
         };
-        await setDatabase(physicalPath, stored);
+        const serializedBytes = new TextEncoder().encode(JSON.stringify(stored)).byteLength;
+        const maxArchiveBytes = window.SIMNIBackupCore?.MAX_FILE_BYTES || (25 * 1024 * 1024);
+        if (serializedBytes > maxArchiveBytes) {
+            throw new Error(`Arsip melebihi ${Math.round(maxArchiveBytes / (1024 * 1024))} MiB. Gunakan ekspor JSON lokal sebelum meninjau retensi.`);
+        }
+        const { database: _snapshot, ...metadata } = stored;
+        const archiveRoot = `workspaces/${access.workspaceId}/archives`;
+        const indexReference = databaseReference(`${archiveRoot}/_index/${access.activeAcademicYearId}`);
+        const reservation = await runTransaction(indexReference, current => {
+            const index = { ...(current || {}) };
+            const others = Object.entries(index).filter(([id]) => id !== safeId);
+            const bytes = others.reduce((sum, [, item]) => sum + Number(item.snapshotBytes || 0), serializedBytes);
+            if (others.length >= 20 || bytes > 128 * 1024 * 1024) return;
+            index[safeId] = { ...metadata, verified: index[safeId]?.verified === true,
+                pending: true, reservedAt: Date.now(), snapshotBytes: serializedBytes };
+            return index;
+        }, { applyLocally: false });
+        if (!reservation.committed) throw new Error('Batas arsip tercapai (20 versi / 128 MiB per tahun). Ekspor dan verifikasi arsip lama melalui Pengelolaan Arsip sebelum menghapus versi pilihan.');
+        if (access.uid !== currentAccess().uid || access.workspaceId !== currentAccess().workspaceId ||
+            access.activeAcademicYearId !== currentAccess().activeAcademicYearId) throw new Error('Sesi berubah sebelum arsip ditulis.');
+        const operation = await commitAdministrativeOperation({ action: 'annual_archive', targetId: safeId, expectedYear: access.activeAcademicYearId, archive: stored });
         const readBack = await readAnnualArchive(safeId);
         if (!readBack.value || readBack.value.integrity?.hash !== hash) {
             throw new Error('Read-back arsip gagal diverifikasi.');
         }
-        return successfulResult({ archiveId: safeId, value: readBack.value, physicalPath });
+        return successfulResult({ archiveId: safeId, value: readBack.value, physicalPath, receipt: operation.receipt });
     } catch (error) {
         return failedResult(
             error
@@ -821,20 +969,86 @@ export async function dbPutAnnualArchive(
     }
 }
 
+export async function dbExportAnnualArchive(id) {
+    try {
+        assertFeature('archive');
+        assertFeature('archive', 'export');
+        const result = await readAnnualArchive(safeArchiveId(id));
+        if (!result.value) throw new Error('Arsip tidak ditemukan.');
+        return successfulResult(result);
+    } catch (error) { return failedResult(error); }
+}
+
+export async function dbDeleteAnnualArchiveAfterVerification(id, exportedArchive) {
+    try {
+        assertWritableState(); assertFeature('archive', 'manage');
+        const safeId = safeArchiveId(id);
+        const access = { ...currentAccess() };
+        const result = await readAnnualArchive(safeId);
+        const expected = result.value;
+        if (!expected || exportedArchive?.archiveId !== safeId ||
+            JSON.stringify(exportedArchive) !== JSON.stringify(expected)) throw new Error('Berkas ekspor tidak cocok dengan arsip cloud. Arsip dipertahankan.');
+        const verified = await window.SIMNIArchive?.verifyAnnualArchive(exportedArchive, { requireCurrentScope: true, requireCurrentHash: false });
+        if (!verified?.ok) throw new Error('Hash/scope berkas arsip tidak lolos verifikasi.');
+        const current = await window.SIMNIBackup?.buildCurrentEnvelope();
+        if (!current?.integrity?.hash || current.integrity.hash === expected.integrity?.hash) throw new Error('Arsip snapshot aktif dipertahankan untuk pemulihan dan reset.');
+        if (access.uid !== currentAccess().uid || access.workspaceId !== currentAccess().workspaceId || access.activeAcademicYearId !== currentAccess().activeAcademicYearId) throw new Error('Sesi berubah.');
+        const expectedText = JSON.stringify(expected);
+        const deleted = await runTransaction(databaseReference(archivePhysicalPath(safeId)), value => {
+            if (JSON.stringify(normalizeArchiveCompatibility(value)) !== expectedText) return;
+            return null;
+        }, { applyLocally: false });
+        if (!deleted.committed) throw new Error('Arsip berubah selama verifikasi; tidak dihapus.');
+        await removeDatabase(`workspaces/${access.workspaceId}/archives/_index/${access.activeAcademicYearId}/${safeId}`);
+        return successfulResult({ deleted: true, archiveId: safeId });
+    } catch (error) { return failedResult(error); }
+}
+
+window.dbExportAnnualArchive = dbExportAnnualArchive;
+window.dbDeleteAnnualArchiveAfterVerification = dbDeleteAnnualArchiveAfterVerification;
+window.dbRepairAnnualArchiveReservation = async function (id) {
+    try {
+        assertWritableState(); assertFeature('archive', 'manage');
+        const safeId = safeArchiveId(id);
+        const access = { ...currentAccess() };
+        const indexPath = `workspaces/${access.workspaceId}/archives/_index/${access.activeAcademicYearId}/${safeId}`;
+        const metadata = (await readDatabase(indexPath)).val();
+        if (!metadata?.pending) return successfulResult({ repaired: false });
+        const archived = (await readAnnualArchive(safeId)).value;
+        let replacement = null;
+        if (archived) {
+            const { database: _snapshot, ...header } = archived;
+            replacement = { ...header, snapshotBytes: new TextEncoder().encode(JSON.stringify(archived)).byteLength };
+        } else if (Date.now() - Number(metadata.reservedAt || Date.parse(metadata.createdAt || '') || Date.now()) < 3600000) {
+            throw new Error('Reservasi masih baru. Tunggu satu jam sebelum memeriksa ulang proses yang terputus.');
+        }
+        if (access.uid !== currentAccess().uid || access.workspaceId !== currentAccess().workspaceId || access.activeAcademicYearId !== currentAccess().activeAcademicYearId) throw new Error('Sesi berubah.');
+        const expected = JSON.stringify(metadata);
+        const result = await runTransaction(databaseReference(indexPath), current => JSON.stringify(current) === expected ? replacement : undefined, { applyLocally: false });
+        if (!result.committed) throw new Error('Reservasi berubah; muat ulang daftar arsip.');
+        return successfulResult({ repaired: true });
+    } catch (error) { return failedResult(error); }
+};
+
 
 export async function dbMarkRolloverArchiveReady(envelope) {
     try {
         const access = currentAccess();
-        const canonicalWorkspace = window.SIMNIAccessPolicy?.ROLE_SCOPES?.[access.role]?.workspaceId;
-        if (!canonicalWorkspace || access.workspaceId !== canonicalWorkspace) {
-            throw new Error('Migrasi workspace wajib VERIFIED sebelum arsip dapat menjadi gate reset.');
+        if (!window.SIMNIAccessPolicy?.hasFeature?.(access.role, window.SIMNIAccessPolicy.FEATURES.ARCHIVE)) {
+            throw new Error('Role aktif tidak memiliki izin arsip tahunan.');
         }
+        window.SIMNIAccessPolicy?.validateProfile?.({ ...access, status: 'active' }, access.uid);
         const core = requireHashCore();
         const verification = await core.verifyEnvelope(envelope);
         if (!verification?.ok) throw new Error('Hash arsip JSON tidak valid.');
         core.validateRestoreScope(envelope, access);
         if (envelope?.completeness?.complete !== true || envelope?.incompletePaths?.length) {
             throw new Error('Arsip belum lengkap; readiness reset ditolak.');
+        }
+        const payloadBytes = new TextEncoder().encode(JSON.stringify(envelope?.database || envelope)).byteLength;
+        const maxArchiveBytes = core.MAX_FILE_BYTES || (25 * 1024 * 1024);
+        if (payloadBytes > maxArchiveBytes) {
+            throw new Error(`Ukuran data arsip (${(payloadBytes / (1024 * 1024)).toFixed(2)} MB) melebihi batas muat ${(maxArchiveBytes / (1024 * 1024)).toFixed(0)} MB.`);
         }
         const yearId = cleanAcademicYear(access.activeAcademicYearId);
         const hash = String(envelope.integrity?.hash || '').toLowerCase();
@@ -847,15 +1061,12 @@ export async function dbMarkRolloverArchiveReady(envelope) {
             academicYearId: yearId,
             archiveHash: hash,
             archiveFilename: String(envelope?.filename || '').slice(0, 180),
+            assignmentRevision: Number(access.assignmentRevision || 1),
             verified: true,
             verifiedAt: new Date().toISOString()
         };
-        await setDatabase(`rollovers/${yearId}/readiness/${access.uid}`, payload);
-        const readBack = await readDatabase(`rollovers/${yearId}/readiness/${access.uid}`);
-        if (!readBack.exists() || readBack.val()?.archiveHash !== hash || readBack.val()?.verified !== true) {
-            throw new Error('Read-back readiness arsip gagal.');
-        }
-        return successfulResult({ value: readBack.val() });
+        // Export verification is local evidence only. It never authorizes server deletion.
+        return successfulResult({ value: {...payload, authority: 'local-export-verification', authorizesDeletion: false} });
     } catch (error) {
         return failedResult(error);
     }
@@ -864,114 +1075,20 @@ export async function dbMarkRolloverArchiveReady(envelope) {
 export async function dbGetRolloverOverview() {
     try {
         const access = currentAccess();
-        if (access.role !== 'superuser') throw new Error('Overview rollover hanya tersedia untuk Superuser.');
-        const yearId = cleanAcademicYear(access.activeAcademicYearId);
-        const [usersSnapshot, rolloverSnapshot] = await Promise.all([
-            readDatabase('users'),
-            readDatabase(`rollovers/${yearId}`)
-        ]);
-        return successfulResult({
-            yearId,
-            users: usersSnapshot.val() || {},
-            rollover: rolloverSnapshot.val() || {}
-        });
+        if (access.role !== 'superuser' || String(access.email || '').toLowerCase() !== OWNER_EMAIL) {
+            throw new Error('Overview rollover hanya tersedia untuk owner SIMNI.');
+        }
+        const result = await getGlobalRolloverOverview();
+        return successfulResult(result);
     } catch (error) {
         return failedResult(error);
     }
 }
 
-export async function dbCommitAcademicYearRollover({ nextYearId, superuserClassId }) {
-    try {
-        const access = currentAccess();
-        if (access.role !== 'superuser' || access.email !== 'unggaran.sditbm@gmail.com' || access.workspaceId !== 'ws_superuser') {
-            throw new Error('Commit tahun baru hanya tersedia untuk owner pada workspace canonical.');
-        }
-        assertOnlineForWrite();
-        const currentYearId = cleanAcademicYear(access.activeAcademicYearId);
-        const nextYear = cleanAcademicYear(nextYearId);
-        const currentStart = Number(currentYearId.slice(0, 4));
-        if (Number(nextYear.slice(0, 4)) !== currentStart + 1) {
-            throw new Error('Tahun baru harus tepat satu periode setelah tahun aktif.');
-        }
-        const nextSuperClass = cleanClassId(superuserClassId, 'Kelas Superuser');
-
-        const overview = await dbGetRolloverOverview();
-        if (!overview.ok) throw overview.error;
-        const profiles = Object.values(overview.users || {});
-        const byEmail = new Map(profiles.map((profile) => [String(profile?.email || '').toLowerCase(), profile]));
-        const required = [
-            ['unggaran.sditbm@gmail.com', 'superuser', 'ws_superuser', nextSuperClass],
-            ['anur.auliya01@gmail.com', 'vip', 'ws_pjok', 'PJOK']
-        ];
-        const readiness = overview.rollover?.readiness || {};
-        for (const [email, role, workspaceId] of required) {
-            const profile = byEmail.get(email);
-            if (!profile?.uid || profile.role !== role || profile.workspaceId !== workspaceId) {
-                throw new Error(`Profil canonical ${role} belum siap atau migrasi workspace belum selesai.`);
-            }
-            const ready = readiness[profile.uid];
-            if (!ready?.verified || ready.archiveHash?.length !== 64 || ready.workspaceId !== workspaceId || ready.academicYearId !== currentYearId) {
-                throw new Error(`Arsip role ${role} belum diverifikasi ulang untuk ${currentYearId}.`);
-            }
-        }
-
-        const preparedAt = new Date().toISOString();
-        await updateDatabase(`rollovers/${currentYearId}`, {
-            state: 'ready',
-            preparedAt,
-            preparedBy: access.uid,
-            nextYearId: nextYear
-        });
-
-        const updates = {};
-        for (const [email, role, workspaceId, classId] of required) {
-            const profile = byEmail.get(email);
-            updates[`workspaces/${workspaceId}/academicYears/${currentYearId}`] = null;
-            updates[`workspaces/${workspaceId}/settings/identity`] = null;
-            updates[`workspaces/${workspaceId}/academicYears/${nextYear}/meta`] = {
-                schemaVersion: 3,
-                academicYearId: nextYear,
-                initializedAt: preparedAt,
-                initializedBy: access.uid,
-                status: 'active'
-            };
-            updates[`users/${profile.uid}/activeAcademicYearId`] = nextYear;
-            updates[`users/${profile.uid}/classId`] = classId;
-            updates[`assignments/${nextYear}/${profile.uid}`] = {
-                uid: profile.uid,
-                email,
-                role,
-                workspaceId,
-                classId,
-                academicYearId: nextYear,
-                assignedAt: preparedAt,
-                assignedBy: access.uid
-            };
-        }
-        updates['system/academicYear/activeYearId'] = nextYear;
-        updates['system/academicYear/updatedAt'] = preparedAt;
-        updates['system/academicYear/updatedBy'] = access.uid;
-        updates[`rollovers/${currentYearId}/state`] = 'completed';
-        updates[`rollovers/${currentYearId}/completedAt`] = preparedAt;
-        updates[`rollovers/${currentYearId}/completedBy`] = access.uid;
-        await updateDatabase('', updates);
-
-        const verification = await Promise.all(required.map(async ([email, role, workspaceId, classId]) => {
-            const profile = byEmail.get(email);
-            const [oldYear, newMeta, userYear, userClass] = await Promise.all([
-                readDatabase(`workspaces/${workspaceId}/academicYears/${currentYearId}`),
-                readDatabase(`workspaces/${workspaceId}/academicYears/${nextYear}/meta`),
-                readDatabase(`users/${profile.uid}/activeAcademicYearId`),
-                readDatabase(`users/${profile.uid}/classId`)
-            ]);
-            return !oldYear.exists() && newMeta.val()?.status === 'active' && userYear.val() === nextYear && userClass.val() === classId && profile.role === role;
-        }));
-        if (verification.some((valid) => !valid)) throw new Error('Post-verify rollover gagal. Akses tetap harus dibekukan untuk audit manual.');
-        return successfulResult({ currentYearId, nextYearId: nextYear, completedAt: preparedAt, verification });
-    } catch (error) {
-        return failedResult(error);
-    }
+export async function dbCommitAcademicYearRollover() {
+    return failedResult(new Error('Gunakan Kelola Akun & Penugasan > Tahun Ajaran. Data tahun lama dipertahankan.'));
 }
+
 
 export function getCurrentUserMeta() {
     const user =
@@ -1026,14 +1143,27 @@ export function getCurrentUserMeta() {
     };
 }
 
+export async function dbRecordAuthoritativeAudit() {
+    // Compatibility only: browser-authored committed receipts are forbidden.
+    return failedResult(new Error('Audit hanya diterbitkan oleh operasi server. Gunakan receipt hasil operasi administratif.'));
+}
+
+export async function logSIMNIAuditEvent(action, targetId = '', details = {}, options = {}) {
+    return dbRecordAuthoritativeAudit(action, targetId, details, options);
+}
+
 const SIMNIRepository =
     Object.freeze({
+        dbCompareRecords,
         resolveDatabasePath,
 
         dbSet,
         dbUpdate,
+        dbAuditedUpdate,
         dbRemove,
         dbGet,
+        dbFetchPagedCollection,
+        dbFetchCompleteCollection,
 
         dbGetAnnualArchives,
         dbCreateAnnualArchive,
@@ -1045,6 +1175,9 @@ const SIMNIRepository =
         dbMarkRolloverArchiveReady,
         dbGetRolloverOverview,
         dbCommitAcademicYearRollover,
+
+        dbRecordAuthoritativeAudit,
+        logSIMNIAuditEvent,
 
         getCurrentUserMeta
     });
@@ -1052,12 +1185,15 @@ const SIMNIRepository =
 Object.assign(
     window,
     {
+        dbCompareRecords,
         resolveDatabasePath,
 
         dbSet,
         dbUpdate,
         dbRemove,
         dbGet,
+        dbFetchPagedCollection,
+        dbFetchCompleteCollection,
 
         dbGetAnnualArchives,
         dbCreateAnnualArchive,
@@ -1069,6 +1205,9 @@ Object.assign(
         dbMarkRolloverArchiveReady,
         dbGetRolloverOverview,
         dbCommitAcademicYearRollover,
+
+        dbRecordAuthoritativeAudit,
+        logSIMNIAuditEvent,
 
         getCurrentUserMeta,
 

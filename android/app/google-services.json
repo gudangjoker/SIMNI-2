@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "618633503047",
+    "firebase_url": "https://admin-kelas-3a-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "admin-kelas-3a",
+    "storage_bucket": "admin-kelas-3a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:618633503047:android:ab7fa40b94c01d4b7a2c62",
+        "android_client_info": {
+          "package_name": "id.sch.simni.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfnvWCvkfj9L9ES_PD4STqBV_BTptKrhQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

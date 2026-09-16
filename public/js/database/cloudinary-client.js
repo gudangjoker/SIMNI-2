@@ -12,7 +12,8 @@ import {
 
 const PURPOSE = Object.freeze({
     LOGO: 'logo',
-    DOCUMENT: 'document'
+    DOCUMENT: 'document',
+    STUDENT_PHOTO: 'student_photo'
 });
 
 const ALLOWED_PURPOSES =
@@ -835,13 +836,32 @@ export async function uploadDocument(
     );
 }
 
-export async function deleteCloudinaryAsset(
-    publicId,
-    resourceType =
-        'image',
-    purpose =
-        null
+export async function uploadStudentPhoto(
+    file
 ) {
+    return signedCloudinaryUpload(
+        file,
+        PURPOSE.STUDENT_PHOTO
+    );
+}
+
+export async function deleteCloudinaryAsset(
+    publicIdOrOptions,
+    resourceTypeArg = 'image',
+    purposeArg = null
+) {
+    let publicId = '';
+    let resourceType = resourceTypeArg;
+    let purpose = purposeArg;
+
+    if (publicIdOrOptions && typeof publicIdOrOptions === 'object') {
+        publicId = publicIdOrOptions.publicId || publicIdOrOptions.public_id || '';
+        resourceType = publicIdOrOptions.resourceType || resourceTypeArg;
+        purpose = publicIdOrOptions.purpose || purposeArg;
+    } else {
+        publicId = publicIdOrOptions;
+    }
+
     const normalizedPublicId =
         cleanText(
             publicId
@@ -892,6 +912,8 @@ const SIMNICloudinary =
         uploadLogo,
 
         uploadDocument,
+
+        uploadStudentPhoto,
 
         deleteCloudinaryAsset,
 

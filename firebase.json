@@ -2,14 +2,10 @@
   "database": {
     "rules": "firebase/database.rules.production.json"
   },
-  "firestore": {
-    "rules": "chat/firestore.rules",
-    "indexes": "chat/firestore.indexes.json"
-  },
   "hosting": {
     "public": "public",
     "predeploy": [
-      "node scripts/build-hosting.mjs"
+      "node scripts/verify-hosting.mjs"
     ],
     "ignore": [
       "firebase.json",
@@ -37,7 +33,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.cloudinary.com https://res.cloudinary.com https://*.workers.dev https://firestore.googleapis.com; frame-src 'self' https://*.firebaseapp.com; frame-ancestors 'none'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+            "value": "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.cloudinary.com https://res.cloudinary.com https://*.workers.dev; frame-src 'self' https://*.firebaseapp.com; frame-ancestors 'none'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
           },
           {
             "key": "Permissions-Policy",

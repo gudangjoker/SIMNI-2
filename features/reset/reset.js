@@ -147,11 +147,11 @@
 
     function requireRepository() {
         if (
-            typeof window.dbUpdate !==
+            typeof window.dbAuditedUpdate !==
             'function'
         ) {
             throw new Error(
-                'dbUpdate belum tersedia.'
+                'dbAuditedUpdate belum tersedia.'
             );
         }
 
@@ -420,96 +420,6 @@
         };
     }
 
-    async function writeAudit(
-        scopeKey,
-        scope,
-        current,
-        archive,
-        targets,
-        denied
-    ) {
-        if (
-            typeof window
-                .logSIMNIAuditEvent !==
-            'function'
-        ) {
-            return {
-                ok:
-                    true,
-
-                skipped:
-                    true
-            };
-        }
-
-        try {
-            const result =
-                await window
-                    .logSIMNIAuditEvent(
-                        'annual_reset_completed',
-                        scopeKey,
-                        {
-                            label:
-                                scope.label,
-
-                            archiveId:
-                                archive.archiveId ||
-                                null,
-
-                            archiveHash:
-                                archive.integrity
-                                    ?.hash ||
-                                null,
-
-                            academicYearId:
-                                current
-                                    .activeAcademicYearId,
-
-                            classId:
-                                current.classId,
-
-                            pathCount:
-                                targets.length,
-
-                            paths:
-                                [
-                                    ...targets
-                                ],
-
-                            deniedPaths:
-                                denied.map(
-                                    (
-                                        entry
-                                    ) =>
-                                        entry.path
-                                )
-                        }
-                    );
-
-            return (
-                result ||
-                {
-                    ok:
-                        true
-                }
-            );
-
-        } catch (
-            error
-        ) {
-            console.error(
-                '[SIMNI Reset] Audit event gagal:',
-                error
-            );
-
-            return {
-                ok:
-                    false,
-
-                error
-            };
-        }
-    }
 
     async function performReset(
         scopeKey
@@ -647,8 +557,8 @@
 
             const writeResult =
                 await window
-                    .dbUpdate(
-                        updates
+                    .dbAuditedUpdate(
+                        'annual_reset', scopeKey, updates
                     );
 
             if (
@@ -686,15 +596,7 @@
                 );
             }
 
-            const audit =
-                await writeAudit(
-                    scopeKey,
-                    scope,
-                    current,
-                    archive,
-                    targets,
-                    denied
-                );
+            const audit = writeResult;
 
             runtime.lastOperation = {
                 type:
@@ -741,8 +643,8 @@
                     ),
 
                 auditLogged:
-                    audit?.ok !==
-                    false,
+                    audit?.ok ===
+                    true,
 
                 completedAt:
                     nowISO()
@@ -856,75 +758,14 @@
 
     async function startAnnualRollover(event) {
         event?.preventDefault?.();
-        if (runtime.busy) {
-            notify('Operasi reset lain masih berlangsung.', 'info');
-            return { ok: false, reason: 'busy' };
+        if (!window.SIMNIAccess?.canAccess('accounts')) {
+            notify('Pergantian tahun hanya untuk superuser.', 'error');
+            return {ok:false};
         }
-        runtime.busy = true;
-        try {
-            const current = requireResetAccess();
-            if (current.workspaceId !== 'ws_superuser') {
-                throw new Error('Migrasi Superuser ke ws_superuser wajib diselesaikan sebelum rollover.');
-            }
-            const nextYearId = cleanText(document.getElementById('rollover-next-year')?.value);
-            const superuserClassId = cleanText(document.getElementById('rollover-superuser-class')?.value).toUpperCase();
-            if (!/^\d{4}-\d{4}$/.test(nextYearId)) throw new Error('Format tahun pelajaran baru tidak valid.');
-            if (!/^[1-6][A-Z]$/.test(superuserClassId)) {
-                throw new Error('Kelas baru harus memakai format 1A sampai 6Z.');
-            }
-            if (typeof window.dbGetRolloverOverview !== 'function' || typeof window.dbCommitAcademicYearRollover !== 'function') {
-                throw new Error('Repository rollover belum tersedia.');
-            }
-            showProgress('Memeriksa readiness arsip Superuser dan VIP...');
-            const overview = await window.dbGetRolloverOverview();
-            if (!overview?.ok) throw overview?.error || new Error('Status arsip role tidak dapat dibaca.');
-            const readiness = overview.rollover?.readiness || {};
-            const profiles = Object.values(overview.users || {});
-            const requiredScopes = [
-                ['unggaran.sditbm@gmail.com', 'superuser', 'ws_superuser'],
-                ['anur.auliya01@gmail.com', 'vip', 'ws_pjok']
-            ];
-            const readinessCount = requiredScopes.filter(([email, role, workspaceId]) => {
-                const profile = profiles.find((item) => String(item?.email || '').toLowerCase() === email);
-                const ready = profile?.uid ? readiness[profile.uid] : null;
-                return profile?.role === role && profile?.workspaceId === workspaceId && ready?.verified === true && ready?.workspaceId === workspaceId && ready?.academicYearId === current.activeAcademicYearId;
-            }).length;
-            if (readinessCount !== requiredScopes.length) throw new Error(`Baru ${readinessCount}/${requiredScopes.length} role yang memiliki arsip VERIFIED sesuai scope.`);
-            hideProgress();
-
-            const approved = window.confirm(
-                `RESET TAHUN BUKU GLOBAL\n\nTahun: ${current.activeAcademicYearId} → ${nextYearId}\nKelas Superuser: ${superuserClassId}\nVIP: PJOK\n\nData operasional tahun lama pada dua workspace canonical akan dihapus setelah arsip VERIFIED. Lanjutkan?`
-            );
-            if (!approved) return { ok: false, cancelled: true };
-            const typed = window.prompt(`Ketik tepat: AKTIFKAN ${nextYearId}`);
-            if (typed !== `AKTIFKAN ${nextYearId}`) {
-                notify('Rollover dibatalkan karena konfirmasi tidak cocok.', 'info');
-                return { ok: false, cancelled: true };
-            }
-
-            showProgress('Mengosongkan tahun lama dan membuat struktur tahun baru secara atomik...');
-            const result = await window.dbCommitAcademicYearRollover({ nextYearId, superuserClassId });
-            if (!result?.ok) throw result?.error || new Error('Commit rollover ditolak.');
-            runtime.lastOperation = {
-                type: 'annual-rollover',
-                status: 'verified',
-                currentYearId: result.currentYearId,
-                nextYearId: result.nextYearId,
-                completedAt: result.completedAt
-            };
-            notify(`Tahun pelajaran ${nextYearId} aktif. Database operasional baru kosong dan terverifikasi.`, 'success');
-            window.setTimeout(() => window.location.reload(), 1200);
-            return result;
-        } catch (rawError) {
-            const error = normalizeError(rawError, 'Rollover tahun buku gagal.');
-            console.error('[SIMNI Reset] Rollover gagal:', error);
-            runtime.lastOperation = { type: 'annual-rollover', status: 'failed', error: error.message, completedAt: nowISO() };
-            notify(`Rollover gagal: ${error.message}`, 'error');
-            return { ok: false, error };
-        } finally {
-            runtime.busy = false;
-            hideProgress();
-        }
+        window.SIMNIDialog?.close?.(document.getElementById('modal-pengaturan'));
+        document.querySelector('[data-target="kelola-akun"]')?.click();
+        notify('Susun dan aktifkan penempatan melalui bagian Tahun Ajaran. Data tahun lama tetap tersimpan.', 'info');
+        return {ok:true,requiresOwnerPlacement:true};
     }
 
     function getRuntimeSnapshot() {

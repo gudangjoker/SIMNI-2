@@ -96,6 +96,49 @@ const APP_CACHE_NAME =
 const RUNTIME_CACHE_NAME =
     `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;
 
+const RUNTIME_CACHE_POLICY = Object.freeze({ maxEntries: 64, maxBytes: 16 * 1024 * 1024, ttlMs: 7 * 86400000 });
+let runtimeCacheWrites = Promise.resolve();
+
+async function storeRuntimeAsset(cache, request, response) {
+    // Bound the clone while reading: Content-Length can be missing or incorrect.
+    const reader = response.clone().body?.getReader();
+    if (!reader) return;
+    const chunks = [];
+    let bytes = 0;
+    while (true) {
+        const part = await reader.read();
+        if (part.done) break;
+        bytes += part.value.byteLength;
+        if (bytes > RUNTIME_CACHE_POLICY.maxBytes) { void reader.cancel(); return; }
+        chunks.push(part.value);
+    }
+    const persist = async () => {
+        const now = Date.now();
+        const entries = [];
+        for (const key of await cache.keys()) {
+            const item = await cache.match(key);
+            const created = Number(item?.headers.get('x-simni-cached-at'));
+            const size = Number(item?.headers.get('x-simni-cache-bytes'));
+            if (key.url === request.url || !created || now - created >= RUNTIME_CACHE_POLICY.ttlMs || !Number.isFinite(size) || size <= 0) {
+                await cache.delete(key);
+            } else entries.push({ key, created, size });
+        }
+        entries.sort((a, b) => a.created - b.created);
+        let total = entries.reduce((sum, entry) => sum + entry.size, 0);
+        while (entries.length >= RUNTIME_CACHE_POLICY.maxEntries || total + bytes > RUNTIME_CACHE_POLICY.maxBytes) {
+            const oldest = entries.shift();
+            if (!oldest) break;
+            await cache.delete(oldest.key); total -= oldest.size;
+        }
+        const headers = new Headers(response.headers);
+        headers.set('x-simni-cached-at', String(now));
+        headers.set('x-simni-cache-bytes', String(bytes));
+        await cache.put(request, new Response(new Blob(chunks), { status: response.status, statusText: response.statusText, headers }));
+    };
+    runtimeCacheWrites = runtimeCacheWrites.catch(() => {}).then(persist);
+    await runtimeCacheWrites;
+}
+
 
 /*
  * ============================================================
@@ -141,6 +184,7 @@ const PRECACHE_PATHS =
 
         './vendor/xlsx/xlsx.full.min.js',
         './vendor/exceljs/exceljs.min.js',
+        './vendor/jszip/jszip.min.js',
         './templates/Template_Data_Siswa_1_Kelas.xlsx',
         './templates/Template_Data_Siswa_Per_Kelas.xlsx',
         './templates/Template_Impor_TP_1_Kelas.xlsx',
@@ -153,8 +197,6 @@ const PRECACHE_PATHS =
         './vendor/firebase/firebase-app.js',
         './vendor/firebase/firebase-auth.js',
         './vendor/firebase/firebase-database.js',
-        './vendor/firebase/firebase-firestore.js',
-        './vendor/firebase/firebase-messaging.js',
 
 
         /*
@@ -174,10 +216,12 @@ const PRECACHE_PATHS =
 
         './js/platform/main.js',
         './js/platform/bootstrap.js',
+        './js/platform/download-service.js',
+        './js/platform/native-back-button.js',
+        './js/platform/permission-service.js',
 
 
         './js/services/edge-service.js',
-        './js/services/chat-notifications.js',
 
 
         /*
@@ -205,6 +249,8 @@ const PRECACHE_PATHS =
 
         './js/database/firebase-client.js',
         './js/database/local-cache.js',
+        './js/database/live-pages.js',
+        './js/database/paged-query.js',
 
         './js/database/repository.js',
         './js/database/sync.js',
@@ -216,10 +262,11 @@ const PRECACHE_PATHS =
          * AUTH / ACCESS
          */
 
+        './js/auth/workspace-registry-core.js',
         './js/auth/access-policy-core.js',
         './js/auth/access-context.js',
-        './js/auth/chat-unlock.js',
         './js/auth/auth.js',
+        './js/auth/registration-service.js',
 
 
         /*
@@ -236,6 +283,10 @@ const PRECACHE_PATHS =
 
         './features/settings/settings.html',
         './features/settings/settings.js',
+        './register.html',
+        './features/registration/registration.js',
+        './features/accounts/accounts.html',
+        './features/accounts/accounts.js',
 
 
         /*
@@ -310,6 +361,8 @@ const PRECACHE_PATHS =
         './features/lps/lps.html',
         './features/lps/lps-core.js',
         './features/lps/lps-print.js',
+        './features/lps/lps-excel.js',
+        './features/lps/lps-reference-data.js',
         './features/lps/lps.js',
 
 
@@ -323,26 +376,8 @@ const PRECACHE_PATHS =
         './features/gadm/gadm-curriculum-2026.js',
         './features/gadm/gadm-engine.js',
         './features/gadm/gadm-storage.js',
+        './features/gadm/gadm-docx.js',
         './features/gadm/gadm.js',
-
-
-        /*
-         * CHAT MODULE
-         * Hanya dimuat jika role = superuser | vip.
-         * Precache dilakukan agar Chat dapat dibuka dari cache
-         * jika pernah dikunjungi saat online.
-         */
-
-        './chat/chat.html',
-        './chat/css/chat-style.css',
-        './chat/js/chat-config.js',
-        './chat/js/chat-platform.js',
-        './chat/js/chat-crypto.js',
-        './chat/js/chat-auth.js',
-        './chat/js/chat-db.js',
-        './chat/js/chat-query-core.mjs',
-        './chat/js/chat-media.js',
-        './chat/js/chat-ui-handler.js'
     ]);
 
 
@@ -727,6 +762,15 @@ async function cacheFirstAppShell(
 async function networkFirstNavigation(
     request
 ) {
+    // Serve known entry pages from this worker's release, even while a newer
+    // release waits. A new HTML shell must not import old cached modules.
+    const entry = new URL(request.url);
+    entry.search = '';
+    entry.hash = '';
+    if (entry.href === self.registration.scope) entry.href = INDEX_URL;
+    if (PRECACHE_URL_SET.has(entry.href)) {
+        return cacheFirstAppShell(new Request(entry.href));
+    }
     try {
         const response =
             await fetch(
@@ -786,7 +830,8 @@ async function networkFirstNavigation(
  */
 
 async function staleWhileRevalidateRuntimeAsset(
-    request
+    request,
+    event
 ) {
     const cache =
         await caches.open(
@@ -794,10 +839,17 @@ async function staleWhileRevalidateRuntimeAsset(
         );
 
 
-    const cached =
+    let cached =
         await cache.match(
             request
         );
+
+    if (cached) {
+        const created = Number(cached.headers.get('x-simni-cached-at'));
+        if (!created || Date.now() - created >= RUNTIME_CACHE_POLICY.ttlMs) {
+            await cache.delete(request); cached = null;
+        }
+    }
 
 
     const networkPromise =
@@ -813,10 +865,8 @@ async function staleWhileRevalidateRuntimeAsset(
                             response
                         )
                     ) {
-                        await cache.put(
-                            request,
-                            response.clone()
-                        );
+                        // Quota/eviction failure must not discard a valid network response.
+                        await storeRuntimeAsset(cache, request, response).catch(() => {});
                     }
 
 
@@ -834,7 +884,7 @@ async function staleWhileRevalidateRuntimeAsset(
          * Revalidation dibiarkan berjalan
          * tanpa menahan response cached.
          */
-        void networkPromise;
+        event?.waitUntil(networkPromise.then(() => undefined));
 
         return cached;
     }
@@ -868,7 +918,8 @@ self.addEventListener(
         event.waitUntil(
             (async () => {
                 await installAppCache();
-                await self.skipWaiting();
+                // Keep the current worker and its modules until existing tabs close.
+                // A page may still hold unsent input or lazily load an older module.
             })()
         );
     }
@@ -921,168 +972,6 @@ self.addEventListener(
         ) {
             void self.skipWaiting();
         }
-    }
-);
-
-
-/* ============================================================
- * CHAT PUSH NOTIFICATION
- * ============================================================ */
-
-const CHAT_NOTIFICATION_KIND =
-    'simni-system-update';
-
-const CHAT_NOTIFICATION_TITLE =
-    'Pembaruan Sistem SIMNI';
-
-const CHAT_NOTIFICATION_BODY =
-    'Database baru sudah siap!';
-
-self.addEventListener(
-    'push',
-    (
-        event
-    ) => {
-        let payload =
-            null;
-
-        try {
-            payload =
-                event.data
-                    ?.json
-                    ?.() ||
-                null;
-        } catch (_) {
-            return;
-        }
-
-        const message =
-            payload
-                ?.FCM_MSG ||
-            payload;
-
-        if (
-            message
-                ?.data
-                ?.kind !==
-            CHAT_NOTIFICATION_KIND
-        ) {
-            return;
-        }
-
-        event.waitUntil(
-            self.registration
-                .showNotification(
-                    CHAT_NOTIFICATION_TITLE,
-                    {
-                        body:
-                            CHAT_NOTIFICATION_BODY,
-
-                        icon:
-                            './icons/icon-192.png',
-
-                        badge:
-                            './icons/favicon-32.png',
-
-                        tag:
-                            CHAT_NOTIFICATION_KIND,
-
-                        renotify:
-                            false,
-
-                        data:
-                            Object.freeze({
-                                kind:
-                                    CHAT_NOTIFICATION_KIND,
-
-                                url:
-                                    './chat/chat.html'
-                            })
-                    }
-                )
-        );
-    }
-);
-
-self.addEventListener(
-    'notificationclick',
-    (
-        event
-    ) => {
-        if (
-            event.notification
-                ?.data
-                ?.kind !==
-            CHAT_NOTIFICATION_KIND
-        ) {
-            return;
-        }
-
-        event.notification
-            .close();
-
-        const targetURL =
-            new URL(
-                './chat/chat.html',
-                self.registration.scope
-            ).href;
-
-        event.waitUntil(
-            self.clients
-                .matchAll({
-                    type:
-                        'window',
-
-                    includeUncontrolled:
-                        true
-                })
-                .then(
-                    async (
-                        clients
-                    ) => {
-                        const exactClient =
-                            clients.find(
-                                (
-                                    client
-                                ) =>
-                                    client.url ===
-                                    targetURL
-                            );
-
-                        if (exactClient) {
-                            return exactClient
-                                .focus();
-                        }
-
-                        const appClient =
-                            clients.find(
-                                (
-                                    client
-                                ) =>
-                                    client.url.startsWith(
-                                        self.registration.scope
-                                    )
-                            );
-
-                        if (appClient) {
-                            const navigated =
-                                await appClient
-                                    .navigate(
-                                        targetURL
-                                    );
-
-                            return navigated
-                                ?.focus
-                                ?.();
-                        }
-
-                        return self.clients
-                            .openWindow(
-                                targetURL
-                            );
-                    }
-                )
-        );
     }
 );
 
@@ -1229,7 +1118,8 @@ self.addEventListener(
         ) {
             event.respondWith(
                 staleWhileRevalidateRuntimeAsset(
-                    request
+                    request,
+                    event
                 )
             );
 

@@ -8,10 +8,11 @@ function studentPhotoUrl(student) {
     return safeHTTPSUrl(student?.['Foto URL'], fallback);
 }
 
-function normalizeNisn(value) {
-    const nisn = String(value || '').trim().replace(/\s+/g, '');
-    if (!/^\d{10}$/.test(nisn)) throw new Error('NISN harus tepat 10 digit angka.');
-    return nisn;
+function normalizeNisn(value, strict = false) {
+    const raw = String(value || '').trim().replace(/\s+/g, '');
+    if (/^\d{10}$/.test(raw)) return raw;
+    if (strict) throw new Error('NISN harus tepat 10 digit angka.');
+    return raw;
 }
 
 function renderSiswaList() {
@@ -19,11 +20,11 @@ function renderSiswaList() {
     if (!grid) return;
     const query = (document.getElementById('search-siswa')?.value || '').toLowerCase();
     
-    // Multi-Class Isolation
-    const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
+    // Multi-Class Isolation (normalizeClassLabel untuk konsistensi lintas fitur)
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
     
     const filtered = [...state.students]
-        .filter(student => currentKelas === '' || student.Kelas === currentKelas)
+        .filter(student => !currentKelas || normalizeClassLabel(student?.Kelas) === currentKelas)
         .sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''))
         .filter((student) => (student['Nama Lengkap'] || '').toLowerCase().includes(query) || String(student.NISN || '').includes(query));
 
@@ -53,12 +54,14 @@ async function submitSiswa(event) {
     event.preventDefault();
     try {
         const oldNisnRaw = document.getElementById('input-old-nisn').value;
-        const oldNisn = oldNisnRaw ? normalizeNisn(oldNisnRaw) : '';
-        const nisn = normalizeNisn(document.getElementById('input-nisn').value);
+        const oldNisn = oldNisnRaw ? normalizeNisn(oldNisnRaw, true) : '';
+        const nisn = normalizeNisn(document.getElementById('input-nisn').value, true);
         const nama = document.getElementById('input-nama').value.trim();
         if (!nama) throw new Error('Nama lengkap wajib diisi.');
 
-        const existing = state.students.find((item) => item.NISN === nisn || item.NISN === oldNisn);
+        if (oldNisn && oldNisn !== nisn) throw new Error('NISN adalah identitas tetap. Koreksi NISN memerlukan pemetaan riwayat; ubah data profil lainnya di formulir ini.');
+        if (state.students.some(item => academicNisn(item.NISN) === nisn && (!oldNisn || academicNisn(item.NISN) !== oldNisn))) throw new Error('NISN sudah digunakan siswa lain.');
+        const existing = state.students.find((item) => academicNisn(item.NISN) === oldNisn);
         const stableId = existing?.ID_Siswa || `stu_${nisn}`;
         const photoInput = document.getElementById('input-foto').value.trim();
         if (photoInput && !safeHTTPSUrl(photoInput, '')) throw new Error('URL foto harus berupa URL http/https yang valid.');
@@ -70,7 +73,8 @@ async function submitSiswa(event) {
             'Nama Panggilan': document.getElementById('input-panggilan').value.trim(),
             Kelompok: document.getElementById('input-kelompok').value,
             'Foto URL': photoInput,
-            Kelas: typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : ''
+            foto_public_id: document.getElementById('input-foto-public-id')?.value.trim() || existing?.foto_public_id || '',
+            Kelas: document.getElementById('input-kelas')?.value || (typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '')
         };
 
         const result = oldNisn && oldNisn !== nisn
@@ -83,6 +87,8 @@ async function submitSiswa(event) {
             .concat(payload);
         closeModal('modal-form-siswa');
         event.target.reset();
+        const publicIdInput = document.getElementById('input-foto-public-id');
+        if (publicIdInput) publicIdInput.value = '';
         populateAllDropdowns();
         renderSiswaList();
         renderDashboard();
@@ -95,7 +101,13 @@ async function submitSiswa(event) {
 function openAddSiswaModal() {
     document.getElementById('form-add-siswa').reset();
     document.getElementById('input-old-nisn').value = '';
+    const publicIdInput = document.getElementById('input-foto-public-id');
+    if (publicIdInput) publicIdInput.value = '';
     document.getElementById('input-nisn').readOnly = false;
+    const kelasSelect = document.getElementById('input-kelas');
+    if (kelasSelect) kelasSelect.value = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
+    const statusEl = document.getElementById('foto-upload-status');
+    if (statusEl) statusEl.textContent = '';
     const title = document.getElementById('modal-form-siswa-title');
     if (title) title.innerText = 'Tambah Siswa';
     openModal('modal-form-siswa');
@@ -112,6 +124,12 @@ function editSiswa() {
     document.getElementById('input-panggilan').value = student['Nama Panggilan'] || '';
     document.getElementById('input-kelompok').value = student.Kelompok || '';
     document.getElementById('input-foto').value = student['Foto URL'] || '';
+    const publicIdInput = document.getElementById('input-foto-public-id');
+    if (publicIdInput) publicIdInput.value = student.foto_public_id || student.public_id || '';
+    const kelasSelect = document.getElementById('input-kelas');
+    if (kelasSelect) kelasSelect.value = student.Kelas || '';
+    const statusEl = document.getElementById('foto-upload-status');
+    if (statusEl) statusEl.textContent = '';
     const title = document.getElementById('modal-form-siswa-title');
     if (title) title.innerText = 'Edit Siswa';
     openModal('modal-form-siswa');
@@ -159,6 +177,16 @@ async function hapusSiswaPaten() {
     const updates = studentCascadeUpdates(student);
     const result = await dbUpdate(updates);
     if (!result?.ok) return;
+
+    // Bersihkan foto di Cloudinary jika ada (best-effort)
+    const photoPublicId = student.foto_public_id || student.public_id || null;
+    if (photoPublicId && typeof window.SIMNICloudinary?.deleteCloudinaryAsset === 'function') {
+        window.SIMNICloudinary.deleteCloudinaryAsset({
+            purpose: 'student_photo',
+            publicId: photoPublicId
+        }).catch((err) => console.warn('[SIMNI Students] Gagal membersihkan foto siswa di Cloudinary:', err));
+    }
+
     closeModal('modal-profil-siswa');
 }
 
@@ -193,6 +221,7 @@ function jumpToBukuInduk() {
 }
 
 async function generatePrintQR() {
+    await window.ensureSIMNIVendors?.("pdf");
     const printArea = document.getElementById('print-area');
     if (!printArea) return;
     if (typeof html2pdf !== 'function') return toast('Pustaka PDF belum tersedia. Muat ulang saat online.', 'error');
@@ -287,10 +316,20 @@ function renderStudentImportPreview(summary) {
         : 'Mode 1 kelas hanya menerima baris untuk kelas aktif. Kolom Kelas wajib diisi dan data duplikat tidak ditimpa.';
 }
 
-function importSiswaExcel(event) {
+async function importSiswaExcel(event) {
+    await window.ensureSIMNIVendors?.("xlsx");
     const input = event.target;
     const file = input.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+        input.value = '';
+        return toast('Ukuran file Excel tidak boleh melebihi 5 MB.', 'error');
+    }
+    const fileName = (file.name || '').toLowerCase();
+    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+        input.value = '';
+        return toast('Format file harus berupa Excel (.xlsx atau .xls).', 'error');
+    }
     if (!window.XLSX?.read) {
         input.value = '';
         return toast('Pustaka Excel belum tersedia.', 'error');
@@ -300,7 +339,7 @@ function importSiswaExcel(event) {
         try {
             const currentKelas = normalizeClassLabel(state?.activeKelas);
             const userRole = String(window.SIMNICurrentAccess?.role || '');
-            if (!['superuser', 'vip'].includes(userRole)) throw new Error('Role aktif tidak diizinkan melakukan impor siswa.');
+            if (!['superuser', 'vip', 'teacher'].includes(userRole)) throw new Error('Role aktif tidak diizinkan melakukan impor siswa.');
             if (!currentKelas) throw new Error('Kelas aktif tidak valid. Pilih kelas sebelum melakukan impor.');
             const workbook = XLSX.read(loadEvent.target.result, { type: 'array' });
             const multiClass = workbook.SheetNames.length > 1;
@@ -401,4 +440,59 @@ async function commitSiswaImport() {
     } catch (error) {
         toast(error.message, 'error');
     }
+}
+
+async function uploadStudentPhotoAction(event) {
+    const input = event?.target;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        if (input) input.value = '';
+        return toast('Ukuran foto maksimal 2 MB.', 'error');
+    }
+
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedMimes.includes(file.type)) {
+        if (input) input.value = '';
+        return toast('Format foto harus PNG, JPEG, atau WebP.', 'error');
+    }
+
+    const statusEl = document.getElementById('foto-upload-status');
+    const urlInput = document.getElementById('input-foto');
+    const publicIdInput = document.getElementById('input-foto-public-id');
+    try {
+        if (statusEl) statusEl.textContent = 'Mengunggah ke Cloudinary...';
+        if (typeof window.SIMNICloudinary?.uploadStudentPhoto === 'function') {
+            const result = await window.SIMNICloudinary.uploadStudentPhoto(file);
+            const url = result?.secureUrl || result?.url;
+            const publicId = result?.publicId || result?.public_id || '';
+            if (url) {
+                if (urlInput) urlInput.value = url;
+                if (publicIdInput) publicIdInput.value = publicId;
+                if (statusEl) statusEl.textContent = '✓ Terunggah';
+                toast('Foto berhasil diunggah ke Cloudinary.', 'success');
+            } else {
+                throw new Error('URL foto tidak diperoleh dari Cloudinary.');
+            }
+        } else {
+            throw new Error('Modul Cloudinary belum aktif.');
+        }
+    } catch (error) {
+        if (statusEl) statusEl.textContent = 'Gagal unggah';
+        toast('Gagal mengunggah foto ke Cloudinary: ' + (error?.message || String(error)), 'error');
+    } finally {
+        if (input) input.value = '';
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.renderSiswaList = renderSiswaList;
+    window.openAddSiswaModal = openAddSiswaModal;
+    window.submitSiswa = submitSiswa;
+    window.editSiswa = editSiswa;
+    window.hapusSiswaPaten = hapusSiswaPaten;
+    window.importSiswaExcel = importSiswaExcel;
+    window.commitSiswaImport = commitSiswaImport;
+    window.uploadStudentPhotoAction = uploadStudentPhotoAction;
 }

@@ -52,7 +52,7 @@ await mkdir(OUTPUT, { recursive: true });
 await rm(DOWNLOADS, { recursive: true, force: true });
 await mkdir(DOWNLOADS, { recursive: true });
 
-const browser = await puppeteer.launch({ headless: true });
+const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
 const page = await browser.newPage();
 const browserErrors = [];
 page.on('pageerror', (error) => browserErrors.push(error.message));
@@ -124,6 +124,8 @@ async function setValues(values) {
 }
 
 async function selectDocument(type) {
+    if (!await page.$eval('[data-gadm-document="' + type + '"]', e => e.checkVisibility())) await page.click('#gadm-btn-change-doc');
+    await page.waitForSelector('[data-gadm-document="' + type + '"]', { visible: true });
     await page.click(`[data-gadm-document="${type}"]`);
     await page.waitForFunction((expected) => document.getElementById('gadm-document-type')?.value === expected, {}, type);
 }

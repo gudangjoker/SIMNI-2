@@ -1,0 +1,17 @@
+import {readFile,writeFile,copyFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const hash=s=>createHash('sha256').update(s).digest('hex');
+const read=async p=>JSON.parse(await readFile(p,'utf8'));
+const result=await read('test-output/three-findings/lps-revalidation-result.json');
+const workflow=await read('test-output/lps-template-fidelity/workflow-results.json');
+const manifest=await read('public/build-manifest.json');
+const cumulative=await read('test-output/tahap7-final/cumulative-results.json');
+if(result.exitCode!==0 || !result.output.includes('"pass":15,"fail":0') || workflow.buildId!==manifest.buildId || cumulative.buildId!==manifest.buildId || workflow.checks.length!==15 || workflow.checks.some(c=>c.status!=='PASS')) throw Error('Revalidation did not pass');
+const suite=cumulative.suites.find(s=>s.script==='qa/lps-template-workflow.mjs');
+const file='test-output/tahap7-final/'+suite.log;
+await copyFile(file,'test-output/three-findings-attempts/lps-before-guid.log');
+await writeFile(file,result.output);
+Object.assign(suite,{status:'PASS',exitCode:result.exitCode,seconds:null,logHash:hash(result.output),scriptHash:hash(await readFile(suite.script)),revalidatedAt:new Date().toISOString(),note:'Same production build. QA now identifies download by GUID, dispatches input/change, and waits for full save completion before applying a template.'});
+cumulative.completedAt=new Date().toISOString();
+await writeFile('test-output/tahap7-final/cumulative-results.json',JSON.stringify(cumulative,null,2));
+console.log('Updated LPS revalidation evidence on unchanged build '+manifest.buildId);

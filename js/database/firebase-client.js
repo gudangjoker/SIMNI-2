@@ -340,26 +340,22 @@ export function getFirebaseRuntimeSnapshot() {
  * --------------------
  * Generic audit event dari browser DIHAPUS sebagai authority.
  *
- * Cloud Functions sekarang menulis audit event sendiri hanya setelah
+ * Worker menulis receipt audit sendiri hanya setelah
  * operasi privileged benar-benar berhasil.
  *
  * Bridge ini sengaja tidak melakukan network request dan tidak menerima
  * payload client sebagai bukti audit. Consumer lama dapat tetap `await`
  * fungsi ini sampai direkonstruksi tanpa menyebabkan exception.
  */
-export async function logSIMNIAuditEvent() {
+export async function logSIMNIAuditEvent(action, targetId = '', details = {}, options = {}) {
+    if (typeof window !== 'undefined' && typeof window.dbRecordAuthoritativeAudit === 'function') {
+        return window.dbRecordAuthoritativeAudit(action, targetId, details, options);
+    }
     return Object.freeze({
-        ok:
-            false,
-
-        blocked:
-            true,
-
-        authority:
-            'server-only',
-
-        reason:
-            'CLIENT_FORGED_AUDIT_DISABLED'
+        ok: false,
+        blocked: true,
+        authority: 'server-only',
+        reason: 'REPOSITORY_NOT_READY'
     });
 }
 

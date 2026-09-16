@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SIMNI</string>
+    <string name="title_activity_main">SIMNI</string>
+    <string name="package_name">id.sch.simni.app</string>
+    <string name="custom_url_scheme">id.sch.simni.app</string>
+</resources>

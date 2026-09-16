@@ -39,6 +39,8 @@ async function submitCatatan(event) {
         document.getElementById('input-catatan-tanggal').value = getJakartaDateString();
         setCatatanTab('rekap');
         toast('Berhasil disimpan.', 'success');
+    } else {
+        toast(result?.error?.message || 'Catatan gagal disimpan.', 'error');
     }
 }
 
@@ -77,6 +79,7 @@ function renderCatatanList() {
 }
 
 async function cetakCatatanPDF() {
+    await window.ensureSIMNIVendors?.("pdf");
     if (typeof html2pdf !== 'function') return toast('Pustaka PDF belum tersedia. Muat ulang saat online.', 'error');
     const cards = Array.from(document.querySelectorAll('#catatan-grid > div'));
     if (!cards.length) return toast('Tidak ada catatan untuk dicetak.', 'info');

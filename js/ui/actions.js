@@ -18,6 +18,7 @@
         'closeLPSPreview',
         'exportExcelLPS',
         'changeSIMNIAccount',
+        'closeMenuDrawer',
         'closeModal',
         'commitSiswaImport',
         'commitTPImport',
@@ -39,9 +40,27 @@
         'jumpToPresensi',
         'loadSiswaLPS',
         'openAddSiswaModal',
+        'openEditTPModal',
+        'openMenuDrawer',
         'openModal',
+        'openLocalStorageManager',
+        'openSubsystemRecoveryGuide',
+        'openAnnualArchiveManager',
+        'openGrantedAcademicArchives',
         'openModalPengaturanLPS',
         'openQRScanner',
+        'openSIMNILens',
+        'closeSIMNILens',
+        'captureLensFrameToRAM',
+        'restartLensCapture',
+        'batchInsertScannedTP',
+        'handleLensGalleryFile',
+        'rotateLens90',
+        'toggleNewBabInput',
+        'saveNewBabFromInput',
+        'submitEditTP',
+        'deleteTPEditModal',
+        'updateEditTPBabOptions',
         'populateLPSFilter',
         'previewLPS',
         'refreshSIMNIAccounts',
@@ -51,6 +70,9 @@
         'renderPresensiManual',
         'renderRekapJurnal',
         'renderRekapNilai',
+        'showRekapNilai',
+        'unduhRekapNilai',
+        'invalidateRekapNilai',
         'renderRekapPresensi',
         'renderSiswaList',
         'resetDataJadwal',
@@ -79,6 +101,7 @@
         'submitTP',
         'startAnnualRollover',
         'switchView',
+        'toggleMenuDrawer',
         'toast',
         'unduhTemplateExcel',
         'updateCredentials',
@@ -87,6 +110,7 @@
         'updateStudentTemplateLink',
         'updateTPTemplateLink',
         'updateTPDropdown',
+        'uploadStudentPhotoAction',
         'verifyAnnualArchiveFile',
         'gunakanTemplateLPSAktif',
         'logoutAuth'
@@ -146,7 +170,8 @@
 
         if (trigger === 'submit') event.preventDefault();
 
-        if (element.dataset.simniProcessing === 'true') {
+        const form = element.tagName === 'FORM' ? element : element.closest('form');
+        if (element.dataset.simniProcessing === 'true' || (form && form.dataset.simniProcessing === 'true')) {
             event.preventDefault();
             return;
         }
@@ -162,11 +187,14 @@
             submitBtn = element.querySelector('button[type="submit"]');
         } else if (element.tagName === 'BUTTON') {
             submitBtn = element;
+        } else {
+            submitBtn = element.closest('button') || element.querySelector('button');
         }
 
         try {
             element.dataset.simniProcessing = 'true';
-            if (submitBtn) submitBtn.disabled = true;
+            if (form) form.dataset.simniProcessing = 'true';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.setAttribute('aria-busy', 'true'); }
 
             const args = parseArguments(element);
             const argumentMode = String(element.dataset.simniArgument || 'none');
@@ -177,14 +205,16 @@
             }
 
             if (name === 'openAttendanceScanner') {
-                root.switchView?.('presensi');
+                const switchRes = root.switchView?.('presensi');
+                if (switchRes && typeof switchRes.then === 'function') await switchRes;
                 const result = root.openQRScanner?.();
                 if (result && typeof result.then === 'function') await result;
                 return;
             }
 
             if (name === 'openStudentsCreate') {
-                root.switchView?.('siswa');
+                const switchRes = root.switchView?.('siswa');
+                if (switchRes && typeof switchRes.then === 'function') await switchRes;
                 const result = root.openAddSiswaModal?.();
                 if (result && typeof result.then === 'function') await result;
                 return;
@@ -198,7 +228,8 @@
             reportFailure(error);
         } finally {
             element.dataset.simniProcessing = 'false';
-            if (submitBtn) submitBtn.disabled = false;
+            if (form) form.dataset.simniProcessing = 'false';
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.removeAttribute('aria-busy'); }
         }
     }
 

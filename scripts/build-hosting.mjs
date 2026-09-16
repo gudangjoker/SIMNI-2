@@ -1,35 +1,44 @@
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { createHash } from 'node:crypto';
 
 const root = process.cwd();
 const out = path.join(root, 'public');
+const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const runtimeSource = await readFile(path.join(root, 'js/core/runtime-config.js'), 'utf8');
+const manifestSource = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
+const dashboardSource = await readFile(path.join(root, 'features/dashboard/dashboard.html'), 'utf8');
+const settingsSource = await readFile(path.join(root, 'features/settings/settings.html'), 'utf8');
+const indexSource = await readFile(path.join(root, 'index.html'), 'utf8');
+const lockVersion = JSON.parse(await readFile(path.join(root, 'package-lock.json'), 'utf8')).version;
+if (manifestSource.version !== packageJson.version || lockVersion !== packageJson.version || runtimeSource.match(/appVersion:\s*'([^']+)'/)?.[1] !== packageJson.version || runtimeSource.match(/cacheVersion:\s*'([^']+)'/)?.[1] !== packageJson.version || !dashboardSource.includes(`V.${packageJson.version}`) || !settingsSource.includes(`Versi Build: v${packageJson.version}`) || !indexSource.includes(packageJson.version)) {
+    throw new Error('Version authority source tidak konsisten. Build dibatalkan sebelum public diubah.');
+}
+
+const PRODUCTION_DEFAULTS = Object.freeze({
+    SIMNI_EDGE_URL: 'https://simni-assets-gateway.2ndgoal.workers.dev',
+});
 
 function requiredDeploymentValue(name) {
-    const value = String(process.env[name] || '').trim();
+    const value = String(process.env[name] || PRODUCTION_DEFAULTS[name] || '').trim();
     if (!value) throw new Error(`Deployment variable ${name} wajib tersedia.`);
     return value;
 }
 
-function validateChatEdgeUrl(value) {
+function validateEdgeUrl(value) {
     let url;
     try {
         url = new URL(value);
     } catch (_) {
-        throw new Error('SIMNI_CHAT_EDGE_URL tidak valid.');
+        throw new Error('SIMNI_EDGE_URL tidak valid.');
     }
     if (url.protocol !== 'https:' || !url.hostname.endsWith('.workers.dev')) {
-        throw new Error('SIMNI_CHAT_EDGE_URL wajib berupa endpoint HTTPS workers.dev Free Tier.');
+        throw new Error('SIMNI_EDGE_URL wajib berupa endpoint HTTPS workers.dev Free Tier.');
     }
     return url.href.replace(/\/$/, '');
 }
 
-function validateVapidKey(value) {
-    if (!/^[A-Za-z0-9_-]{80,120}$/.test(value)) {
-        throw new Error('SIMNI_CHAT_FCM_VAPID_KEY bukan public VAPID key yang valid.');
-    }
-    return value;
-}
 
 const sourceEntries = Object.freeze([
     'index.html',
@@ -39,9 +48,6 @@ const sourceEntries = Object.freeze([
     'icons',
     'features',
     'js',
-    'chat/chat.html',
-    'chat/css',
-    'chat/js'
 ]);
 
 const templateAssets = Object.freeze([
@@ -60,8 +66,6 @@ const vendors = Object.freeze([
             ['node_modules/firebase/firebase-app.js', 'vendor/firebase/firebase-app.js'],
             ['node_modules/firebase/firebase-auth.js', 'vendor/firebase/firebase-auth.js'],
             ['node_modules/firebase/firebase-database.js', 'vendor/firebase/firebase-database.js'],
-            ['node_modules/firebase/firebase-firestore.js', 'vendor/firebase/firebase-firestore.js'],
-            ['node_modules/firebase/firebase-messaging.js', 'vendor/firebase/firebase-messaging.js']
         ]
     },
     {
@@ -100,6 +104,22 @@ const vendors = Object.freeze([
         copies: [
             ['node_modules/html2pdf.js/dist/html2pdf.bundle.min.js', 'vendor/html2pdf/html2pdf.bundle.min.js']
         ]
+    },
+    {
+        name: 'jszip@3.10.1',
+        copies: [
+            ['node_modules/jszip/dist/jszip.min.js', 'vendor/jszip/jszip.min.js']
+        ]
+    },
+    {
+        name: 'tesseract.js@5.1.1',
+        copies: [
+            ['vendor/tesseract/tesseract.min.js', 'vendor/tesseract/tesseract.min.js'],
+            ['vendor/tesseract/worker.min.js', 'vendor/tesseract/worker.min.js'],
+            ['vendor/tesseract/tesseract-core.wasm.js', 'vendor/tesseract/tesseract-core.wasm.js'],
+            ['vendor/tesseract/ind.traineddata.gz', 'vendor/tesseract/ind.traineddata.gz'],
+            ['vendor/tesseract/ocr-worker.js', 'vendor/tesseract/ocr-worker.js']
+        ]
     }
 ]);
 
@@ -114,7 +134,7 @@ async function copyIntoPublic(sourceRelative, targetRelative = sourceRelative) {
     const source = path.join(root, sourceRelative);
     const target = path.join(out, targetRelative);
     await mkdir(path.dirname(target), { recursive: true });
-    await cp(source, target, { recursive: true, force: true });
+    await cp(source, target, { recursive: true, force: true, filter: filename => !filename.endsWith(`${path.sep}mock-adapter.js`) });
 }
 
 async function resetOutputDirectory() {
@@ -147,10 +167,10 @@ async function assertNoUnexpectedHostingFiles() {
         'manifest.json',
         'sw.js',
         'tailwind-offline.css',
+        'build-manifest.json',
         'icons',
         'features',
         'js',
-        'chat',
         'templates',
         'vendor'
     ]);
@@ -182,8 +202,6 @@ const firebaseVendorDirectory = path.join(out, 'vendor', 'firebase');
 for (const filename of [
     'firebase-auth.js',
     'firebase-database.js',
-    'firebase-firestore.js',
-    'firebase-messaging.js'
 ]) {
     const modulePath = path.join(firebaseVendorDirectory, filename);
     const source = await readFile(modulePath, 'utf8');
@@ -197,30 +215,38 @@ for (const filename of [
     await writeFile(modulePath, localized, 'utf8');
 }
 
-const chatEdgeUrl = validateChatEdgeUrl(requiredDeploymentValue('SIMNI_CHAT_EDGE_URL'));
-const chatVapidKey = validateVapidKey(requiredDeploymentValue('SIMNI_CHAT_FCM_VAPID_KEY'));
-const builtChatHtmlPath = path.join(out, 'chat', 'chat.html');
-const builtChatHtml = await readFile(builtChatHtmlPath, 'utf8');
-const deploymentMetadata = [
-    `  <meta name="simni-chat-edge-url" content="${chatEdgeUrl}">`,
-    `  <meta name="simni-chat-fcm-vapid-key" content="${chatVapidKey}">`
-].join('\n');
-if (!builtChatHtml.includes('</head>')) throw new Error('chat/chat.html tidak memiliki penutup head.');
-await writeFile(
-    builtChatHtmlPath,
-    builtChatHtml.replace('</head>', `${deploymentMetadata}\n</head>`),
-    'utf8'
-);
+const edgeUrl = validateEdgeUrl(requiredDeploymentValue('SIMNI_EDGE_URL'));
+const deploymentMetadata = `  <meta name="simni-edge-url" content="${edgeUrl}">`;
+
+const builtIndexHtmlPath = path.join(out, 'index.html');
+const builtIndexHtml = await readFile(builtIndexHtmlPath, 'utf8');
+if (builtIndexHtml.includes('</head>')) {
+    await writeFile(
+        builtIndexHtmlPath,
+        builtIndexHtml.replace('</head>', `${deploymentMetadata}\n</head>`),
+        'utf8'
+    );
+}
 
 await assertNoUnexpectedHostingFiles();
 
-const packageJson = JSON.parse(await (await import('node:fs/promises')).readFile(path.join(root, 'package.json'), 'utf8'));
+const files = {};
+async function fingerprint(directory) {
+    for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a,b) => a.name.localeCompare(b.name))) {
+        const filename = path.join(directory, entry.name);
+        if (entry.isDirectory()) await fingerprint(filename);
+        else files[path.relative(out, filename).replaceAll(path.sep, '/')] = createHash('sha256').update(await readFile(filename)).digest('hex');
+    }
+}
+await fingerprint(out);
+const buildId = createHash('sha256').update(JSON.stringify(files)).digest('hex');
+await writeFile(path.join(out, 'build-manifest.json'), JSON.stringify({ version: packageJson.version, buildId, files }, null, 2));
 
 console.log('');
 console.log('SIMNI HOSTING BUILD PASS');
 console.log(`Version : ${packageJson.version}`);
 console.log(`Output  : ${out}`);
-console.log(`Chat API: ${chatEdgeUrl}`);
+console.log(`Asset API: ${edgeUrl}`);
 console.log('');
 console.log('Vendor:');
 for (const vendor of vendors) console.log(`- ${vendor.name}`);

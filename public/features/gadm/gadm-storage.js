@@ -3,7 +3,9 @@ const DATABASE_VERSION = 1;
 const DRAFT_STORE = 'drafts';
 const DOCUMENT_STORE = 'documents';
 const MAX_RECORD_BYTES = 2 * 1024 * 1024;
-const ALLOWED_ROLES = new Set(['superuser', 'vip']);
+const MAX_DATABASE_BYTES = 64 * 1024 * 1024;
+const MAX_SCOPE_DOCUMENTS = 500;
+const ALLOWED_ROLES = new Set(['superuser', 'vip', 'teacher']);
 
 function cleanScopePart(value, label) {
     const normalized = String(value || '').normalize('NFKC').trim();
@@ -14,6 +16,9 @@ function cleanScopePart(value, label) {
 }
 
 export function createGADMScope(context) {
+    if (globalThis.SIMNIAccess) globalThis.SIMNIAccess.assertFeature('gadm');
+    const active = globalThis.SIMNICurrentAccess;
+    if (active && (active.uid !== context?.uid || active.workspaceId !== context?.workspaceId || (active.role !== 'superuser' && active.activeAcademicYearId !== (context?.activeAcademicYearId || context?.academicYearId)))) throw new Error('Scope GADM tidak sesuai penugasan aktif.');
     if (!context || typeof context !== 'object' || Array.isArray(context)) {
         throw new Error('Konteks akses GADM tidak tersedia.');
     }
@@ -89,8 +94,10 @@ async function withStore(storeName, mode, operation) {
     const database = await openDatabase();
     try {
         const transaction = database.transaction(storeName, mode);
+        const completed = transactionDone(transaction);
+        completed.catch(() => undefined);
         const result = await operation(transaction.objectStore(storeName));
-        await transactionDone(transaction);
+        await completed;
         return result;
     } finally {
         database.close();
@@ -112,6 +119,7 @@ export async function loadGADMDraft(scope) {
 }
 
 export async function saveGADMDraft(scope, input) {
+    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
     const normalizedScope = createGADMScope(scope);
     const safeInput = clonePlain(input, 'Draft');
     const record = {
@@ -124,10 +132,24 @@ export async function saveGADMDraft(scope, input) {
         updatedAt: new Date().toISOString(),
         input: safeInput
     };
-    return withStore(DRAFT_STORE, 'readwrite', (store) => requestResult(store.put(record), 'Draft GADM gagal disimpan.'));
+    return withStore(DRAFT_STORE, 'readwrite', (store) => new Promise((resolve, reject) => {
+        let bytes = new Blob([JSON.stringify(record)]).size;
+        const request = store.openCursor();
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            const cursor = request.result;
+            if (cursor) {
+                if (cursor.key !== record.scopeKey) bytes += new Blob([JSON.stringify(cursor.value)]).size;
+                cursor.continue(); return;
+            }
+            if (bytes > 16 * 1024 * 1024) { reject(new Error('Draft GADM mencapai batas 16 MiB perangkat. Ekspor hasil kerja dan hapus draft tahun/kelas lama yang sudah diamankan.')); return; }
+            requestResult(store.put(record), 'Draft GADM gagal disimpan.').then(resolve, reject);
+        };
+    }));
 }
 
 export async function saveGADMDocument(scope, documentRecord) {
+    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
     const normalizedScope = createGADMScope(scope);
     const safeRecord = clonePlain(documentRecord, 'Dokumen');
     const id = validDocumentId(safeRecord.id);
@@ -145,17 +167,57 @@ export async function saveGADMDocument(scope, documentRecord) {
         createdAt: safeRecord.createdAt || timestamp,
         updatedAt: timestamp
     };
-    return withStore(DOCUMENT_STORE, 'readwrite', (store) => requestResult(store.put(record), 'Dokumen GADM gagal disimpan.'));
+    record.storageBytes = new Blob([JSON.stringify(record)]).size;
+    return withStore(DOCUMENT_STORE, 'readwrite', (store) => new Promise((resolve, reject) => {
+        let totalBytes = record.storageBytes;
+        let scopeCount = 1;
+        const request = store.openCursor();
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            const cursor = request.result;
+            if (cursor) {
+                const old = cursor.value;
+                if (old.storageKey !== record.storageKey) {
+                    totalBytes += Number(old.storageBytes) || new Blob([JSON.stringify(old)]).size;
+                    if (old.scopeKey === normalizedScope.key) scopeCount += 1;
+                } else record.createdAt = old.createdAt || record.createdAt;
+                cursor.continue();
+                return;
+            }
+            if (totalBytes > MAX_DATABASE_BYTES || scopeCount > MAX_SCOPE_DOCUMENTS) {
+                reject(new Error('Riwayat mencapai batas 64 MiB perangkat atau 500 dokumen per kelas/tahun. Ekspor dokumen lama melalui Buka, lalu hapus dokumen pilihan di Riwayat sebelum menyimpan.'));
+                return;
+            }
+            requestResult(store.put(record), 'Dokumen GADM gagal disimpan.').then(resolve, reject);
+        };
+    }));
 }
 
-export async function listGADMDocuments(scope) {
+export async function listGADMDocuments(scope, { before = null, limit = 20 } = {}) {
     const normalizedScope = createGADMScope(scope);
-    return withStore(DOCUMENT_STORE, 'readonly', async (store) => {
-        const records = await requestResult(store.index('scopeKey').getAll(normalizedScope.key), 'Riwayat GADM gagal dibaca.');
-        return records
-            .map((record) => clonePlain(record, 'Dokumen'))
-            .sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt)));
-    });
+    const pageSize = Math.max(1, Math.min(50, Number(limit) || 20));
+    return withStore(DOCUMENT_STORE, 'readonly', (store) => new Promise((resolve, reject) => {
+        const records = [];
+        const range = IDBKeyRange.bound([normalizedScope.key, ''], [normalizedScope.key, before?.updatedAt || '\uffff']);
+        const request = store.index('scopeUpdatedAt').openCursor(range, 'prev');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) { resolve({ records, nextCursor: null }); return; }
+            const record = cursor.value;
+            if (before && record.updatedAt === before.updatedAt && record.storageKey >= before.storageKey) {
+                cursor.continue(); return;
+            }
+            if (records.length === pageSize) {
+                const last = records.at(-1);
+                resolve({ records, nextCursor: { updatedAt: last.updatedAt, storageKey: last.storageKey } });
+                return;
+            }
+            const { id, title, subject, selectedClassId, updatedAt, storageKey } = record;
+            records.push({ id, title, subject, selectedClassId, updatedAt, storageKey });
+            cursor.continue();
+        };
+    }));
 }
 
 export async function getGADMDocument(scope, documentId) {
@@ -168,9 +230,50 @@ export async function getGADMDocument(scope, documentId) {
 }
 
 export async function deleteGADMDocument(scope, documentId) {
+    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
     const normalizedScope = createGADMScope(scope);
     const id = validDocumentId(documentId);
     return withStore(DOCUMENT_STORE, 'readwrite', (store) => requestResult(store.delete(`${normalizedScope.key}|${id}`), 'Dokumen GADM gagal dihapus.'));
+}
+
+export async function listGADMStorageScopes(scope) {
+    const owner = createGADMScope(scope);
+    const prefix = `${owner.uid}|${owner.role}|${owner.workspaceId}|`;
+    const keys = new Set([owner.key]);
+    for (const name of [DRAFT_STORE, DOCUMENT_STORE]) {
+        await withStore(name, 'readonly', store => new Promise((resolve, reject) => {
+            const range = IDBKeyRange.bound(prefix, `${prefix}\uffff`);
+            const request = name === DOCUMENT_STORE
+                ? store.index('scopeKey').openKeyCursor(range, 'nextunique') : store.openKeyCursor(range);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                const cursor = request.result;
+                if (!cursor) { resolve(); return; }
+                keys.add(cursor.key); cursor.continue();
+            };
+        }));
+    }
+    return [...keys].sort().map(key => {
+        const [uid, role, workspaceId, academicYearId, classId] = key.split('|');
+        return createGADMScope({ uid, role, workspaceId, academicYearId, classId });
+    });
+}
+
+export async function deleteGADMDraftAfterVerification(scope, exported) {
+    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
+    const selected = createGADMScope(scope);
+    if (exported?.format !== 'simni-gadm-draft-v1' || exported.scopeKey !== selected.key) throw new Error('Berkas draft tidak cocok dengan kelas/tahun pilihan.');
+    const expected = JSON.stringify(clonePlain(exported.input, 'Draft ekspor'));
+    return withStore(DRAFT_STORE, 'readwrite', store => new Promise((resolve, reject) => {
+        const request = store.get(selected.key);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            if (!request.result || JSON.stringify(request.result.input) !== expected) {
+                reject(new Error('Draft berubah atau berkas tidak cocok. Draft dipertahankan.')); return;
+            }
+            requestResult(store.delete(selected.key), 'Draft lama gagal dihapus.').then(resolve, reject);
+        };
+    }));
 }
 
 export const GADM_STORAGE_INFO = Object.freeze({

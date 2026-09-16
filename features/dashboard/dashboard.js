@@ -3,7 +3,9 @@
 // UI dan logika Dashboard.
 // ==========================================
 
+let dismissedAcademicWarning = '';
 function renderDashboard() {
+    window.updateSyncUI?.(window.SIMNISyncState?.status === 'ready' && window.SIMNISyncState?.connected === true);
     const currentKelas = typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '';
     const myStudents = currentKelas ? state.students.filter(s => s.Kelas === currentKelas) : state.students;
     const myJurnal = currentKelas ? state.jurnal.filter(j => j.Kelas === currentKelas) : state.jurnal;
@@ -17,6 +19,11 @@ function renderDashboard() {
     const today = getJakartaDateString(); 
     const hadir = myPresensi.filter(p => normalizeDate(p.Tanggal)===today && (p.Status||'').toLowerCase()==='hadir').length;
     if(document.getElementById('stat-hadir')) document.getElementById('stat-hadir').innerText = hadir; 
+
+    const versionHeader = document.getElementById('dashboard-app-version');
+    if (versionHeader && window.SIMNIVersionManifest?.appVersion) {
+        versionHeader.textContent = `SIMNI V.${window.SIMNIVersionManifest.appVersion} ENTERPRISE`;
+    }
 
     // --- SISTEM PERINGATAN DINI AKADEMIK ---
     const pdCont = document.getElementById('peringatan-dini-container');
@@ -33,7 +40,7 @@ function renderDashboard() {
     });
 
     myNilai.forEach(n => {
-        if(n.nilai < 60) rekapNilai[n.NISN] = (rekapNilai[n.NISN] || 0) + 1;
+        if(academicScore(n.nilai) !== null && n.nilai < 60) rekapNilai[n.NISN] = (rekapNilai[n.NISN] || 0) + 1;
     });
 
     myStudents.forEach(s => {
@@ -48,7 +55,11 @@ function renderDashboard() {
         }
     });
 
-    if(warnings) {
+    const access = window.SIMNICurrentAccess || {};
+    const warningKey = JSON.stringify([access.uid, access.workspaceId, access.activeAcademicYearId, today, warnings]);
+    const dismiss = document.getElementById('dismiss-academic-warning');
+    if (dismiss) dismiss.onclick = () => { dismissedAcademicWarning = warningKey; pdCont.classList.add('hidden'); };
+    if(warnings && dismissedAcademicWarning !== warningKey) {
         pdList.innerHTML = warnings;
         pdCont.classList.remove('hidden');
     } else {

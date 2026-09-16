@@ -1,0 +1,262 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "meta": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "system": {
+      "academicYear": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active'",
+        ".write": false
+      }
+    },
+    "assignments": {
+      "$yearId": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid == $uid || (root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && auth.token.email == 'unggaran.sditbm@gmail.com'))",
+          ".write": false,
+          ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','academicYearId']) && newData.child('uid').val() == $uid && newData.child('academicYearId').val() == $yearId && ((newData.child('role').val() == 'superuser' && newData.child('email').val() == 'unggaran.sditbm@gmail.com' && newData.child('workspaceId').val() == 'ws_superuser' && newData.child('classId').val().matches(/^[1-6][A-Z]$/)) || (newData.child('role').val() == 'vip' && newData.child('email').val() == 'anur.auliya01@gmail.com' && newData.child('workspaceId').val() == 'ws_pjok' && newData.child('classId').val() == 'PJOK'))"
+        }
+      }
+    },
+    "rollovers": {
+      "$yearId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active'",
+        ".write": false,
+        "readiness": {
+          "$uid": {
+            ".write": false,
+            ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','academicYearId','archiveHash','verified','verifiedAt']) && newData.child('uid').val() == $uid && newData.child('email').val() == auth.token.email && newData.child('academicYearId').val() == $yearId && newData.child('archiveHash').val().matches(/^[a-f0-9]{64}$/) && newData.child('verified').val() == true && newData.child('workspaceId').val() == root.child('users').child(auth.uid).child('workspaceId').val() && newData.child('role').val() == root.child('users').child(auth.uid).child('role').val()"
+          }
+        }
+      }
+    },
+    "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && auth.token.email == 'unggaran.sditbm@gmail.com'))",
+        ".write": false,
+        ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','activeAcademicYearId','status']) && newData.child('uid').val() == $uid && newData.child('status').val() == 'active' && (auth.uid != $uid || newData.child('email').val() == auth.token.email) && ((newData.child('email').val() == 'unggaran.sditbm@gmail.com' && newData.child('role').val() == 'superuser' && newData.child('workspaceId').val() == 'ws_superuser' && newData.child('classId').val().matches(/^[1-6][A-Z]$/)) || (newData.child('email').val() == 'anur.auliya01@gmail.com' && newData.child('role').val() == 'vip' && newData.child('workspaceId').val() == 'ws_pjok' && newData.child('classId').val() == 'PJOK')) && newData.child('activeAcademicYearId').val().matches(/^[0-9]{4}-[0-9]{4}$/)"
+      }
+    },
+    "workspaces": {
+      "$workspaceId": {
+        "meta": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+          ".write": false
+        },
+        "settings": {
+          ".write": false,
+          "identity": {
+            ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+            ".write": false,
+            ".validate": "newData.hasChildren(['nama_aplikasi','nama_kelas','tahun_pelajaran']) && newData.child('nama_aplikasi').isString() && newData.child('nama_aplikasi').val().length <= 160 && newData.child('nama_kelas').isString() && newData.child('tahun_pelajaran').val().matches(/^[0-9]{4}-[0-9]{4}$/)"
+          },
+          "lpsV2": {
+            ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+            ".write": false
+          }
+        },
+        "academicYears": {
+          "$yearId": {
+            ".write": false,
+            "meta": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false
+            },
+            "students": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false,
+              ".indexOn": [
+                "NISN",
+                "Kelas"
+              ],
+              "$studentId": {
+                ".validate": "newData.hasChildren(['ID_Siswa','NISN','Nama Lengkap']) && newData.child('ID_Siswa').isString() && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('Nama Lengkap').isString() && newData.child('Nama Lengkap').val().length > 0 && newData.child('Nama Lengkap').val().length <= 160"
+              }
+            },
+            "attendance": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false,
+              ".indexOn": [
+                "Tanggal",
+                "NISN",
+                "Kelas"
+              ],
+              "$attendanceId": {
+                ".validate": "newData.hasChildren(['Tanggal','NISN','Nama','Status']) && newData.child('Tanggal').val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('Nama').isString() && (newData.child('Status').val() == 'Hadir' || newData.child('Status').val() == 'Sakit' || newData.child('Status').val() == 'Izin' || newData.child('Status').val() == 'Alpa')"
+              }
+            },
+            "learningObjectives": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false,
+              ".indexOn": [
+                "mapel",
+                "semester"
+              ],
+              "$objectiveId": {
+                ".validate": "newData.hasChildren(['ID_mapel','mapel','semester','kode_tp','deskripsi_tp']) && newData.child('ID_mapel').val() == $objectiveId && newData.child('mapel').isString() && (root.child('users').child(auth.uid).child('role').val() != 'vip' || newData.child('mapel').val() == 'PJOK') && newData.child('kode_tp').isString() && newData.child('deskripsi_tp').isString() && (newData.child('semester').val() == '1' || newData.child('semester').val() == '2' || newData.child('semester').val() == 1 || newData.child('semester').val() == 2)"
+              }
+            },
+            "grades": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false,
+              ".indexOn": [
+                "NISN",
+                "learningObjectiveId",
+                "mapel",
+                "Kelas"
+              ],
+              "$gradeId": {
+                ".validate": "newData.hasChildren(['ID_Nilai','ID_Siswa','NISN','learningObjectiveId','mapel','semester','kode_tp','nilai']) && newData.child('ID_Nilai').val() == $gradeId && newData.child('ID_Siswa').isString() && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('learningObjectiveId').isString() && newData.child('mapel').isString() && (root.child('users').child(auth.uid).child('role').val() != 'vip' || newData.child('mapel').val() == 'PJOK') && newData.child('kode_tp').isString() && newData.child('nilai').isNumber() && newData.child('nilai').val() >= 0 && newData.child('nilai').val() <= 100"
+              }
+            },
+            "notes": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId",
+              ".write": false,
+              ".indexOn": [
+                "NISN",
+                "Tanggal",
+                "Kelas"
+              ],
+              "$noteId": {
+                ".validate": "newData.hasChildren(['ID_Catatan', 'Tanggal', 'ID_Siswa', 'NISN', 'Nama', 'Catatan']) && newData.child('ID_Catatan').val() == $noteId && newData.child('Tanggal').val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.child('NISN').val().matches(/^[0-9]{10}$/) && newData.child('Nama').isString() && newData.child('Catatan').isString() && newData.child('Catatan').val().length <= 5000 && (!newData.hasChild('Kelas') || newData.child('Kelas').isString())"
+              }
+            },
+            "journals": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false,
+              ".indexOn": [
+                "Tanggal",
+                "Jam_Ke",
+                "Mapel",
+                "Kelas"
+              ],
+              "$journalId": {
+                ".validate": "newData.hasChildren(['ID_Jurnal', 'Tanggal', 'Jam_Ke', 'Mapel']) && newData.child('ID_Jurnal').val() == $journalId && newData.child('Tanggal').val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && (root.child('users').child(auth.uid).child('role').val() != 'vip' || newData.child('Mapel').val() == 'PJOK') && newData.child('Mapel').isString() && (newData.child('Jam_Ke').isNumber() || newData.child('Jam_Ke').isString()) && (!newData.hasChild('Materi') || (newData.child('Materi').isString() && newData.child('Materi').val().length <= 4000)) && (!newData.hasChild('Keterangan') || (newData.child('Keterangan').isString() && newData.child('Keterangan').val().length <= 4000)) && (!newData.hasChild('Kelas') || newData.child('Kelas').isString())"
+              }
+            },
+            "schedule": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId && ((root.child('users').child(auth.uid).child('role').val() == 'superuser' && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com') || (root.child('users').child(auth.uid).child('role').val() == 'vip' && $workspaceId == 'ws_pjok'))",
+              ".write": false,
+              ".indexOn": [
+                "Hari",
+                "Jam_Ke",
+                "Kelas"
+              ],
+              "$scheduleId": {
+                ".validate": "newData.hasChildren(['ID_Jadwal', 'Hari', 'Jam_Ke', 'Mapel']) && newData.child('ID_Jadwal').val() == $scheduleId && newData.child('Hari').val().matches(/^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Ahad|Minggu)$/) && (root.child('users').child(auth.uid).child('role').val() != 'vip' || newData.child('Mapel').val() == 'PJOK' || newData.child('Mapel').val() == 'Istirahat' || newData.child('Mapel').val() == '-Kosong-') && newData.child('Mapel').isString() && (newData.child('Jam_Ke').isNumber() || newData.child('Jam_Ke').isString()) && (!newData.hasChild('Kelas') || newData.child('Kelas').isString())"
+              }
+            },
+            "documents": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com' && root.child('users').child(auth.uid).child('activeAcademicYearId').val() == $yearId",
+              ".write": false,
+              ".indexOn": [
+                "kategori",
+                "mapel"
+              ],
+              "$documentId": {
+                ".validate": "newData.hasChildren(['nama_file', 'url_file', 'public_id']) && newData.child('nama_file').isString() && newData.child('nama_file').val().length > 0 && newData.child('nama_file').val().length <= 255 && newData.child('url_file').isString() && newData.child('url_file').val().matches(/^https:\\/\\/.+/) && newData.child('public_id').isString() && newData.child('public_id').val().length > 0 && newData.child('public_id').val().length <= 255 && (!newData.hasChild('bytes') || (newData.child('bytes').isNumber() && newData.child('bytes').val() <= 10485760))"
+              }
+            },
+            "legacyLps": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+              ".write": false,
+              "$legacyLpsId": {
+                ".validate": "newData.hasChildren(['NISN', 'Periode']) && (newData.child('NISN').isString() || newData.child('NISN').isNumber()) && newData.child('Periode').isString() && newData.child('Periode').val().length <= 100"
+              }
+            },
+            "lps": {
+              ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+              ".write": false,
+              "templates": {
+                "$templateId": {
+                  ".validate": "newData.hasChildren(['templateId', 'templateVersion', 'sections', 'reportType']) && newData.child('templateId').val() == $templateId && newData.child('templateVersion').isNumber() && newData.child('templateVersion').val() >= 1 && (newData.child('reportType').val() == 'LPS' || newData.child('reportType').val() == 'BLP') && newData.child('sections').hasChildren()",
+                  "sections": {
+                    "$sectionIndex": {
+                      ".validate": "$sectionIndex.matches(/^([0-9]|1[0-9]|2[0-5])$/) && newData.hasChildren(['id', 'title']) && newData.child('id').isString() && newData.child('title').isString() && newData.child('title').val().length <= 4000"
+                    }
+                  }
+                }
+              },
+              "reports": {
+                "$reportId": {
+                  ".validate": "newData.hasChildren(['reportId', 'templateId', 'templateSnapshot', 'studentSnapshot', 'reportType', 'status']) && newData.child('reportId').val() == $reportId && newData.child('templateId').isString() && newData.child('templateSnapshot').hasChildren(['sections']) && newData.child('studentSnapshot').hasChildren(['studentId', 'name']) && (newData.child('reportType').val() == 'LPS' || newData.child('reportType').val() == 'BLP') && (newData.child('status').val() == 'draft' || (newData.child('status').val() == 'final' && newData.child('hash').isString() && newData.child('hash').val().matches(/^[a-f0-9]{64}$/)))"
+                }
+              },
+              "revisions": {
+                "$revisionId": {
+                  "$archiveKey": {
+                    ".validate": "newData.hasChildren(['reportId', 'templateSnapshot', 'studentSnapshot', 'status', 'hash']) && newData.child('reportId').val() == $revisionId && newData.child('status').val() == 'final' && newData.child('templateSnapshot').hasChildren(['sections']) && newData.child('studentSnapshot').hasChildren(['studentId', 'name']) && newData.child('hash').isString() && newData.child('hash').val().matches(/^[a-f0-9]{64}$/)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "archives": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('role').val() == 'superuser' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && $workspaceId == 'ws_superuser' && auth.token.email == 'unggaran.sditbm@gmail.com'",
+          ".write": false,
+          "_index": {
+            "$academicYearId": {
+              "$archiveId": {
+                ".validate": "newData.hasChildren(['archiveId']) && newData.child('archiveId').val() == $archiveId"
+              }
+            }
+          },
+          "$academicYearId": {
+            "$archiveId": {
+              ".validate": "newData.hasChildren(['archiveId', 'integrity', 'database']) && newData.child('archiveId').val() == $archiveId && newData.child('integrity').child('hash').val().matches(/^[a-f0-9]{64}$/)"
+            }
+          }
+        }
+      }
+    },
+    "auditLogs": {
+      "$workspaceId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ($workspaceId == 'ws_superuser' || $workspaceId == 'ws_pjok')",
+        "$operationId": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('status').val() == 'active' && root.child('users').child(auth.uid).child('workspaceId').val() == $workspaceId && ($workspaceId == 'ws_superuser' || $workspaceId == 'ws_pjok')",
+          ".write": false,
+          ".validate": "newData.hasChildren(['operationId','action','uid','email','role','workspaceId','academicYearId','timestamp','status']) && newData.child('operationId').val() == $operationId && newData.child('operationId').val().matches(/^[A-Za-z0-9_-]{16,64}$/) && newData.child('uid').val() == auth.uid && newData.child('email').val() == auth.token.email && newData.child('role').val() == 'superuser' && newData.child('workspaceId').val() == $workspaceId && newData.child('academicYearId').val() == root.child('users').child(auth.uid).child('activeAcademicYearId').val() && newData.child('timestamp').val() == now && newData.child('status').val() == 'committed' && newData.child('action').val().matches(/^(backup_restore|annual_archive|annual_reset)(_verified|_completed)?$/)"
+        }
+      }
+    },
+    "invites": {
+      ".read": false,
+      ".write": false
+    },
+    "inviteLocks": {
+      ".read": false,
+      ".write": false
+    },
+    "operations": {
+      ".read": false,
+      ".write": false
+    },
+    "reconciliation": {
+      ".read": false,
+      ".write": false
+    },
+    "administrativeCommitMarkers": {
+      "$workspaceId": {
+        "$operationId": {
+          ".read": false,
+          ".write": false,
+          ".validate": "newData.hasChildren(['uid','nonce']) && newData.child('uid').val() == auth.uid && newData.child('nonce').isString() && newData.child('nonce').val().length == 36 && $operationId.matches(/^[A-Za-z0-9_-]{16,64}$/)",
+          "uid": {},
+          "nonce": {},
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "administrativeOperations": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

@@ -12,14 +12,24 @@
     const DEFAULT_LOGO_URL =
         './icons/school-logo.png';
 
-    const MAX_LOGO_BYTES =
-        5 * 1024 * 1024;
+    const FALLBACK_INSTITUTION_IDENTITY = Object.freeze({
+        nama_aplikasi: 'SIMNI Administrasi Kelas',
+        nama_yayasan: 'Yayasan Sosial dan Pendidikan Bina Muda',
+        jenjang_sekolah: 'Sekolah Dasar',
+        nama_sekolah: 'SDIT Bina Muda Cicalengka',
+        status_akreditasi: 'A',
+        kota: 'Cicalengka',
+        nomor_izin: 'No.421.2/1143-Disdikbud/2011'
+    });
+
+    function permanentInstitutionIdentity() {
+        return window.SIMNIInstitutionIdentity || FALLBACK_INSTITUTION_IDENTITY;
+    }
 
     const runtime = {
         savingIdentity: false,
         deletingLogo: false,
         migratingLegacy: false,
-        clearLogoInput: false,
         lastOperation: null
     };
 
@@ -185,17 +195,16 @@
     }
 
     function collectIdentitySettings() {
-        const existing =
-            currentIdentity();
+        const existing = currentIdentity();
+        const access = assertSettingsAccess();
+        const institution = permanentInstitutionIdentity();
+        const academicYear = normalizedAcademicYear(
+            access.activeAcademicYearId || '2026-2027'
+        );
 
         return {
             ...existing,
-
-            nama_aplikasi:
-                requiredValue(
-                    'set-nama-app',
-                    'Nama Aplikasi'
-                ),
+            ...institution,
 
             nama_kelas:
                 requiredValue(
@@ -204,52 +213,7 @@
                 ),
 
             tahun_pelajaran:
-                normalizedAcademicYear(
-                    requiredValue(
-                        'set-tapel',
-                        'Tahun Pelajaran'
-                    )
-                ),
-
-            ikon_kelas:
-                optionalValue(
-                    'set-ikon-kelas'
-                ) ||
-                'fa-school',
-
-            nama_yayasan:
-                requiredValue(
-                    'set-nama-yayasan',
-                    'Nama Yayasan'
-                ),
-
-            jenjang_sekolah:
-                requiredValue(
-                    'set-jenjang-sekolah',
-                    'Jenjang Sekolah'
-                ),
-
-            nama_sekolah:
-                requiredValue(
-                    'set-nama-sekolah',
-                    'Nama Sekolah'
-                ),
-
-            status_akreditasi:
-                optionalValue(
-                    'set-akreditasi'
-                ),
-
-            nomor_izin:
-                optionalValue(
-                    'set-nomor-izin'
-                ),
-
-            kota:
-                requiredValue(
-                    'set-kota',
-                    'Kota Penandatanganan'
-                ),
+                academicYear,
 
             nama_wali_kelas:
                 requiredValue(
@@ -263,16 +227,18 @@
                     'NUPTK Wali Kelas'
                 ),
 
+            // Logo kustom dihapus dari UI. Pertahankan logo standar SIMNI
+            // dan kosongkan metadata Cloudinary agar identitas konsisten.
+            ikon_kelas:
+                'fa-school',
+
             logo_url:
-                existing.logo_url ||
                 DEFAULT_LOGO_URL,
 
             logo_public_id:
-                existing.logo_public_id ||
                 null,
 
             logo_resource_type:
-                existing.logo_resource_type ||
                 null
         };
     }
@@ -329,6 +295,12 @@
     }
 
     function renderSettingsActionState() {
+        const identity = window.SIMNIAuthState || {};
+        const access = currentAccess();
+        const email = document.getElementById('profile-email-display');
+        const uid = document.getElementById('firebase-uid-display');
+        if (email) email.textContent = identity.email || access?.email || 'Identitas akun belum tersedia';
+        if (uid) uid.textContent = `UID: ${identity.uid || access?.uid || 'Tidak tersedia'}`;
         const saveButton =
             element(
                 'btn-save-id'
@@ -361,21 +333,6 @@
             );
         }
 
-        const logoInput =
-            element(
-                'set-logo-file'
-            );
-
-        if (
-            logoInput &&
-            runtime.clearLogoInput
-        ) {
-            logoInput.value =
-                '';
-
-            runtime.clearLogoInput =
-                false;
-        }
     }
 
     function updateIdentityState(
@@ -427,54 +384,6 @@
         return cloud;
     }
 
-    function validateLogoFile(
-        file
-    ) {
-        if (!file) {
-            return;
-        }
-
-        const size =
-            Number(
-                file.size
-            );
-
-        if (
-            !Number.isFinite(size) ||
-            size <= 0
-        ) {
-            throw new Error(
-                'Ukuran logo tidak valid.'
-            );
-        }
-
-        if (
-            size >
-            MAX_LOGO_BYTES
-        ) {
-            throw new Error(
-                'Maksimal gambar logo 5 MB.'
-            );
-        }
-
-        const mime =
-            String(
-                file.type || ''
-            )
-                .trim()
-                .toLowerCase();
-
-        if (
-            !mime.startsWith(
-                'image/'
-            )
-        ) {
-            throw new Error(
-                'Logo wajib berupa gambar.'
-            );
-        }
-    }
-
     function yearWillChange(
         payload,
         access
@@ -495,28 +404,12 @@
         }
     }
 
-    function confirmAcademicYearTransition(
-        access,
-        nextYear
-    ) {
-        return window.confirm(
-            [
-                `Tahun aktif akan diubah dari ${access.activeAcademicYearId} menjadi ${nextYear}.`,
-                '',
-                'Seluruh akun aktif akan diarahkan ke Tahun Pelajaran yang sama.',
-                'Data tahun lama tetap berada pada namespace tahun lama.',
-                '',
-                'Lanjutkan?'
-            ].join('\n')
-        );
-    }
-
     async function persistIdentity({
         payload,
         access,
         yearChanged
     }) {
-        if (!canAdministerUsers()) throw new Error('Identitas sekolah hanya dapat dikelola Superuser.');
+        if (!canAccessSettings()) throw new Error('Role tidak memiliki akses Pengaturan Identitas.');
         if (typeof window.dbSet !== 'function') throw new Error('Database repository belum siap.');
 
         const result =
@@ -534,36 +427,7 @@
             );
         }
 
-        return { authority: 'firebase-spark-owner', result, identity: payload, yearChanged };
-    }
-
-    async function compensateUploadedLogo(
-        uploaded
-    ) {
-        if (
-            !uploaded
-                ?.public_id
-        ) {
-            return;
-        }
-
-        try {
-            const cloud =
-                await loadCloudinary();
-
-            await cloud
-                .deleteCloudinaryAsset(
-                    uploaded.public_id,
-                    uploaded.resource_type ||
-                    'image',
-                    'logo'
-                );
-        } catch (error) {
-            console.error(
-                '[SIMNI Settings] Rollback logo upload gagal:',
-                error
-            );
-        }
+        return { authority: 'workspace-settings', result, identity: payload, yearChanged };
     }
 
     async function simpanIdentitas(
@@ -580,211 +444,76 @@
 
         let access;
         let payload;
-        let uploaded =
-            null;
-
-        let yearChanged =
-            false;
 
         try {
-            access =
-                assertSettingsAccess();
+            access = assertSettingsAccess();
+            payload = collectIdentitySettings();
 
-            payload =
-                collectIdentitySettings();
-
-            yearChanged =
-                yearWillChange(
-                    payload,
-                    access
-                );
+            const yearChanged = yearWillChange(
+                payload,
+                access
+            );
 
             assertYearTransitionPermission(
                 yearChanged
             );
 
-            const fileInput =
-                element(
-                    'set-logo-file'
-                );
-
-            const file =
-                fileInput
-                    ?.files
-                    ?.[0] ||
-                null;
-
-            validateLogoFile(
-                file
-            );
-
-            if (
-                file &&
-                !canAdministerUsers()
-            ) {
-                throw new Error(
-                    'Logo kustom hanya dapat dikelola Superuser.'
-                );
-            }
-
-            /*
-             * public_id Cloudinary memiliki academic-year scope.
-             * Upload logo baru tidak boleh dibuat dengan scope tahun lama
-             * lalu identity langsung dipindahkan ke tahun baru.
-             */
-            if (
-                file &&
-                yearChanged
-            ) {
-                throw new Error(
-                    'Perubahan Tahun Pelajaran dan unggah logo baru tidak dapat dilakukan dalam satu operasi. Simpan perubahan Tahun Pelajaran terlebih dahulu.'
-                );
-            }
-
-            if (
-                yearChanged &&
-                payload.logo_public_id
-            ) {
-                /*
-                 * Logo tahun lama tidak dibawa ke namespace tahun baru.
-                 * Backend akan membersihkan asset lama memakai scope
-                 * caller sebelum transition dilakukan.
-                 */
-                payload.logo_url =
-                    DEFAULT_LOGO_URL;
-
-                payload.logo_public_id =
-                    null;
-
-                payload.logo_resource_type =
-                    null;
-            }
-
-            if (
-                yearChanged &&
-                !confirmAcademicYearTransition(
-                    access,
-                    payload.tahun_pelajaran
-                )
-            ) {
-                return false;
-            }
-
-            runtime.savingIdentity =
-                true;
-
+            runtime.savingIdentity = true;
             runtime.lastOperation = {
-                type:
-                    'save-identity',
-
-                startedAt:
-                    new Date()
-                        .toISOString(),
-
-                yearChanged
+                type: 'save-identity',
+                startedAt: new Date().toISOString(),
+                yearChanged: false
             };
 
             renderSettingsActionState();
+            window.showLoad?.('Menyimpan identitas kelas...');
 
-            window.showLoad?.(
-                file
-                    ? 'Mengunggah logo dan menyimpan identitas...'
-                    : (
-                        yearChanged
-                            ? 'Mengubah Tahun Pelajaran dan menyimpan identitas...'
-                            : 'Menyimpan identitas...'
-                    )
-            );
+            const existing = currentIdentity();
+            const previousLogoPublicId = existing.logo_public_id || null;
+            const previousLogoResourceType = existing.logo_resource_type || 'image';
 
-            if (file) {
-                const cloud =
-                    await loadCloudinary();
-
-                uploaded =
-                    await cloud
-                        .uploadLogo(
-                            file
-                        );
-
-                payload.logo_url =
-                    uploaded.secure_url;
-
-                payload.logo_public_id =
-                    uploaded.public_id;
-
-                payload.logo_resource_type =
-                    uploaded.resource_type ||
-                    'image';
-            }
-
-            const persisted =
-                await persistIdentity({
-                    payload,
-                    access,
-                    yearChanged
-                });
+            const persisted = await persistIdentity({
+                payload,
+                access,
+                yearChanged: false
+            });
 
             updateIdentityState(
                 persisted.identity
             );
 
-            runtime.clearLogoInput =
-                true;
+            // Jika instalasi lama masih memiliki logo kustom Cloudinary,
+            // identitas sudah dialihkan ke logo standar. Cleanup dilakukan
+            // best-effort setelah commit database sukses dan tidak boleh
+            // membatalkan penyimpanan identitas.
+            if (previousLogoPublicId) {
+                try {
+                    const cloud = await loadCloudinary();
+                    await cloud.deleteCloudinaryAsset(
+                        previousLogoPublicId,
+                        previousLogoResourceType,
+                        'logo'
+                    );
+                } catch (cleanupError) {
+                    console.warn(
+                        '[SIMNI Settings] Cleanup logo kustom lama gagal:',
+                        cleanupError
+                    );
+                }
+            }
 
             runtime.lastOperation = {
-                type:
-                    'save-identity',
-
-                status:
-                    'success',
-
-                authority:
-                    persisted.authority,
-
-                completedAt:
-                    new Date()
-                        .toISOString(),
-
-                yearChanged:
-                    persisted.yearChanged
+                type: 'save-identity',
+                status: 'success',
+                authority: persisted.authority,
+                completedAt: new Date().toISOString(),
+                yearChanged: false
             };
 
-            const logoCleanup =
-                persisted.result
-                    ?.logoCleanup;
-
-            if (
-                logoCleanup &&
-                logoCleanup.attempted &&
-                logoCleanup.ok ===
-                    false
-            ) {
-                window.toast?.(
-                    'Identitas tersimpan, tetapi pembersihan logo lama di Cloudinary belum berhasil.',
-                    'warning'
-                );
-            } else {
-                window.toast?.(
-                    'Berhasil disimpan: identitas sekolah diperbarui.',
-                    'success'
-                );
-            }
-
-            if (
-                yearChanged
-            ) {
-                window.toast?.(
-                    'Tahun Pelajaran aktif berhasil berubah. Workspace akan dimuat ulang.',
-                    'success'
-                );
-
-                window.setTimeout(
-                    () => {
-                        window.location.reload();
-                    },
-                    700
-                );
-            }
+            window.toast?.(
+                'Berhasil disimpan: identitas kelas diperbarui.',
+                'success'
+            );
 
             return true;
         } catch (error) {
@@ -793,31 +522,11 @@
                 error
             );
 
-            if (
-                uploaded
-                    ?.public_id
-            ) {
-                await compensateUploadedLogo(
-                    uploaded
-                );
-            }
-
             runtime.lastOperation = {
-                type:
-                    'save-identity',
-
-                status:
-                    'failed',
-
-                completedAt:
-                    new Date()
-                        .toISOString(),
-
-                error:
-                    String(
-                        error?.message ||
-                        error
-                    )
+                type: 'save-identity',
+                status: 'failed',
+                completedAt: new Date().toISOString(),
+                error: String(error?.message || error)
             };
 
             window.toast?.(
@@ -827,16 +536,16 @@
 
             return false;
         } finally {
-            runtime.savingIdentity =
-                false;
-
+            runtime.savingIdentity = false;
             renderSettingsActionState();
-
             window.hideLoad?.();
         }
     }
 
     async function hapusLogo() {
+        // Kompatibilitas untuk action lama/cache Service Worker lama.
+        // UI logo kustom sudah dihapus; fungsi ini hanya memastikan identitas
+        // memakai logo standar tanpa membuka alur unggah baru.
         if (
             runtime.savingIdentity ||
             runtime.deletingLogo
@@ -845,175 +554,44 @@
         }
 
         try {
-            assertSettingsAccess();
-
-            if (
-                !canAdministerUsers()
-            ) {
-                throw new Error(
-                    'Logo kustom hanya dapat dikelola Superuser.'
-                );
+            const access = assertSettingsAccess();
+            if (!canAdministerUsers()) {
+                throw new Error('Logo standar hanya dapat dikonfirmasi Superuser.');
             }
 
-            const existing =
-                currentIdentity();
-
-            if (
-                !existing
-                    .logo_public_id &&
-                (
-                    !existing
-                        .logo_url ||
-                    existing.logo_url ===
-                        DEFAULT_LOGO_URL
-                )
-            ) {
-                window.toast?.(
-                    'Logo sudah menggunakan logo standar.',
-                    'info'
-                );
-
-                return true;
-            }
-
-            if (
-                !window.confirm(
-                    'Hapus logo kustom dan kembali ke logo standar?'
-                )
-            ) {
-                return false;
-            }
-
-            runtime.deletingLogo =
-                true;
-
-            runtime.lastOperation = {
-                type:
-                    'delete-logo',
-
-                startedAt:
-                    new Date()
-                        .toISOString()
-            };
-
+            runtime.deletingLogo = true;
             renderSettingsActionState();
 
-            window.showLoad?.(
-                'Menghapus logo kustom...'
-            );
-
+            const existing = currentIdentity();
             const payload = {
                 ...existing,
-
-                tahun_pelajaran:
-                    normalizedAcademicYear(
-                        existing
-                            .tahun_pelajaran ||
-                        currentAccess()
-                            ?.activeAcademicYearId
-                    ),
-
-                logo_url:
-                    DEFAULT_LOGO_URL,
-
-                logo_public_id:
-                    null,
-
-                logo_resource_type:
-                    null
+                ...permanentInstitutionIdentity(),
+                tahun_pelajaran: normalizedAcademicYear(
+                    access.activeAcademicYearId || existing.tahun_pelajaran || '2026-2027'
+                ),
+                ikon_kelas: 'fa-school',
+                logo_url: DEFAULT_LOGO_URL,
+                logo_public_id: null,
+                logo_resource_type: null
             };
 
             const result = await window.dbSet('Pengaturan/Identitas', payload);
-
             if (!result?.ok) {
-                throw new Error(
-                    'Database gagal mengembalikan logo ke standar.'
-                );
+                throw result?.error || new Error('Database gagal menetapkan logo standar.');
             }
 
-            updateIdentityState(
-                payload
-            );
-
-            if (existing.logo_public_id) {
-                const cloud = await loadCloudinary();
-                await cloud.deleteCloudinaryAsset(
-                    existing.logo_public_id,
-                    existing.logo_resource_type || 'image',
-                    'logo'
-                );
-            }
-
-            runtime.clearLogoInput =
-                true;
-
-            runtime.lastOperation = {
-                type:
-                    'delete-logo',
-
-                status:
-                    'success',
-
-                completedAt:
-                    new Date()
-                        .toISOString()
-            };
-
-            if (
-                result.logoCleanup
-                    ?.attempted &&
-                result.logoCleanup
-                    ?.ok === false
-            ) {
-                window.toast?.(
-                    'Logo standar sudah aktif, tetapi cleanup asset cloud lama belum berhasil.',
-                    'warning'
-                );
-            } else {
-                window.toast?.(
-                    'Logo berhasil dikembalikan ke standar.',
-                    'success'
-                );
-            }
-
+            updateIdentityState(payload);
             return true;
         } catch (error) {
-            console.error(
-                '[SIMNI Settings] Hapus logo gagal:',
-                error
-            );
-
-            runtime.lastOperation = {
-                type:
-                    'delete-logo',
-
-                status:
-                    'failed',
-
-                completedAt:
-                    new Date()
-                        .toISOString(),
-
-                error:
-                    String(
-                        error?.message ||
-                        error
-                    )
-            };
-
+            console.error('[SIMNI Settings] Penetapan logo standar gagal:', error);
             window.toast?.(
-                `Gagal menghapus logo: ${error.message || error}`,
+                `Gagal menetapkan logo standar: ${error.message || error}`,
                 'error'
             );
-
             return false;
         } finally {
-            runtime.deletingLogo =
-                false;
-
+            runtime.deletingLogo = false;
             renderSettingsActionState();
-
-            window.hideLoad?.();
         }
     }
 
