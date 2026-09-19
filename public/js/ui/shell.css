@@ -1072,3 +1072,13 @@ button.text-white[data-simni-action="exportArsipTotalExcel"] { background-color:
 .dark .simni-scanner-close { background:#334155; color:#fff; }
 .dark #modal-scanner #reader { background:#1e293b; color:#f1f5f9; }
 @media(max-width:480px) { #modal-scanner { padding:10px; } .simni-scanner-panel { max-height:calc(100dvh - 20px); } .simni-scanner-header { padding:12px 16px; } }
+
+/* TP import: independently scroll the preview; keep header/actions visible. */
+#modal-preview-tp-import { padding:12px; overflow:hidden; }
+#modal-preview-tp-import .tp-import-panel { display:flex; flex-direction:column; width:100%; max-width:960px; max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); min-height:0; }
+#modal-preview-tp-import .tp-import-panel > :first-child,
+#modal-preview-tp-import .tp-import-panel > :last-child { flex:0 0 auto; }
+#modal-preview-tp-import .tp-import-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+#modal-preview-tp-import button { min-width:44px; min-height:44px; touch-action:manipulation; }
+#modal-preview-tp-import button:focus-visible { outline:3px solid #6366f1; outline-offset:2px; }
+#modal-preview-tp-import .tp-import-panel > :last-child { padding-bottom:max(12px,env(safe-area-inset-bottom)); }
