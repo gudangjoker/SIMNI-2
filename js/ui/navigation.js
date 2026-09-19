@@ -301,7 +301,7 @@ window.SIMNIDialog = (() => {
             if (!element.contains(document.activeElement)) (focusables(element)[0] || element).focus({preventScroll:true});
             return;
         }
-        const entry = {element, dismiss, trigger:document.activeElement, siblings:[]};
+        const entry = {element, dismiss, trigger:document.activeElement, siblings:[], unlocked:[]};
         element.setAttribute('role', 'dialog'); element.setAttribute('aria-modal', 'true');
         if (!element.hasAttribute('aria-label') && !element.hasAttribute('aria-labelledby')) {
             const title = element.querySelector('h1,h2,h3');
@@ -314,6 +314,11 @@ window.SIMNIDialog = (() => {
                 entry.siblings.push([sibling, sibling.inert]); sibling.inert = true;
             }
         }
+        // A previous modal made its siblings inert, including this new layer.
+        // Unlock only the new dialog's ancestor branch; restore it on close.
+        for (let branch = element; branch && branch !== document.body; branch = branch.parentElement) {
+            if (branch.inert) { entry.unlocked.push(branch); branch.inert = false; }
+        }
         stack.push(entry); element.tabIndex = -1;
         (focusables(element)[0] || element).focus({preventScroll:true});
     }
@@ -324,6 +329,7 @@ window.SIMNIDialog = (() => {
         for (let i=stack.length-1;i>=index;i--) {
             const entry = stack.pop();
             for (const [sibling,inert] of entry.siblings) sibling.inert = inert;
+            for (const branch of entry.unlocked) branch.inert = true;
             entry.element.removeAttribute('aria-modal');
             if (entry.trigger?.isConnected && !entry.trigger.closest('[inert]')) entry.trigger.focus({preventScroll:true});
         }
