@@ -1,6 +1,6 @@
 {
   "version": "4.8.0-rc.1",
-  "buildId": "15d084dbe5a185329a6f94e54a68cfb788563f91c3cda03ecd3c628e01a8868c",
+  "buildId": "6a52703c685d923604791829eca8ed79c2034cf12c88e5111f354cbe7f3cdc28",
   "files": {
     "features/accounts/accounts.html": "03c29ca403897545504624c55e0de0b4a7b074dd856f8197299fe7f90837fbde",
     "features/accounts/accounts.js": "b10fe6f4b373104011b11f2351e69febb89a212a2c3d743f6abdf1b880773c21",
@@ -39,8 +39,8 @@
     "features/reset/reset.js": "db529dcd6ce649846360d6c60088fa5a999757fba5da31ea09fd8ffe9d2b31da",
     "features/settings/settings.html": "4cdef872d6258fdd0a3b2353883823d90beb105cd51de7bcb71fb2b83719d446",
     "features/settings/settings.js": "d71356e0135bc28a6c885350781cdc4abe384384faee693ae58ec9f5078326b5",
-    "features/students/students.html": "e6f9093d96cd8e0b95b2b198dd40bae4dc563a6777feab2e7ff6f06e5a882965",
-    "features/students/students.js": "0d2ade649f2e1f26f6c03d591490faa643915f7691a7755c4e8e4b423282faf9",
+    "features/students/students.html": "5d06a637a13f03707c3ac24f668872ac06254a1746a82abe992f474e74456bbe",
+    "features/students/students.js": "dfb92e0de66fd4fab8b2068c1cf42700d1f30c3d650acf0b8eb81df86c38d78c",
     "icons/favicon-32.png": "4727914ccedd2ae8c9f8b7a714bede96c227646de8273adcd2b18d55da0462c1",
     "icons/icon-192.png": "6fe2e855e4cb3b1ab9c91cb0e741a14380a2e50ca0a420fec9c4dae911ef14c8",
     "icons/icon-512.png": "d48a33f978d4d67af1acba01332333e8688fdd6c27c009a9e9ad54f9f7cdcccd",

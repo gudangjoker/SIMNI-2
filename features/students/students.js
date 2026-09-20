@@ -486,6 +486,72 @@ async function uploadStudentPhotoAction(event) {
     }
 }
 
+async function exportSiswaExcel() {
+    try {
+        await window.ensureSIMNIVendors?.("xlsx");
+        if (!window.XLSX?.utils) return toast('Pustaka Excel belum tersedia. Muat ulang saat online.', 'error');
+
+        const currentKelas = normalizeClassLabel(state?.activeKelas);
+        const students = [...state.students]
+            .filter(s => !currentKelas || normalizeClassLabel(s?.Kelas) === currentKelas)
+            .sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+
+        if (!students.length) return toast('Tidak ada data siswa untuk diunduh.', 'warning');
+
+        // Build export rows — exclude QR Code, Foto URL, foto_public_id, ID_Siswa
+        const exportData = students.map((s, i) => ({
+            'No': i + 1,
+            'NISN': s.NISN || '',
+            'Nama Lengkap': s['Nama Lengkap'] || '',
+            'Nama Panggilan': s['Nama Panggilan'] || '',
+            'Kelas': s.Kelas || '',
+            'Kelompok BTQ': s.Kelompok || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Set column widths for readability
+        ws['!cols'] = [
+            { wch: 5 },   // No
+            { wch: 14 },  // NISN
+            { wch: 30 },  // Nama Lengkap
+            { wch: 18 },  // Nama Panggilan
+            { wch: 8 },   // Kelas
+            { wch: 14 }   // Kelompok BTQ
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const sheetName = currentKelas ? `Kelas ${currentKelas}` : 'Semua Siswa';
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        const kelasLabel = currentKelas || 'Semua';
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const filename = `Data_Siswa_${kelasLabel}_${dateStr}.xlsx`;
+
+        if (window.SIMNIDownloadService?.downloadBlob) {
+            await window.SIMNIDownloadService.downloadBlob(blob, filename);
+        } else {
+            // Fallback browser download
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            anchor.style.display = 'none';
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
+        toast(`Data ${students.length} siswa berhasil diunduh.`, 'success');
+    } catch (error) {
+        toast(error.message || 'Gagal mengunduh data siswa.', 'error');
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.renderSiswaList = renderSiswaList;
     window.openAddSiswaModal = openAddSiswaModal;
@@ -495,4 +561,5 @@ if (typeof window !== 'undefined') {
     window.importSiswaExcel = importSiswaExcel;
     window.commitSiswaImport = commitSiswaImport;
     window.uploadStudentPhotoAction = uploadStudentPhotoAction;
+    window.exportSiswaExcel = exportSiswaExcel;
 }
