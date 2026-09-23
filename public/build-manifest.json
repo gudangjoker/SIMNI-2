@@ -1,6 +1,6 @@
 {
   "version": "4.8.0-rc.1",
-  "buildId": "c14cbbb4d4cf7f98bf612efa189f3d1daee5d6ea1ca4ace6fc2b678a7459226b",
+  "buildId": "0c790ed4a8c27ce3466a63592926fa5361406d4d47ed473b78ded1017297af53",
   "files": {
     "features/accounts/accounts.html": "03c29ca403897545504624c55e0de0b4a7b074dd856f8197299fe7f90837fbde",
     "features/accounts/accounts.js": "b10fe6f4b373104011b11f2351e69febb89a212a2c3d743f6abdf1b880773c21",
@@ -69,7 +69,7 @@
     "js/platform/bootstrap.js": "e48e7ed7899c7ae563d8f865d6ce78765f8853aefaf6c5b4160e641820161ed2",
     "js/platform/download-service.js": "14a1f53ac984a68a6a2875f380201550d07db9a999eff2e0f265ca393661094b",
     "js/platform/main.js": "79c1358d70eb8014442624685c192ba04a8cd997b92b7f6b70e6a70ea805a12e",
-    "js/platform/native-back-button.js": "fdc7cb711c1c01df660e28a37036f13bc6a6ea58afebe73c8c725a8a39110101",
+    "js/platform/native-back-button.js": "16922a7ea35199ab9d745cc6d7ad9476e9630cd2cd27e35869c062af76e2f633",
     "js/platform/permission-service.js": "972ed513f3d5ab7cd6e8211375e06a95ef150b9a5251681cdbb0c60fa2289b3a",
     "js/services/edge-service.js": "29ab2150d7f2a7d5e461631144dba931602400ada2ff8db8d1f06631ce0e59fb",
     "js/ui/actions.js": "e9ca98c878393aa4a1580a17e025d1a08182952fc8803c6aa7b20001b9e60363",

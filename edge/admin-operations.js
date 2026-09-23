@@ -1,3 +1,4 @@
+import '../js/auth/workspace-registry-core.js';
 import '../features/backup/backup-core.js';
 import '../js/auth/access-policy-core.js';
 import '../js/database/workspace-paths-core.js';

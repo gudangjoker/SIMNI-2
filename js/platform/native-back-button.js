@@ -31,10 +31,14 @@
         }
 
         // 2. QR Scanner Modal / Presensi QR
-        const qrModal = document.getElementById('modal-scan-qr');
+        const qrModal = document.getElementById('modal-scanner');
         if (qrModal && !qrModal.classList.contains('hidden')) {
+            if (typeof window.closeQRScanner === 'function') {
+                void window.closeQRScanner();
+                return true;
+            }
             if (typeof window.closeModal === 'function') {
-                window.closeModal('modal-scan-qr');
+                window.closeModal('modal-scanner');
                 return true;
             }
         }
