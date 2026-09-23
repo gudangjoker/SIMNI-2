@@ -419,7 +419,15 @@ async function importSiswaExcel(event) {
 }
 
 async function commitSiswaImport() {
-    if (!pendingSiswaImport) return;
+    if (!pendingSiswaImport || !Object.keys(pendingSiswaImport).length) {
+        return toast('Tidak ada data siswa valid yang dapat disimpan.', 'warning');
+    }
+    const btn = document.getElementById('btn-commit-siswa-import');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Menyimpan...';
+    }
+    if (typeof showLoad === 'function') showLoad('Menyimpan data siswa ke database...');
     try {
         const updates = pendingSiswaImport;
         const result = await dbUpdate(updates);
@@ -438,7 +446,13 @@ async function commitSiswaImport() {
         closeModal('modal-preview-siswa-import');
         pendingSiswaImport = null;
     } catch (error) {
-        toast(error.message, 'error');
+        toast(error.message || String(error), 'error');
+    } finally {
+        if (typeof hideLoad === 'function') hideLoad();
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Simpan Data';
+        }
     }
 }
 

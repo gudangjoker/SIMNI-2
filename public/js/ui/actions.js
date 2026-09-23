@@ -29,6 +29,7 @@
         'editSiswa',
         'exportArsipTotalExcel',
         'exportDataLokal',
+        'exportSiswaExcel',
         'finalisasiLPS',
         'generatePrintQR',
         'hapusLogo',

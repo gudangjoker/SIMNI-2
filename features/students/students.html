@@ -85,16 +85,16 @@
         </div>
     </div>
 
-    <div id="modal-preview-siswa-import" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-transform duration-300 border border-slate-100 dark:border-slate-800">
+    <div id="modal-preview-siswa-import" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10010] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
+        <div class="siswa-import-panel bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden border border-slate-100 dark:border-slate-800">
             <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]">
                 <h3 class="font-bold text-lg dark:text-white">Pratinjau Impor Siswa</h3>
-                <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button>
+                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200 cursor-pointer"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-5 overflow-y-auto max-h-[60vh]">
-                <div id="preview-siswa-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"></div>
-                <div id="preview-siswa-errors" class="text-red-500 text-sm font-bold mb-4"></div>
-                <div class="overflow-x-auto">
+            <div class="siswa-import-scroll p-5">
+                <div id="preview-siswa-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+                <div id="preview-siswa-errors" class="text-red-500 text-xs font-bold mb-4"></div>
+                <div class="overflow-x-auto border dark:border-slate-800 rounded-xl">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-slate-50 dark:bg-[#000000] text-slate-500 text-xs uppercase">
                             <tr><th class="p-2">NISN</th><th class="p-2">Nama</th><th class="p-2">Kelas</th><th class="p-2">Status</th></tr>
@@ -104,8 +104,8 @@
                 </div>
             </div>
             <div class="p-4 border-t dark:border-slate-800 bg-slate-50 dark:bg-[#000000] flex justify-end gap-2">
-                <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-sm">Batal</button>
-                <button data-simni-action="commitSiswaImport" data-simni-trigger="click" id="btn-commit-siswa-import" class="px-4 py-2 bg-primary text-white font-bold rounded-xl text-sm">Simpan Data</button>
+                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm cursor-pointer">Batal</button>
+                <button type="button" data-simni-action="commitSiswaImport" data-simni-trigger="click" id="btn-commit-siswa-import" class="px-4 py-2 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Simpan Data</button>
             </div>
         </div>
     </div>
