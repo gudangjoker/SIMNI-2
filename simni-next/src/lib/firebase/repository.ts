@@ -1,7 +1,9 @@
-﻿import { ref, get, set, update, remove, runTransaction } from 'firebase/database';
+import { ref, get, set, update, remove, runTransaction } from 'firebase/database';
 import { getFirebaseClient } from './client';
 import { resolveDatabasePath } from './paths';
 import { ClassId } from '@/types/auth';
+
+const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_DATABASE === 'true';
 
 export interface RepositoryResult<T> {
   success: boolean;
@@ -9,11 +11,33 @@ export interface RepositoryResult<T> {
   error?: string;
 }
 
+// Helper untuk sandbox storage lokal
+function getMockStorage<T>(path: string): T | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const raw = localStorage.getItem(`SIMNI_MOCK_${path}`);
+  return raw ? JSON.parse(raw) : undefined;
+}
+
+function setMockStorage<T>(path: string, val: T): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(`SIMNI_MOCK_${path}`, JSON.stringify(val));
+}
+
+function removeMockStorage(path: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(`SIMNI_MOCK_${path}`);
+}
+
 export async function dbGet<T>(
   logicalPath: string,
   classId: ClassId,
   academicYear: string
 ): Promise<RepositoryResult<T>> {
+  if (IS_MOCK) {
+    const val = getMockStorage<T>(logicalPath);
+    return { success: true, data: val };
+  }
+
   try {
     const { database } = getFirebaseClient();
     const physicalPath = resolveDatabasePath(logicalPath, classId, academicYear);
@@ -36,6 +60,11 @@ export async function dbSet<T>(
   classId: ClassId,
   academicYear: string
 ): Promise<RepositoryResult<T>> {
+  if (IS_MOCK) {
+    setMockStorage(logicalPath, value);
+    return { success: true, data: value };
+  }
+
   try {
     const { database } = getFirebaseClient();
     const physicalPath = resolveDatabasePath(logicalPath, classId, academicYear);
@@ -53,6 +82,14 @@ export async function dbUpdate(
   classId: ClassId,
   academicYear: string
 ): Promise<RepositoryResult<void>> {
+  if (IS_MOCK) {
+    for (const [key, val] of Object.entries(logicalUpdates)) {
+      if (val === null) removeMockStorage(key);
+      else setMockStorage(key, val);
+    }
+    return { success: true };
+  }
+
   try {
     const { database } = getFirebaseClient();
     const physicalUpdates: Record<string, unknown> = {};
@@ -75,6 +112,11 @@ export async function dbRemove(
   classId: ClassId,
   academicYear: string
 ): Promise<RepositoryResult<void>> {
+  if (IS_MOCK) {
+    removeMockStorage(logicalPath);
+    return { success: true };
+  }
+
   try {
     const { database } = getFirebaseClient();
     const physicalPath = resolveDatabasePath(logicalPath, classId, academicYear);
@@ -93,6 +135,13 @@ export async function dbCompareRecords<T extends Record<string, unknown>>(
   classId: ClassId,
   academicYear: string
 ): Promise<RepositoryResult<T>> {
+  if (IS_MOCK) {
+    const current = (getMockStorage<T>(logicalRoot) || {}) as T;
+    const merged = { ...current, ...changes };
+    setMockStorage(logicalRoot, merged);
+    return { success: true, data: merged };
+  }
+
   try {
     const { database } = getFirebaseClient();
     const physicalPath = resolveDatabasePath(logicalRoot, classId, academicYear);
