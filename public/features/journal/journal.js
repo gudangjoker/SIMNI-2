@@ -6,7 +6,7 @@
 function setJurnalTab(tab) {
     ['input', 'rekap', 'jadwal'].forEach((name) => {
         const button = document.getElementById(`tab-jurnal-${name}`);
-        if (button) button.className = `whitespace-nowrap px-4 py-2 border-b-2 text-sm font-bold ${tab === name ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`;
+        if (button) button.className = `simni-tab ${tab === name ? 'active' : ''} whitespace-nowrap`;
         const panel = document.getElementById(`jurnal-tab-${name}`);
         if (panel) panel.classList.toggle('hidden', tab !== name);
     });
@@ -323,6 +323,207 @@ async function cetakJurnalPDF() {
     }
 }
 
+function previewPrintJurnal() {
+    const monthInput = document.getElementById('filter-jurnal-bulan');
+    const month = monthInput?.value || getJakartaMonthString();
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
+    const filtered = (state.jurnal || []).filter((item) => {
+        if (!currentKelas || academicRecordClass(item) !== currentKelas) return false;
+        return normalizeDate(item.Tanggal).startsWith(month);
+    }).sort((a, b) => String(a.Tanggal).localeCompare(String(b.Tanggal)) || Number(a.Jam_Ke) - Number(b.Jam_Ke));
+
+    if (!filtered.length) return toast('Tidak ada data jurnal untuk bulan ini.', 'warning');
+
+    const area = document.getElementById('area-preview-cetak-jurnal');
+    if (!area) return;
+
+    const logoUrl = escapeHTML(state?.pengaturan?.logo_url || './icons/school-logo.png');
+    const namaYayasan = escapeHTML(state?.pengaturan?.nama_yayasan || 'YAYASAN SOSIAL DAN PENDIDIKAN BINA MUDA');
+    const jenjangSekolah = escapeHTML(state?.pengaturan?.jenjang_sekolah || 'SEKOLAH DASAR ISLAM TERPADU');
+    const namaSekolah = escapeHTML(state?.pengaturan?.nama_sekolah || 'SDIT BINA MUDA CICALENGKA');
+    const statusAkreditasiRaw = state?.pengaturan?.status_akreditasi || 'A';
+    const statusAkreditasi = escapeHTML(statusAkreditasiRaw.toLowerCase().includes('terakreditasi') ? statusAkreditasiRaw : `Terakreditasi "${statusAkreditasiRaw}"`);
+    const nomorIzinRaw = state?.pengaturan?.nomor_izin || 'No.421.2/1143-Disdikbud/2011';
+    const nomorIzin = escapeHTML(nomorIzinRaw.toLowerCase().includes('ijin') || nomorIzinRaw.toLowerCase().includes('izin') ? nomorIzinRaw : `Ijin Operasional/RPS : ${nomorIzinRaw}`);
+    const kotaSekolah = escapeHTML(state?.pengaturan?.kota || 'Cicalengka');
+    const tahunPelajaran = escapeHTML(state?.pengaturan?.tahun_pelajaran || '2026/2027');
+    const semester = escapeHTML(state?.pengaturan?.semester || '1 (Ganjil)');
+    const namaKelas = escapeHTML(state?.pengaturan?.nama_kelas || currentKelas || 'Semua Kelas');
+    const namaGuru = escapeHTML(state?.pengaturan?.nama_wali_kelas || state?.pengaturan?.nama_guru || state?.user?.displayName || 'Guru Kelas');
+    const nuptkGuru = escapeHTML(state?.pengaturan?.nuptk_wali_kelas || state?.pengaturan?.nuptk_guru || state?.pengaturan?.nip_guru || '-');
+    const namaKamad = escapeHTML(state?.pengaturan?.nama_kepala_sekolah || state?.pengaturan?.nama_kamad || 'Kepala SDIT Bina Muda');
+    const nuksKamad = escapeHTML(state?.pengaturan?.nuks_kepala_sekolah || state?.pengaturan?.nuks_kamad || state?.pengaturan?.nip_kamad || '-');
+    const tglCetak = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
+    let formattedMonth = month;
+    try {
+        const [y, m] = month.split('-');
+        const dateObj = new Date(Number(y), Number(m) - 1, 1);
+        formattedMonth = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(dateObj);
+    } catch (_) {}
+
+    const rowsHtml = filtered.map((item, idx) => {
+        let tglFormatted = normalizeDate(item.Tanggal);
+        try {
+            const d = new Date(item.Tanggal);
+            tglFormatted = new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(d);
+        } catch (_) {}
+
+        return `
+            <tr style="border-bottom: 1px solid #333;">
+                <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${idx + 1}</td>
+                <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; white-space: nowrap;">${escapeHTML(tglFormatted)}</td>
+                <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; font-weight: bold;">Ke-${escapeHTML(String(item.Jam_Ke || ''))}</td>
+                <td style="border: 1px solid #333; padding: 6px 8px; font-weight: bold;">${escapeHTML(item.Mapel || '')}</td>
+                <td style="border: 1px solid #333; padding: 6px 8px; text-align: left; line-height: 1.4; white-space: pre-wrap;">${escapeHTML(item.Materi || '-')}</td>
+                <td style="border: 1px solid #333; padding: 6px 8px; text-align: left;">${escapeHTML(item.Keterangan || '-')}</td>
+            </tr>
+        `;
+    }).join('');
+
+    area.innerHTML = `
+        <div style="font-family: 'Times New Roman', serif; color: #111; line-height: 1.3;">
+            <!-- KOP SURAT RESMI IDENTIK LPS / BLP -->
+            <header class="lps-letterhead" style="display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 85px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 16px;">
+                <div class="lps-logo-box" style="display: flex; align-items: center; justify-content: center; width: 75px; height: 75px;">
+                    <img src="${logoUrl}" alt="Logo sekolah" style="display: block; max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div class="lps-school-copy" style="min-width: 0; text-align: center;">
+                    <p style="margin: 0; font-size: 10pt; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${namaYayasan}</p>
+                    <p style="margin: 1px 0 0 0; font-size: 9.5pt; font-weight: 600; text-transform: uppercase;">${jenjangSekolah}</p>
+                    <h1 style="margin: 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 16pt; font-weight: bold; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px;">${namaSekolah}</h1>
+                    <strong style="display: block; margin: 1px 0 0 0; font-size: 9pt; font-weight: bold;">${statusAkreditasi}</strong>
+                    <em style="display: block; margin: 1px 0 0 0; font-size: 8.5pt; font-style: normal; font-weight: 500;">${nomorIzin}</em>
+                </div>
+            </header>
+
+            <!-- JUDUL JURNAL -->
+            <div style="text-align: center; margin-bottom: 16px;">
+                <h3 style="font-size: 13pt; font-weight: bold; text-decoration: underline; margin: 0; text-transform: uppercase;">JURNAL KEGIATAN PEMBELAJARAN HARIAN</h3>
+                <p style="font-size: 10.5pt; font-weight: bold; margin: 4px 0 0 0;">Kelas: ${namaKelas} — Bulan: ${escapeHTML(formattedMonth)}</p>
+                <p style="font-size: 9pt; margin: 2px 0 0 0;">Tahun Pelajaran ${tahunPelajaran} (Semester ${semester})</p>
+            </div>
+
+            <!-- TABEL JURNAL -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 25px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; font-weight: bold; text-transform: uppercase;">
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 35px; text-align: center;">No</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 85px; text-align: center;">Hari, Tgl</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 60px; text-align: center;">Jam</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; width: 140px; text-align: left;">Mata Pelajaran</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; text-align: left;">Uraian Materi Pembelajaran</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; width: 110px; text-align: left;">Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- TANDA TANGAN -->
+            <div style="display: flex; justify-content: space-between; page-break-inside: avoid; margin-top: 30px; font-size: 10pt;">
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">Mengetahui,</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Kepala SDIT Bina Muda</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaKamad}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUKS. ${nuksKamad}</p>
+                </div>
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">${kotaSekolah}, ${tglCetak}</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Guru Kelas / Mata Pelajaran</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaGuru}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUPTK. ${nuptkGuru}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    openModal('modal-preview-cetak-jurnal');
+}
+
+async function executePrintJurnalPreview() {
+    await window.ensureSIMNIVendors?.("pdf");
+    const container = document.getElementById('area-preview-cetak-jurnal');
+    if (!container) return;
+
+    if (typeof html2pdf === 'function') {
+        showLoad('Membuat dokumen PDF Jurnal...');
+        const monthInput = document.getElementById('filter-jurnal-bulan');
+        const month = monthInput?.value || getJakartaMonthString();
+        const currentKelas = normalizeClassLabel(state?.activeKelas) || 'Semua';
+        try {
+            await html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: `Jurnal_Mengajar_${currentKelas}_${month}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(container).save();
+            toast('Dokumen PDF Jurnal berhasil disimpan.', 'success');
+        } catch (err) {
+            console.error(err);
+            window.print();
+        } finally {
+            hideLoad();
+        }
+    } else {
+        window.print();
+    }
+}
+
+async function exportJurnalExcel() {
+    await window.ensureSIMNIVendors?.("xlsx");
+    if (!window.XLSX?.utils) return toast('Pustaka Excel belum siap. Muat ulang saat online.', 'error');
+
+    const monthInput = document.getElementById('filter-jurnal-bulan');
+    const month = monthInput?.value || getJakartaMonthString();
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
+    const filtered = (state.jurnal || []).filter((item) => {
+        if (!currentKelas || academicRecordClass(item) !== currentKelas) return false;
+        return normalizeDate(item.Tanggal).startsWith(month);
+    }).sort((a, b) => String(a.Tanggal).localeCompare(String(b.Tanggal)) || Number(a.Jam_Ke) - Number(b.Jam_Ke));
+
+    if (!filtered.length) return toast('Tidak ada data jurnal untuk bulan ini.', 'warning');
+
+    showLoad('Menyusun file Excel Jurnal...');
+    try {
+        const rows = filtered.map((item, idx) => ({
+            'No': idx + 1,
+            'Tanggal': normalizeDate(item.Tanggal),
+            'Jam Ke': item.Jam_Ke || '',
+            'Mata Pelajaran': item.Mapel || '',
+            'Uraian Materi Pembelajaran': item.Materi || '',
+            'Catatan / Keterangan': item.Keterangan || '',
+            'Kelas': item.Kelas || currentKelas || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [
+            { wch: 6 },   // No
+            { wch: 14 },  // Tanggal
+            { wch: 8 },   // Jam Ke
+            { wch: 22 },  // Mapel
+            { wch: 45 },  // Materi
+            { wch: 25 },  // Catatan
+            { wch: 8 }    // Kelas
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const sheetName = `Jurnal_${month.replace(/-/g, '_')}`;
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+        const filename = `Jurnal_Mengajar_${safeFilename(currentKelas || 'Semua')}_${month}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        toast(`Jurnal berhasil diekspor (${filtered.length} kegiatan).`, 'success');
+    } catch (err) {
+        console.error(err);
+        toast(`Gagal mengekspor jurnal: ${err.message || err}`, 'error');
+    } finally {
+        hideLoad();
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.setJurnalTab = setJurnalTab;
     window.renderJadwalSetting = renderJadwalSetting;
@@ -333,4 +534,7 @@ if (typeof window !== 'undefined') {
     window.hapusJurnal = hapusJurnal;
     window.renderRekapJurnal = renderRekapJurnal;
     window.cetakJurnalPDF = cetakJurnalPDF;
+    window.previewPrintJurnal = previewPrintJurnal;
+    window.executePrintJurnalPreview = executePrintJurnalPreview;
+    window.exportJurnalExcel = exportJurnalExcel;
 }

@@ -63,6 +63,26 @@ function feedback(text) {
     el.innerHTML = `<i class="fas fa-info-circle text-sm text-primary mr-1"></i> <span>${escape(text)}</span>`;
 }
 
+function updateAccountsNavBadge(count) {
+    const n = Number(count) || 0;
+    const desktopBadge = $('badge-nav-accounts-desktop');
+    const mobileBadge = $('badge-nav-accounts-mobile');
+    const hamburgerDot = $('badge-hamburger-dot');
+    [desktopBadge, mobileBadge].forEach(el => {
+        if (!el) return;
+        if (n > 0) {
+            el.textContent = n;
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    });
+    if (hamburgerDot) {
+        if (n > 0) hamburgerDot.classList.remove('hidden');
+        else hamburgerDot.classList.add('hidden');
+    }
+}
+
 function button(action, text, attrs = '', variant = 'secondary') {
     let cls = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0';
     if (variant === 'primary' || action === 'approve' || action === 'assign') {
@@ -75,12 +95,15 @@ function button(action, text, attrs = '', variant = 'secondary') {
     return `<button type="button" class="${cls}" data-action="${action}" ${attrs}>${escape(text)}</button>`;
 }
 
-function card(title, description, actions = '', icon = 'fa-user-circle') {
+function card(title, description, actions = '', icon = 'fa-user-circle', badge = '') {
     return `<article class="bg-white dark:bg-[#111111] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-3">
-        <div class="space-y-1.5">
-            <div class="flex items-center gap-2">
-                <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-primary flex items-center justify-center text-xs flex-shrink-0"><i class="fas ${icon}"></i></span>
-                <h3 class="font-bold text-sm text-slate-800 dark:text-white truncate">${escape(title)}</h3>
+        <div class="space-y-2">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-primary flex items-center justify-center text-xs flex-shrink-0 shadow-2xs"><i class="fas ${icon}"></i></span>
+                    <h3 class="font-bold text-sm text-slate-800 dark:text-white truncate">${escape(title)}</h3>
+                </div>
+                ${badge ? `<div class="shrink-0">${badge}</div>` : ''}
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${escape(description)}</p>
         </div>
@@ -109,9 +132,31 @@ function render() {
     if ($('badge-menu-users')) $('badge-menu-users').textContent = `${activeCount} Aktif`;
     if ($('badge-menu-year')) $('badge-menu-year').textContent = `Tahun ${data.activeYear}`;
 
-    $('accounts-registration-toggle').innerHTML = data.enabled
-        ? '<i class="fas fa-door-closed text-xs"></i> <span>Tutup Pendaftaran</span>'
-        : '<i class="fas fa-door-open text-xs"></i> <span>Buka Pendaftaran</span>';
+    const regToggle = $('accounts-registration-toggle');
+    const regThumb = $('accounts-registration-switch-thumb');
+    const regBadge = $('accounts-registration-badge');
+    const regIndicator = $('accounts-registration-indicator');
+    if (regToggle && regThumb && regBadge) {
+        regToggle.setAttribute('aria-checked', String(data.enabled));
+        if (data.enabled) {
+            regToggle.classList.remove('bg-slate-300', 'dark:bg-slate-700');
+            regToggle.classList.add('bg-emerald-500');
+            regThumb.classList.remove('translate-x-0');
+            regThumb.classList.add('translate-x-4');
+            regBadge.textContent = 'Terbuka';
+            regBadge.className = 'text-xs font-bold mt-0.5 text-emerald-600 dark:text-emerald-400';
+            if (regIndicator) regIndicator.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]';
+        } else {
+            regToggle.classList.remove('bg-emerald-500');
+            regToggle.classList.add('bg-slate-300', 'dark:bg-slate-700');
+            regThumb.classList.remove('translate-x-4');
+            regThumb.classList.add('translate-x-0');
+            regBadge.textContent = 'Tertutup';
+            regBadge.className = 'text-xs font-bold mt-0.5 text-rose-500 dark:text-rose-400';
+            if (regIndicator) regIndicator.className = 'w-2 h-2 rounded-full bg-rose-500';
+        }
+    }
+    updateAccountsNavBadge(pendingCount);
     $('accounts-summary').textContent = `${pendingCount} permohonan menunggu · ${availableCount} kelas belum ditugaskan · Tahun ${data.activeYear}`;
 
     if (section === 'hub') {
@@ -155,37 +200,63 @@ function render() {
     let html = '';
     if (section === 'requests') {
         html = Object.values(data.requests).filter(r => r.status === 'pending').map(r =>
-            card(r.displayName || r.email, `${r.email} · meminta kelas ${r.classId}`,
+            card(r.displayName || r.email, `${r.email} · meminta penugasan kelas ${r.classId}`,
                 button('approve', 'Tinjau & Setujui', uidAttr(r.uid), 'primary') + button('reject', 'Tolak', uidAttr(r.uid), 'danger'),
-                'fa-inbox'
+                'fa-inbox',
+                '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 shadow-2xs">Menunggu</span>'
             )
         ).join('');
     }
     if (section === 'classes') {
         html = data.items.map(s => {
             const p = data.users[s.assignedUid];
+            const classBadge = s.systemOwned
+                ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-500/20 shadow-2xs">Sistem</span>'
+                : s.assignedUid
+                    ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shadow-2xs">Terisi</span>'
+                    : '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 shadow-2xs">Kosong</span>';
             return card(`Kelas ${s.classId}`,
-                p ? `${p.displayName || p.email} · ${statusLabel[p.status] || p.status}` : 'Belum ditugaskan',
+                p ? `${p.displayName || p.email} · ${statusLabel[p.status] || p.status}` : 'Belum ditugaskan guru',
                 s.systemOwned ? '<span class="text-xs text-slate-400 font-medium">Khusus Superuser</span>' : s.assignedUid ? (button('replace', 'Ganti Guru', uidAttr(s.assignedUid)) + button('unassign', 'Cabut Penugasan', uidAttr(s.assignedUid), 'danger')) : (button('assign', 'Tetapkan Guru', `data-class="${s.classId}"`, 'primary') + button('invite', 'Buat Undangan', `data-class="${s.classId}"`)),
-                'fa-chalkboard'
+                'fa-chalkboard',
+                classBadge
             );
         }).join('');
     }
     if (section === 'users') {
-        html = Object.values(data.users).map(p =>
-            card(p.displayName || p.email, `${p.email} · ${statusLabel[p.status] || p.status} · ${p.classId || 'Belum ditugaskan'}`,
+        html = Object.values(data.users).map(p => {
+            const userBadge = p.role === 'superuser'
+                ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold border border-indigo-500/20 shadow-2xs">Superuser</span>'
+                : p.status === 'active'
+                    ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shadow-2xs">Aktif</span>'
+                    : p.status === 'disabled'
+                        ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-500/20 shadow-2xs">Nonaktif</span>'
+                        : `<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 shadow-2xs">${escape(statusLabel[p.status] || p.status)}</span>`;
+            return card(p.displayName || p.email, `${p.email} · Kelas: ${p.classId || 'Belum ditugaskan'}`,
                 p.role === 'superuser' ? '<span class="text-xs text-primary font-bold"><i class="fas fa-shield-alt mr-1"></i> Superuser</span>' : (p.status === 'deleting' ? button('resume-delete', 'Lanjutkan Penghapusan', uidAttr(p.uid), 'danger') : button('permissions', 'Atur Izin', uidAttr(p.uid))) + (p.role === 'teacher' ? (button('move', 'Pindahkan Kelas', uidAttr(p.uid)) + button('archive-access', 'Akses Arsip', uidAttr(p.uid))) : '') + (['active', 'unassigned', 'disabled'].includes(p.status) ? button('status', p.status === 'disabled' ? 'Aktifkan' : 'Nonaktifkan', uidAttr(p.uid)) : '') + button('delete', 'Hapus Akun', uidAttr(p.uid), 'danger'),
-                p.role === 'superuser' ? 'fa-shield-alt' : 'fa-user-shield'
-            )
-        ).join('');
+                p.role === 'superuser' ? 'fa-shield-alt' : 'fa-user-shield',
+                userBadge
+            );
+        }).join('');
     }
     if (section === 'invites') {
-        html = card('Undangan Baru', 'Kode sekali pakai ditampilkan saat dibuat. Guru tetap membutuhkan persetujuanmu.', button('invite', 'Buat Undangan', '', 'primary'), 'fa-ticket-alt');
+        html = card('Undangan Baru', 'Kode sekali pakai ditampilkan saat dibuat. Guru tetap membutuhkan persetujuanmu.', button('invite', 'Buat Undangan', '', 'primary'), 'fa-ticket-alt', '<span class="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20 shadow-2xs">Baru</span>');
         html += data.invitations.map(inv => {
-            const state = inv.revokedAt ? 'Dicabut' : inv.consumedBy ? (data.requests[inv.consumedBy]?.status === 'pending' ? 'Menunggu persetujuan' : 'Sudah digunakan') : inv.expiresAt < Date.now() ? 'Kedaluwarsa' : 'Belum digunakan';
-            return card(`Undangan Kelas ${inv.classId}`, `${inv.email} · ${state} · Berlaku s/d ${new Date(inv.expiresAt).toLocaleString('id-ID')}`,
+            const isRevoked = Boolean(inv.revokedAt);
+            const isConsumed = Boolean(inv.consumedBy);
+            const isExpired = inv.expiresAt < Date.now();
+            const state = isRevoked ? 'Dicabut' : isConsumed ? (data.requests[inv.consumedBy]?.status === 'pending' ? 'Menunggu persetujuan' : 'Sudah digunakan') : isExpired ? 'Kedaluwarsa' : 'Belum digunakan';
+            const inviteBadge = isRevoked
+                ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-500/20 shadow-2xs">Dicabut</span>'
+                : isConsumed
+                    ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shadow-2xs">Digunakan</span>'
+                    : isExpired
+                        ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-400 text-[10px] font-bold border border-slate-500/20 shadow-2xs">Kedaluwarsa</span>'
+                        : '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-bold border border-purple-500/20 shadow-2xs">Aktif</span>';
+            return card(`Undangan Kelas ${inv.classId}`, `${inv.email} · Berlaku s/d ${new Date(inv.expiresAt).toLocaleString('id-ID')}`,
                 button('invite', 'Buat Ulang', `data-class="${inv.classId}"`) + button('revoke-invite', 'Cabut', `data-class="${inv.classId}"`, 'danger'),
-                'fa-envelope-open-text'
+                'fa-envelope-open-text',
+                inviteBadge
             );
         }).join('');
     }
@@ -193,12 +264,13 @@ function render() {
         const start = Number(data.activeYear.slice(0, 4)), year = `${start + 1}-${start + 2}`, draft = data.drafts[year];
         html = card(`Penempatan Tahun ${year}`, 'Siapkan susunan guru tahun berikutnya. Aktivasi penempatan tidak menghapus data tahun lama.',
             button('save-draft', 'Susun Draf', `data-year="${year}"`, 'primary') + (draft ? button('activate-year', 'Tinjau & Aktifkan', `data-year="${year}"`) : ''),
-            'fa-calendar-alt'
+            'fa-calendar-alt',
+            draft ? '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 shadow-2xs">Draf Siap</span>' : '<span class="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">Belum Ada</span>'
         );
-        if (draft) html += Object.entries(draft.placement).map(([cls, uid]) => card(`Kelas ${cls}`, data.users[uid]?.displayName || data.users[uid]?.email || uid, '', 'fa-user-check')).join('');
+        if (draft) html += Object.entries(draft.placement).map(([cls, uid]) => card(`Kelas ${cls}`, data.users[uid]?.displayName || data.users[uid]?.email || uid, '', 'fa-user-check', '<span class="simni-badge-dot px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shadow-2xs">Ditempatkan</span>')).join('');
     }
     if (section === 'history') {
-        html = card('Arsip Riwayat', 'Ekspor 20 catatan tertua, lalu konfirmasikan penyimpanan sebelum membersihkannya dari server.', button('archive-history', 'Ekspor & Rapikan Riwayat', '', 'primary'), 'fa-archive') + data.audit.map(a => card(a.action, `${new Date(a.at).toLocaleString('id-ID')} · ${data.users[a.actor]?.displayName || a.actor} · ${a.target || ''}`, '', 'fa-history')).join('');
+        html = card('Arsip Riwayat', 'Ekspor 20 catatan tertua, lalu konfirmasikan penyimpanan sebelum membersihkannya dari server.', button('archive-history', 'Ekspor & Rapikan Riwayat', '', 'primary'), 'fa-archive') + data.audit.map(a => card(a.action, `${new Date(a.at).toLocaleString('id-ID')} · ${data.users[a.actor]?.displayName || a.actor} · ${a.target || ''}`, '', 'fa-history', '<span class="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">Log</span>')).join('');
     }
 
     const emptyMsg = SECTION_META[section]?.empty || 'Belum ada data pada bagian ini.';
@@ -310,13 +382,55 @@ async function action(actionName, body) {
     return accountCommand(actionName, pendingPayload.payload);
 }
 
-function showInvite(code, cls) {
+async function showInvite(code, cls) {
     const link = new URL('./register.html', window.location.href);
     link.hash = new URLSearchParams({ slot: `kelas-${cls.toLowerCase()}`, code }).toString();
-    modal('Undangan dibuat', `<p class="text-xs text-slate-500 mb-3 leading-relaxed">Simpan kode atau tautan ini sekarang. Guru masih harus disetujui setelah mendaftar.</p><pre id="accounts-secret" class="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-primary font-mono text-sm font-bold rounded-xl border border-indigo-200 dark:border-indigo-800/50 mb-3 break-all select-all"></pre><div class="flex gap-2">${button('copy-code', 'Salin Kode', '', 'primary')}${button('copy-link', 'Salin Tautan')}</div>`, null);
-    $('accounts-secret').textContent = code;
-    $('accounts-dialog-fields').querySelector('[data-action="copy-code"]').onclick = () => navigator.clipboard.writeText(code).then(() => { $('accounts-dialog-error').textContent = 'Kode disalin.'; }).catch(() => { $('accounts-dialog-error').textContent = 'Pilih dan salin kode secara manual.'; });
-    $('accounts-dialog-fields').querySelector('[data-action="copy-link"]').onclick = () => navigator.clipboard.writeText(link.href).then(() => { $('accounts-dialog-error').textContent = 'Tautan disalin.'; }).catch(() => { $('accounts-secret').textContent = link.href; });
+    await window.ensureSIMNIVendors?.('qr');
+
+    modal('Undangan Dibuat', `
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+            Simpan kode atau bagikan tautan/QR code ini kepada guru kelas. Guru masih harus disetujui setelah mendaftar.
+        </p>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kode Undangan</label>
+                <pre id="accounts-secret" class="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-primary font-mono text-sm font-bold rounded-xl border border-indigo-200 dark:border-indigo-800/50 break-all select-all">${escape(code)}</pre>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                ${button('copy-code', 'Salin Kode', '', 'primary')}
+                ${button('copy-link', 'Salin Tautan')}
+                ${button('toggle-qr', 'Tampilkan QR Code')}
+            </div>
+            <div id="accounts-qr-container" class="hidden flex flex-col items-center justify-center p-4 bg-white dark:bg-[#111111] rounded-xl border border-slate-200 dark:border-slate-800 mt-2">
+                <div id="accounts-invite-qr-target" class="p-2 bg-white rounded-lg shadow-xs"></div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center">Pindai dengan kamera ponsel guru untuk membuka formulir pendaftaran.</p>
+            </div>
+        </div>
+    `, null);
+
+    const fields = $('accounts-dialog-fields');
+    fields.querySelector('[data-action="copy-code"]').onclick = () => navigator.clipboard.writeText(code).then(() => { $('accounts-dialog-error').textContent = 'Kode disalin ke clipboard.'; }).catch(() => { $('accounts-dialog-error').textContent = 'Pilih dan salin kode secara manual.'; });
+    fields.querySelector('[data-action="copy-link"]').onclick = () => navigator.clipboard.writeText(link.href).then(() => { $('accounts-dialog-error').textContent = 'Tautan disalin ke clipboard.'; }).catch(() => { $('accounts-secret').textContent = link.href; });
+    const toggleQrBtn = fields.querySelector('[data-action="toggle-qr"]');
+    const qrContainer = $('accounts-qr-container');
+    const qrTarget = $('accounts-invite-qr-target');
+    let qrRendered = false;
+    if (toggleQrBtn && qrContainer && qrTarget) {
+        toggleQrBtn.onclick = () => {
+            if (qrContainer.classList.contains('hidden')) {
+                qrContainer.classList.remove('hidden');
+                toggleQrBtn.textContent = 'Sembunyikan QR';
+                if (!qrRendered && typeof QRCode === 'function') {
+                    qrTarget.replaceChildren();
+                    new QRCode(qrTarget, { text: link.href, width: 140, height: 140 });
+                    qrRendered = true;
+                }
+            } else {
+                qrContainer.classList.add('hidden');
+                toggleQrBtn.textContent = 'Tampilkan QR Code';
+            }
+        };
+    }
 }
 
 function openAction(buttonElement) {
@@ -443,8 +557,21 @@ $('view-kelola-akun')?.addEventListener('click', e => {
 $('accounts-refresh')?.addEventListener('click', refresh);
 $('accounts-registration-toggle')?.addEventListener('click', () => {
     if (!data || busy) return;
-    modal(data.enabled ? 'Tutup pendaftaran' : 'Buka pendaftaran', '<p class="text-xs text-slate-500 mb-3">Undangan yang sah tetap memerlukan persetujuanmu sebelum guru memperoleh akses.</p>', () => action('registration', { enabled: !data.enabled }));
+    const targetState = !data.enabled;
+    modal(
+        targetState ? 'Buka Pendaftaran Guru' : 'Tutup Pendaftaran Guru',
+        `<p class="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+            ${targetState 
+                ? 'Pendaftaran akan dibuka. Calon guru dapat memilih kelas kosong dan mendaftar dengan tiket/undangan yang sah. Persetujuan Superuser tetap mutlak diperlukan sebelum akses diberikan.' 
+                : 'Pendaftaran umum akan ditutup. Calon guru baru tidak dapat mengajukan permohonan mandiri sampai pendaftaran diaktifkan kembali.'}
+        </p>`,
+        () => action('registration', { enabled: targetState }),
+        targetState ? 'Buka Pendaftaran' : 'Tutup Pendaftaran'
+    );
 });
 window.addEventListener('pagehide', () => { $('accounts-dialog-fields')?.replaceChildren(); pendingPayload = null; });
+
+window.refreshSIMNIAccounts = refresh;
+window.updateAccountsNavBadge = updateAccountsNavBadge;
 
 refresh();

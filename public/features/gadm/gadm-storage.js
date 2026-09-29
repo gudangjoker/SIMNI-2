@@ -16,7 +16,7 @@ function cleanScopePart(value, label) {
 }
 
 export function createGADMScope(context) {
-    if (globalThis.SIMNIAccess) globalThis.SIMNIAccess.assertFeature('gadm');
+    globalThis.SIMNIAccess?.assertFeature?.('gadm');
     const active = globalThis.SIMNICurrentAccess;
     if (active && (active.uid !== context?.uid || active.workspaceId !== context?.workspaceId || (active.role !== 'superuser' && active.activeAcademicYearId !== (context?.activeAcademicYearId || context?.academicYearId)))) throw new Error('Scope GADM tidak sesuai penugasan aktif.');
     if (!context || typeof context !== 'object' || Array.isArray(context)) {
@@ -119,7 +119,7 @@ export async function loadGADMDraft(scope) {
 }
 
 export async function saveGADMDraft(scope, input) {
-    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
+    globalThis.SIMNIAccess?.assertFeature?.('gadm', 'manage');
     const normalizedScope = createGADMScope(scope);
     const safeInput = clonePlain(input, 'Draft');
     const record = {
@@ -149,7 +149,7 @@ export async function saveGADMDraft(scope, input) {
 }
 
 export async function saveGADMDocument(scope, documentRecord) {
-    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
+    globalThis.SIMNIAccess?.assertFeature?.('gadm', 'manage');
     const normalizedScope = createGADMScope(scope);
     const safeRecord = clonePlain(documentRecord, 'Dokumen');
     const id = validDocumentId(safeRecord.id);
@@ -230,7 +230,7 @@ export async function getGADMDocument(scope, documentId) {
 }
 
 export async function deleteGADMDocument(scope, documentId) {
-    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
+    globalThis.SIMNIAccess?.assertFeature?.('gadm', 'manage');
     const normalizedScope = createGADMScope(scope);
     const id = validDocumentId(documentId);
     return withStore(DOCUMENT_STORE, 'readwrite', (store) => requestResult(store.delete(`${normalizedScope.key}|${id}`), 'Dokumen GADM gagal dihapus.'));
@@ -260,7 +260,7 @@ export async function listGADMStorageScopes(scope) {
 }
 
 export async function deleteGADMDraftAfterVerification(scope, exported) {
-    globalThis.SIMNIAccess?.assertFeature('gadm', 'manage');
+    globalThis.SIMNIAccess?.assertFeature?.('gadm', 'manage');
     const selected = createGADMScope(scope);
     if (exported?.format !== 'simni-gadm-draft-v1' || exported.scopeKey !== selected.key) throw new Error('Berkas draft tidak cocok dengan kelas/tahun pilihan.');
     const expected = JSON.stringify(clonePlain(exported.input, 'Draft ekspor'));

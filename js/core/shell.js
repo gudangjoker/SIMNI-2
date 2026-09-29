@@ -392,10 +392,49 @@
                 switch (
                     action
                 ) {
-                    case 'password-reset':
-                        return invokeAuthAction(
-                            'requestPasswordReset'
-                        );
+                    case 'toggle-password': {
+                        const btn = target.closest('[data-shell-action="toggle-password"]');
+                        const targetId = btn?.dataset?.target || 'auth-password';
+                        const input = document.getElementById(targetId);
+                        if (input) {
+                            const isPassword = input.type === 'password';
+                            input.type = isPassword ? 'text' : 'password';
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+                            }
+                            btn.setAttribute('aria-label', isPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+                        }
+                        return true;
+                    }
+
+                    case 'show-reset-panel': {
+                        const mainPanel = document.getElementById('panel-login-main');
+                        const resetPanel = document.getElementById('panel-reset-password');
+                        const loginEmail = document.getElementById('auth-email')?.value?.trim();
+                        const resetEmail = document.getElementById('reset-auth-email');
+                        const feedback = document.getElementById('reset-feedback');
+                        const authError = document.getElementById('auth-error');
+                        if (authError) { authError.classList.add('hidden'); authError.textContent = ''; }
+                        if (feedback) feedback.classList.add('hidden');
+                        if (loginEmail && resetEmail) resetEmail.value = loginEmail;
+                        if (mainPanel) mainPanel.classList.add('hidden');
+                        if (resetPanel) {
+                            resetPanel.classList.remove('hidden');
+                            resetEmail?.focus();
+                        }
+                        return true;
+                    }
+
+                    case 'hide-reset-panel': {
+                        const mainPanel = document.getElementById('panel-login-main');
+                        const resetPanel = document.getElementById('panel-reset-password');
+                        const feedback = document.getElementById('reset-feedback');
+                        if (feedback) feedback.classList.add('hidden');
+                        if (resetPanel) resetPanel.classList.add('hidden');
+                        if (mainPanel) mainPanel.classList.remove('hidden');
+                        return true;
+                    }
 
                     case 'toggle-theme':
                         return window
@@ -475,6 +514,58 @@
                                 'loginAuth',
                                 event
                             );
+                        }
+                    );
+
+                const resetForm =
+                    document
+                        .getElementById(
+                            'form-reset-auth'
+                        );
+
+                resetForm
+                    ?.addEventListener(
+                        'submit',
+                        async (event) => {
+                            event.preventDefault();
+                            const email = document.getElementById('reset-auth-email')?.value?.trim();
+                            const submitBtn = document.getElementById('btn-submit-reset');
+                            const feedback = document.getElementById('reset-feedback');
+                            if (!email) return;
+
+                            if (submitBtn) {
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Mengirim tautan...';
+                            }
+                            if (feedback) {
+                                feedback.classList.add('hidden');
+                                feedback.className = 'text-xs p-3.5 rounded-xl border leading-relaxed hidden';
+                            }
+
+                            try {
+                                const res = await invokeAuthAction('requestPasswordReset', email);
+                                if (feedback) {
+                                    feedback.classList.remove('hidden');
+                                    if (res && res.ok) {
+                                        feedback.className = 'text-xs p-3.5 rounded-xl border leading-relaxed bg-emerald-500/20 border-emerald-500/40 text-emerald-200';
+                                        feedback.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Tautan reset berhasil dikirim ke <strong>${email}</strong>.<br><span class="opacity-90">Silakan periksa Kotak Masuk atau folder Spam pada email Anda, lalu klik tautan tersebut untuk membuat kata sandi baru.</span>`;
+                                    } else {
+                                        feedback.className = 'text-xs p-3.5 rounded-xl border leading-relaxed bg-red-500/20 border-red-500/40 text-red-200';
+                                        feedback.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> ${res?.message || 'Gagal mengirim tautan reset. Pastikan email benar.'}`;
+                                    }
+                                }
+                            } catch (err) {
+                                if (feedback) {
+                                    feedback.classList.remove('hidden');
+                                    feedback.className = 'text-xs p-3.5 rounded-xl border leading-relaxed bg-red-500/20 border-red-500/40 text-red-200';
+                                    feedback.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i> Terjadi kesalahan: ${err?.message || err}`;
+                                }
+                            } finally {
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = 'Kirim Tautan Reset Sandi <i class="fas fa-paper-plane" aria-hidden="true"></i>';
+                                }
+                            }
                         }
                     );
 

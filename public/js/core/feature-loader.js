@@ -53,6 +53,11 @@ const FEATURE_DEFINITIONS = Object.freeze([
         id: 'accounts',
         feature: 'accounts',
         url: './features/accounts/accounts.html'
+    }),
+    Object.freeze({
+        id: 'btq',
+        feature: 'btq',
+        url: './features/btq/btq.html'
     })
 ]);
 
@@ -79,6 +84,7 @@ const VIEW_TO_FEATURE_MAP = Object.freeze({
     settings: 'settings',
     'kelola-akun': 'accounts',
     accounts: 'accounts',
+    btq: 'btq',
     gadm: 'gadm',
     lps: 'lps',
     archive: 'archive',
@@ -120,7 +126,8 @@ const FEATURE_RUNTIME_ASSETS = Object.freeze({
 
 const FEATURE_MODULES = Object.freeze({
     gadm: Object.freeze(['./features/gadm/gadm.js']),
-    accounts: Object.freeze(['./features/accounts/accounts.js'])
+    accounts: Object.freeze(['./features/accounts/accounts.js']),
+    btq: Object.freeze(['./features/btq/btq.js'])
 });
 
 const FEATURE_STYLESHEETS = Object.freeze({
@@ -134,6 +141,7 @@ const inFlightFeaturePromises = new Map();
 
 const VENDOR_GROUPS = Object.freeze({
     scanner: ['./vendor/html5-qrcode/html5-qrcode.min.js'],
+    qr: ['./vendor/qrcodejs/qrcode.min.js'],
     xlsx: ['./vendor/xlsx/xlsx.full.min.js'],
     excel: ['./vendor/exceljs/exceljs.min.js'],
     pdf: ['./vendor/html2pdf/html2pdf.bundle.min.js'],

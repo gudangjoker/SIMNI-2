@@ -272,7 +272,8 @@
       },
       "users": {
         "$uid": {
-          ".read": "auth != null && auth.uid == $uid"
+          ".read": "auth != null && auth.uid == $uid",
+          ".validate": "newData.hasChildren(['uid','email','role','workspaceId','classId','activeAcademicYearId','status']) && ((newData.child('email').val() == 'unggaran.sditbm@gmail.com' && newData.child('role').val() == 'superuser' && newData.child('workspaceId').val() == 'ws_superuser') || (newData.child('email').val() == 'anur.auliya01@gmail.com' && newData.child('role').val() == 'vip' && newData.child('workspaceId').val() == 'ws_pjok' && newData.child('classId').val() == 'PJOK') || newData.child('role').val() == 'teacher')"
         }
       },
       "assignments": {

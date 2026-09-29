@@ -727,25 +727,62 @@ window.loginAuth = async function loginAuth(event) {
     }
 };
 
-window.requestPasswordReset = async function requestPasswordReset() {
+window.requestPasswordReset = async function requestPasswordReset(targetEmail) {
     if (runtime.firebaseEmulator) {
-        window.toast?.('Reset password dinonaktifkan di emulator.', 'warning');
-        return false;
+        const msg = 'Reset password dinonaktifkan di emulator.';
+        window.toast?.(msg, 'warning');
+        return { ok: false, message: msg };
     }
-    const email = document.getElementById('auth-email')?.value?.trim();
+    const email = (typeof targetEmail === 'string' && targetEmail.trim())
+        ? targetEmail.trim()
+        : (document.getElementById('reset-auth-email')?.value?.trim() || document.getElementById('auth-email')?.value?.trim() || '');
+
     if (!email) {
-        setAuthState({ message: 'Isi alamat email terlebih dahulu.' });
-        return false;
+        const msg = 'Isi alamat email terlebih dahulu.';
+        setAuthState({ message: msg });
+        return { ok: false, message: msg };
     }
     try {
         await sendPasswordResetEmail(auth, email);
         setAuthState({ message: '' });
-        window.toast?.('Jika email terdaftar, tautan reset password telah dikirim.', 'success');
-        return true;
+        const successMsg = `Tautan reset kata sandi telah dikirim ke ${email}. Silakan periksa Kotak Masuk atau folder Spam pada email Anda.`;
+        window.toast?.(successMsg, 'success');
+        return { ok: true, email, message: successMsg };
     } catch (error) {
         console.warn('[SIMNI Auth] Reset password gagal:', error?.code);
-        setAuthState({ message: authMessage(error) });
+        const msg = authMessage(error);
+        setAuthState({ message: msg });
+        return { ok: false, error, message: msg };
+    }
+};
+
+window.sendProfilePasswordReset = async function sendProfilePasswordReset() {
+    if (runtime.firebaseEmulator) {
+        window.toast?.('Reset password dinonaktifkan di emulator.', 'warning');
         return false;
+    }
+    const userEmail = auth.currentUser?.email || window.SIMNIAuthState?.email || '';
+    if (!userEmail) {
+        window.toast?.('Tidak dapat mendeteksi email akun aktif.', 'error');
+        return false;
+    }
+    const confirmed = window.confirm(
+        `Kirim tautan pemulihan kata sandi resmi dari Firebase ke email:\n${userEmail}?\n\n` +
+        `Anda akan menerima email dari Firebase untuk membuat kata sandi baru tanpa perlu mengingat kata sandi lama.`
+    );
+    if (!confirmed) return false;
+
+    window.showLoad?.('Mengirim tautan reset kata sandi ke email...');
+    try {
+        await sendPasswordResetEmail(auth, userEmail);
+        window.toast?.(`Tautan reset kata sandi berhasil dikirim ke ${userEmail}. Silakan periksa Kotak Masuk atau folder Spam email Anda.`, 'success');
+        return true;
+    } catch (error) {
+        console.warn('[SIMNI Auth] Reset password profil gagal:', error?.code);
+        window.toast?.(authMessage(error), 'error');
+        return false;
+    } finally {
+        window.hideLoad?.();
     }
 };
 

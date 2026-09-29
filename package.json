@@ -1,6 +1,6 @@
 {
   "name": "simni-pwa-reconstructed",
-  "version": "4.8.0-rc.1",
+  "version": "4.8.2",
   "private": true,
   "description": "SIMNI PWA production source",
   "scripts": {

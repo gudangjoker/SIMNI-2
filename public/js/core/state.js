@@ -27,7 +27,9 @@ var state = {
         logo_public_id: null,
         logo_resource_type: null,
         nama_wali_kelas: '',
-        nuptk_wali_kelas: ''
+        nuptk_wali_kelas: '',
+        nama_kepala_sekolah: 'Kepala SDIT Bina Muda',
+        nuks_kepala_sekolah: '-'
     }, 
     pengaturanLPS_v2: [], 
     lpsTemplates: {}, lpsReports: [],
@@ -482,6 +484,8 @@ window.setActiveKelas = function setActiveKelas(kelas) {
         
         const desk = document.getElementById('global-kelas-select');
         if (desk) desk.value = kelas;
+        const deskTop = document.getElementById('desktop-kelas-select');
+        if (deskTop) deskTop.value = kelas;
         const mob = document.getElementById('mobile-kelas-select');
         if (mob) mob.value = kelas;
         

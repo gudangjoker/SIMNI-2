@@ -15,39 +15,79 @@ function normalizeNisn(value, strict = false) {
     return raw;
 }
 
-function renderSiswaList() {
-    const grid = document.getElementById('siswa-grid');
-    if (!grid) return;
+let isStudentSelectMode = false;
+let selectedStudentNisns = new Set();
+
+function getFilteredStudentsList() {
     const query = (document.getElementById('search-siswa')?.value || '').toLowerCase();
-    
-    // Multi-Class Isolation (normalizeClassLabel untuk konsistensi lintas fitur)
     const currentKelas = normalizeClassLabel(state?.activeKelas);
-    
-    const filtered = [...state.students]
+    return [...state.students]
         .filter(student => !currentKelas || normalizeClassLabel(student?.Kelas) === currentKelas)
         .sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''))
         .filter((student) => (student['Nama Lengkap'] || '').toLowerCase().includes(query) || String(student.NISN || '').includes(query));
+}
+
+function renderSiswaList() {
+    const grid = document.getElementById('siswa-grid');
+    if (!grid) return;
+    
+    const filtered = getFilteredStudentsList();
 
     if (!filtered.length) {
         grid.innerHTML = '<div class="col-span-full p-8 text-center text-slate-400">Tidak ada data.</div>';
+        updateStudentBatchBar();
         return;
     }
 
     grid.innerHTML = filtered.map((student) => {
         const nisn = normalizeNisn(student.NISN);
         const photo = escapeHTML(studentPhotoUrl(student));
-        return `<div data-student-nisn="${nisn}" class="student-card bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4 cursor-pointer hover:shadow-md transition">
-            <img src="${photo}" alt="Foto ${escapeHTML(student['Nama Lengkap'])}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-50 dark:border-black">
+        const isSelected = selectedStudentNisns.has(nisn);
+        const cardBorderClass = isSelected
+            ? 'border-primary ring-2 ring-primary/40 bg-indigo-50/70 dark:bg-indigo-950/30'
+            : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#111113] hover:border-primary/40';
+        
+        const checkboxHtml = isStudentSelectMode
+            ? `<input type="checkbox" data-select-nisn="${nisn}" ${isSelected ? 'checked' : ''} class="w-5 h-5 rounded-lg text-primary focus:ring-primary border-slate-300 dark:border-slate-700 cursor-pointer">`
+            : '';
+
+        return `<div data-student-nisn="${nisn}" class="student-card simni-student-card ${cardBorderClass} p-4 rounded-2xl shadow-2xs border flex items-center gap-3 md:gap-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            ${checkboxHtml}
+            <img src="${photo}" alt="Foto ${escapeHTML(student['Nama Lengkap'])}" class="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border-2 border-slate-100 dark:border-slate-800 shrink-0 shadow-2xs">
             <div class="flex-1 overflow-hidden">
-                <h4 class="font-bold text-slate-800 dark:text-slate-200 truncate">${escapeHTML(student['Nama Lengkap'])}</h4>
-                <p class="text-xs text-primary font-bold mb-1">${escapeHTML(student['Nama Panggilan'] || '-')} | ${escapeHTML(student.Kelompok || 'Belum Diatur')}</p>
-                <p class="text-[10px] text-slate-500 bg-slate-50 dark:bg-[#000000] px-2 py-0.5 rounded inline-block border dark:border-slate-800">NISN: ${nisn}</p>
+                <h4 class="font-bold text-slate-900 dark:text-slate-100 truncate text-sm md:text-base leading-snug">${escapeHTML(student['Nama Lengkap'])}</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 mb-1.5 truncate"><span class="font-bold text-slate-700 dark:text-slate-200">${escapeHTML(student['Nama Panggilan'] || '-')}</span> &bull; <span>${escapeHTML(student.Kelompok || 'Belum Diatur')}</span></p>
+                <span class="simni-student-nisn">NISN: ${nisn}</span>
             </div>
         </div>`;
     }).join('');
+
     grid.querySelectorAll('.student-card[data-student-nisn]').forEach((card) => {
-        card.addEventListener('click', () => openProfilSiswa(card.dataset.studentNisn || ''));
+        const nisn = card.dataset.studentNisn || '';
+        card.addEventListener('click', (e) => {
+            if (isStudentSelectMode) {
+                const isChecked = selectedStudentNisns.has(nisn);
+                if (isChecked) selectedStudentNisns.delete(nisn);
+                else selectedStudentNisns.add(nisn);
+                renderSiswaList();
+                updateStudentBatchBar();
+            } else {
+                openProfilSiswa(nisn);
+            }
+        });
+        const chk = card.querySelector(`input[data-select-nisn]`);
+        if (chk) {
+            chk.addEventListener('click', (e) => e.stopPropagation());
+            chk.addEventListener('change', (e) => {
+                if (e.target.checked) selectedStudentNisns.add(nisn);
+                else selectedStudentNisns.delete(nisn);
+                renderSiswaList();
+                updateStudentBatchBar();
+            });
+        }
     });
+
+    updateStudentBatchBar();
 }
 
 async function submitSiswa(event) {
@@ -566,6 +606,312 @@ async function exportSiswaExcel() {
     }
 }
 
+function updateStudentBatchBar() {
+    const bar = document.getElementById('student-batch-bar');
+    const countEl = document.getElementById('student-batch-count');
+    const toggleAllBtn = document.getElementById('btn-batch-select-all');
+    if (!bar) return;
+
+    if (isStudentSelectMode && selectedStudentNisns.size > 0) {
+        bar.classList.remove('translate-y-28', 'opacity-0', 'pointer-events-none');
+        bar.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+        if (countEl) countEl.textContent = `${selectedStudentNisns.size} dipilih`;
+        
+        const filtered = getFilteredStudentsList();
+        const allSelected = filtered.length > 0 && filtered.every(s => selectedStudentNisns.has(normalizeNisn(s.NISN)));
+        if (toggleAllBtn) toggleAllBtn.textContent = allSelected ? 'Batal Semua' : 'Pilih Semua';
+    } else {
+        bar.classList.add('translate-y-28', 'opacity-0', 'pointer-events-none');
+        bar.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+    }
+}
+
+function toggleStudentSelectMode() {
+    isStudentSelectMode = !isStudentSelectMode;
+    if (!isStudentSelectMode) {
+        selectedStudentNisns.clear();
+    }
+    const btn = document.getElementById('btn-toggle-select-siswa');
+    const label = document.getElementById('label-toggle-select-siswa');
+    if (btn) {
+        if (isStudentSelectMode) {
+            btn.classList.add('bg-primary', 'text-white');
+            btn.classList.remove('bg-white', 'dark:bg-[#111111]', 'text-slate-700', 'dark:text-slate-300');
+        } else {
+            btn.classList.remove('bg-primary', 'text-white');
+            btn.classList.add('bg-white', 'dark:bg-[#111111]', 'text-slate-700', 'dark:text-slate-300');
+        }
+    }
+    if (label) label.textContent = isStudentSelectMode ? 'Selesai Memilih' : 'Pilih Massal';
+    renderSiswaList();
+}
+
+function toggleSelectAllStudents() {
+    const filtered = getFilteredStudentsList();
+    if (!filtered.length) return;
+    const allSelected = filtered.every(s => selectedStudentNisns.has(normalizeNisn(s.NISN)));
+    if (allSelected) {
+        filtered.forEach(s => selectedStudentNisns.delete(normalizeNisn(s.NISN)));
+    } else {
+        filtered.forEach(s => selectedStudentNisns.add(normalizeNisn(s.NISN)));
+    }
+    renderSiswaList();
+}
+
+function clearStudentSelection() {
+    selectedStudentNisns.clear();
+    renderSiswaList();
+}
+
+function openBatchChangeClassModal() {
+    if (!selectedStudentNisns.size) return toast('Pilih minimal satu siswa.', 'warning');
+    const modeInput = document.getElementById('batch-update-mode');
+    const fieldKelas = document.getElementById('batch-field-kelas');
+    const fieldKelompok = document.getElementById('batch-field-kelompok');
+    const titleEl = document.getElementById('modal-batch-update-title');
+    const countInfo = document.getElementById('batch-update-count-info');
+
+    if (modeInput) modeInput.value = 'kelas';
+    if (fieldKelas) fieldKelas.classList.remove('hidden');
+    if (fieldKelompok) fieldKelompok.classList.add('hidden');
+    if (titleEl) titleEl.textContent = 'Ubah Kelas Massal';
+    if (countInfo) countInfo.textContent = String(selectedStudentNisns.size);
+
+    openModal('modal-batch-update-siswa');
+}
+
+function openBatchChangeKelompokModal() {
+    if (!selectedStudentNisns.size) return toast('Pilih minimal satu siswa.', 'warning');
+    const modeInput = document.getElementById('batch-update-mode');
+    const fieldKelas = document.getElementById('batch-field-kelas');
+    const fieldKelompok = document.getElementById('batch-field-kelompok');
+    const titleEl = document.getElementById('modal-batch-update-title');
+    const countInfo = document.getElementById('batch-update-count-info');
+
+    if (modeInput) modeInput.value = 'kelompok';
+    if (fieldKelas) fieldKelas.classList.add('hidden');
+    if (fieldKelompok) fieldKelompok.classList.remove('hidden');
+    if (titleEl) titleEl.textContent = 'Ubah Kelompok BTQ Massal';
+    if (countInfo) countInfo.textContent = String(selectedStudentNisns.size);
+
+    openModal('modal-batch-update-siswa');
+}
+
+async function commitBatchUpdateStudents(event) {
+    if (event) event.preventDefault();
+    if (!selectedStudentNisns.size) return toast('Tidak ada siswa yang dipilih.', 'warning');
+
+    const mode = document.getElementById('batch-update-mode')?.value || 'kelas';
+    let newValue = '';
+    if (mode === 'kelas') {
+        newValue = document.getElementById('input-batch-kelas')?.value;
+        if (!newValue) return toast('Silakan pilih kelas baru tujuan.', 'warning');
+    } else {
+        newValue = document.getElementById('input-batch-kelompok')?.value || '';
+    }
+
+    showLoad('Menerapkan perubahan massal...');
+    try {
+        const updates = {};
+        selectedStudentNisns.forEach((nisn) => {
+            if (mode === 'kelas') {
+                updates[`Siswa/${nisn}/Kelas`] = newValue;
+            } else {
+                updates[`Siswa/${nisn}/Kelompok`] = newValue;
+            }
+        });
+
+        const result = await dbUpdate(updates);
+        if (!result?.ok) throw result?.error || new Error('Gagal memperbarui data massal.');
+
+        // Update state lokal
+        state.students.forEach((s) => {
+            const n = normalizeNisn(s.NISN);
+            if (selectedStudentNisns.has(n)) {
+                if (mode === 'kelas') s.Kelas = newValue;
+                else s.Kelompok = newValue;
+            }
+        });
+
+        closeModal('modal-batch-update-siswa');
+        selectedStudentNisns.clear();
+        if (typeof populateAllDropdowns === 'function') populateAllDropdowns();
+        renderSiswaList();
+        if (typeof renderDashboard === 'function') renderDashboard();
+        toast(`Berhasil memperbarui data ${Object.keys(updates).length} siswa.`, 'success');
+    } catch (error) {
+        console.error(error);
+        toast(error.message || 'Gagal menerapkan perubahan massal.', 'error');
+    } finally {
+        hideLoad();
+    }
+}
+
+async function deleteBatchStudents() {
+    if (!selectedStudentNisns.size) return toast('Pilih minimal satu siswa untuk dihapus.', 'warning');
+    const count = selectedStudentNisns.size;
+    if (!confirm(`Hapus permanen ${count} siswa terpilih beserta seluruh data riwayat presensi, nilai, dan laporannya?`)) {
+        return;
+    }
+
+    showLoad(`Menghapus ${count} siswa...`);
+    try {
+        let allUpdates = {};
+        const selectedList = state.students.filter(s => selectedStudentNisns.has(normalizeNisn(s.NISN)));
+        
+        selectedList.forEach(student => {
+            const studentUpdates = studentCascadeUpdates(student);
+            Object.assign(allUpdates, studentUpdates);
+        });
+
+        const result = await dbUpdate(allUpdates);
+        if (!result?.ok) throw result?.error || new Error('Gagal menghapus siswa terpilih.');
+
+        const deletedNisns = new Set(selectedStudentNisns);
+        state.students = state.students.filter(s => !deletedNisns.has(normalizeNisn(s.NISN)));
+
+        selectedStudentNisns.clear();
+        if (typeof populateAllDropdowns === 'function') populateAllDropdowns();
+        renderSiswaList();
+        if (typeof renderDashboard === 'function') renderDashboard();
+        toast(`${count} siswa berhasil dihapus permanen.`, 'success');
+    } catch (error) {
+        console.error(error);
+        toast(error.message || 'Gagal menghapus data siswa.', 'error');
+    } finally {
+        hideLoad();
+    }
+}
+
+function previewPrintSiswa() {
+    const currentKelas = normalizeClassLabel(state?.activeKelas);
+    const students = [...state.students]
+        .filter(s => !currentKelas || normalizeClassLabel(s?.Kelas) === currentKelas)
+        .sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+
+    if (!students.length) return toast('Tidak ada data siswa untuk dicetak.', 'warning');
+
+    const area = document.getElementById('area-preview-cetak-siswa');
+    if (!area) return;
+
+    const logoUrl = escapeHTML(state?.pengaturan?.logo_url || './icons/school-logo.png');
+    const namaYayasan = escapeHTML(state?.pengaturan?.nama_yayasan || 'YAYASAN SOSIAL DAN PENDIDIKAN BINA MUDA');
+    const jenjangSekolah = escapeHTML(state?.pengaturan?.jenjang_sekolah || 'SEKOLAH DASAR ISLAM TERPADU');
+    const namaSekolah = escapeHTML(state?.pengaturan?.nama_sekolah || 'SDIT BINA MUDA CICALENGKA');
+    const statusAkreditasiRaw = state?.pengaturan?.status_akreditasi || 'A';
+    const statusAkreditasi = escapeHTML(statusAkreditasiRaw.toLowerCase().includes('terakreditasi') ? statusAkreditasiRaw : `Terakreditasi "${statusAkreditasiRaw}"`);
+    const nomorIzinRaw = state?.pengaturan?.nomor_izin || 'No.421.2/1143-Disdikbud/2011';
+    const nomorIzin = escapeHTML(nomorIzinRaw.toLowerCase().includes('ijin') || nomorIzinRaw.toLowerCase().includes('izin') ? nomorIzinRaw : `Ijin Operasional/RPS : ${nomorIzinRaw}`);
+    const kotaSekolah = escapeHTML(state?.pengaturan?.kota || 'Cicalengka');
+    const tahunPelajaran = escapeHTML(state?.pengaturan?.tahun_pelajaran || '2026/2027');
+    const semester = escapeHTML(state?.pengaturan?.semester || '1 (Ganjil)');
+    const namaKelas = escapeHTML(state?.pengaturan?.nama_kelas || currentKelas || 'Semua Kelas');
+    const namaGuru = escapeHTML(state?.pengaturan?.nama_wali_kelas || state?.pengaturan?.nama_guru || state?.user?.displayName || 'Guru Kelas');
+    const nuptkGuru = escapeHTML(state?.pengaturan?.nuptk_wali_kelas || state?.pengaturan?.nuptk_guru || state?.pengaturan?.nip_guru || '-');
+    const namaKamad = escapeHTML(state?.pengaturan?.nama_kepala_sekolah || state?.pengaturan?.nama_kamad || 'Kepala SDIT Bina Muda');
+    const nuksKamad = escapeHTML(state?.pengaturan?.nuks_kepala_sekolah || state?.pengaturan?.nuks_kamad || state?.pengaturan?.nip_kamad || '-');
+    const tglCetak = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
+    const rowsHtml = students.map((s, idx) => `
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${idx + 1}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; font-family: monospace;">${escapeHTML(s.NISN || '-')}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; font-weight: bold;">${escapeHTML(s['Nama Lengkap'] || '')}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${escapeHTML(s['Nama Panggilan'] || '-')}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; font-weight: bold;">${escapeHTML(s.Kelas || currentKelas || '-')}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${escapeHTML(s.Kelompok || 'Belum Diatur')}</td>
+        </tr>
+    `).join('');
+
+    area.innerHTML = `
+        <div style="font-family: 'Times New Roman', serif; color: #111; line-height: 1.3;">
+            <!-- KOP SURAT RESMI IDENTIK LPS / BLP -->
+            <header class="lps-letterhead" style="display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 85px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 16px;">
+                <div class="lps-logo-box" style="display: flex; align-items: center; justify-content: center; width: 75px; height: 75px;">
+                    <img src="${logoUrl}" alt="Logo sekolah" style="display: block; max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div class="lps-school-copy" style="min-width: 0; text-align: center;">
+                    <p style="margin: 0; font-size: 10pt; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${namaYayasan}</p>
+                    <p style="margin: 1px 0 0 0; font-size: 9.5pt; font-weight: 600; text-transform: uppercase;">${jenjangSekolah}</p>
+                    <h1 style="margin: 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 16pt; font-weight: bold; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px;">${namaSekolah}</h1>
+                    <strong style="display: block; margin: 1px 0 0 0; font-size: 9pt; font-weight: bold;">${statusAkreditasi}</strong>
+                    <em style="display: block; margin: 1px 0 0 0; font-size: 8.5pt; font-style: normal; font-weight: 500;">${nomorIzin}</em>
+                </div>
+            </header>
+
+            <!-- JUDUL DOKUMEN -->
+            <div style="text-align: center; margin-bottom: 16px;">
+                <h3 style="font-size: 13pt; font-weight: bold; text-decoration: underline; margin: 0; text-transform: uppercase;">DAFTAR SISWA KELAS ${namaKelas}</h3>
+                <p style="font-size: 10pt; font-weight: bold; margin: 4px 0 0 0;">Tahun Pelajaran ${tahunPelajaran} — Semester ${semester}</p>
+            </div>
+
+            <!-- TABEL DATA SISWA -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 25px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; font-weight: bold; text-transform: uppercase;">
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 40px; text-align: center;">No</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 120px; text-align: center;">NISN</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; text-align: left;">Nama Lengkap</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 100px; text-align: center;">Panggilan</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 60px; text-align: center;">Kelas</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 110px; text-align: center;">Kelompok BTQ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- TANDA TANGAN DOKUMEN -->
+            <div style="display: flex; justify-content: space-between; page-break-inside: avoid; margin-top: 30px; font-size: 10pt;">
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">Mengetahui,</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Kepala SDIT Bina Muda</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaKamad}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUKS. ${nuksKamad}</p>
+                </div>
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">Ditetapkan di ${kotaSekolah}, ${tglCetak}</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Wali Kelas / Guru</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaGuru}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUPTK. ${nuptkGuru}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    openModal('modal-preview-cetak-siswa');
+}
+
+async function executePrintSiswaPreview() {
+    await window.ensureSIMNIVendors?.("pdf");
+    const container = document.getElementById('area-preview-cetak-siswa');
+    if (!container) return;
+
+    if (typeof html2pdf === 'function') {
+        showLoad('Membuat dokumen PDF...');
+        const currentKelas = normalizeClassLabel(state?.activeKelas) || 'Semua';
+        const dateStr = new Date().toISOString().slice(0, 10);
+        try {
+            await html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: `Daftar_Siswa_${currentKelas}_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(container).save();
+            toast('Dokumen PDF berhasil disimpan.', 'success');
+        } catch (err) {
+            console.error(err);
+            window.print();
+        } finally {
+            hideLoad();
+        }
+    } else {
+        window.print();
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.renderSiswaList = renderSiswaList;
     window.openAddSiswaModal = openAddSiswaModal;
@@ -576,4 +922,13 @@ if (typeof window !== 'undefined') {
     window.commitSiswaImport = commitSiswaImport;
     window.uploadStudentPhotoAction = uploadStudentPhotoAction;
     window.exportSiswaExcel = exportSiswaExcel;
+    window.toggleStudentSelectMode = toggleStudentSelectMode;
+    window.toggleSelectAllStudents = toggleSelectAllStudents;
+    window.clearStudentSelection = clearStudentSelection;
+    window.openBatchChangeClassModal = openBatchChangeClassModal;
+    window.openBatchChangeKelompokModal = openBatchChangeKelompokModal;
+    window.commitBatchUpdateStudents = commitBatchUpdateStudents;
+    window.deleteBatchStudents = deleteBatchStudents;
+    window.previewPrintSiswa = previewPrintSiswa;
+    window.executePrintSiswaPreview = executePrintSiswaPreview;
 }

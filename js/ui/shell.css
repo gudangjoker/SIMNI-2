@@ -1,29 +1,137 @@
 :root {
-            --simni-primary: #4f46e5;
-            --simni-primary-hover: #4338ca;
-            --simni-primary-strong: #3730a3;
-            --simni-primary-soft: #eef2ff;
-            --simni-primary-soft-hover: #e0e7ff;
-            --simni-canvas: #f6f7ff;
-            --simni-surface: #ffffff;
-            --simni-border: #dde3f3;
-            --simni-glow: rgba(79, 70, 229, 0.24);
-            --simni-dark-canvas: #070a18;
-            --simni-dark-surface: #10142a;
-            --simni-dark-soft: #191f3c;
-            --simni-dark-border: #2a3154;
-            --simni-active-canvas: var(--simni-canvas);
-            --simni-active-surface: var(--simni-surface);
-            --simni-active-soft: var(--simni-primary-soft);
-            --simni-active-border: var(--simni-border);
-        }
+    /* --- COLOR PALETTE (60-30-10 RULE) --- */
+    /* 60% Base / Neutral Surface */
+    --simni-bg-base: #f8fafc;
+    --simni-bg-subtle: #f1f5f9;
+    --simni-surface: #ffffff;
+    --simni-surface-muted: #f8fafc;
+    --simni-surface-hover: #f1f5f9;
 
-        html.dark {
-            --simni-active-canvas: var(--simni-dark-canvas);
-            --simni-active-surface: var(--simni-dark-surface);
-            --simni-active-soft: var(--simni-dark-soft);
-            --simni-active-border: var(--simni-dark-border);
-        }
+    /* 30% Structural (Typography, Borders, Dividers) */
+    --simni-text-main: #0f172a;       /* slate-900: WCAG AAA on white (>12:1) */
+    --simni-text-body: #334155;       /* slate-700: WCAG AA (>7:1) */
+    --simni-text-muted: #64748b;      /* slate-500: WCAG AA (>4.5:1) */
+    --simni-text-subtle: #94a3b8;     /* slate-400 */
+    --simni-border-subtle: #e2e8f0;   /* slate-200 */
+    --simni-border-default: #cbd5e1;  /* slate-300 */
+    --simni-border-strong: #94a3b8;   /* slate-400 */
+
+    /* 10% Accent & Functional Feedback */
+    --simni-primary: #4f46e5;         /* Indigo 600 */
+    --simni-primary-hover: #4338ca;   /* Indigo 700 */
+    --simni-primary-strong: #3730a3;  /* Indigo 800 */
+    --simni-primary-soft: #eef2ff;    /* Indigo 50 */
+    --simni-primary-soft-hover: #e0e7ff;
+    --simni-primary-contrast: #ffffff;
+
+    --simni-success: #10b981;         /* Emerald 500 */
+    --simni-success-soft: #ecfdf5;    /* Emerald 50 */
+    --simni-success-border: #a7f3d0;  /* Emerald 200 */
+
+    --simni-warning: #f59e0b;         /* Amber 500 */
+    --simni-warning-soft: #fffbeb;    /* Amber 50 */
+    --simni-warning-border: #fde68a;  /* Amber 200 */
+
+    --simni-danger: #ef4444;          /* Rose 500 */
+    --simni-danger-hover: #dc2626;    /* Rose 600 */
+    --simni-danger-soft: #fff1f2;     /* Rose 50 */
+    --simni-danger-border: #fecdd3;   /* Rose 200 */
+
+    --simni-info: #0284c7;            /* Sky 600 */
+    --simni-info-soft: #f0f9ff;       /* Sky 50 */
+
+    /* Legacy mapping preservation */
+    --simni-canvas: var(--simni-bg-base);
+    --simni-border: var(--simni-border-subtle);
+    --simni-glow: rgba(79, 70, 229, 0.20);
+    --simni-active-canvas: var(--simni-canvas);
+    --simni-active-surface: var(--simni-surface);
+    --simni-active-soft: var(--simni-primary-soft);
+    --simni-active-border: var(--simni-border);
+
+    /* --- 8-POINT GRID SPATIAL SYSTEM --- */
+    --simni-space-1: 4px;
+    --simni-space-2: 8px;
+    --simni-space-3: 12px;
+    --simni-space-4: 16px;
+    --simni-space-5: 20px;
+    --simni-space-6: 24px;
+    --simni-space-8: 32px;
+    --simni-space-10: 40px;
+    --simni-space-12: 48px;
+
+    /* --- TYPOGRAPHY SCALE --- */
+    --simni-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --simni-text-xs: 0.6875rem;   /* 11px */
+    --simni-text-sm: 0.8125rem;   /* 13px */
+    --simni-text-base: 0.9375rem; /* 15px */
+    --simni-text-lg: 1.125rem;    /* 18px */
+    --simni-text-xl: 1.375rem;    /* 22px */
+    --simni-text-2xl: 1.75rem;    /* 28px */
+    --simni-text-3xl: 2.125rem;   /* 34px */
+
+    /* --- BORDER RADII --- */
+    --simni-radius-sm: 8px;
+    --simni-radius-md: 12px;
+    --simni-radius-lg: 16px;
+    --simni-radius-xl: 20px;
+    --simni-radius-full: 9999px;
+
+    /* --- ELEVATION & SHADOWS (MULTI-LAYER SOFT) --- */
+    --simni-shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+    --simni-shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+    --simni-shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+    --simni-shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.09), 0 4px 8px -3px rgba(15, 23, 42, 0.04);
+    --simni-shadow-hover: 0 10px 22px -4px rgba(15, 23, 42, 0.09), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+
+    /* --- ERGONOMIC HITBOX --- */
+    --simni-touch-target: 44px;
+}
+
+html.dark {
+    /* 60% Base / Neutral Surface (Dark Mode) */
+    --simni-bg-base: #09090b;
+    --simni-bg-subtle: #121215;
+    --simni-surface: #121215;
+    --simni-surface-muted: #18181b;
+    --simni-surface-hover: #222226;
+
+    /* 30% Structural */
+    --simni-text-main: #f8fafc;
+    --simni-text-body: #e2e8f0;
+    --simni-text-muted: #94a3b8;
+    --simni-text-subtle: #64748b;
+    --simni-border-subtle: #27272a;
+    --simni-border-default: #3f3f46;
+    --simni-border-strong: #52525b;
+
+    /* 10% Accent */
+    --simni-primary-soft: rgba(79, 70, 229, 0.15);
+    --simni-primary-soft-hover: rgba(79, 70, 229, 0.25);
+    --simni-success-soft: rgba(16, 185, 129, 0.15);
+    --simni-success-border: rgba(16, 185, 129, 0.3);
+    --simni-warning-soft: rgba(245, 158, 11, 0.15);
+    --simni-warning-border: rgba(245, 158, 11, 0.3);
+    --simni-danger-soft: rgba(239, 68, 68, 0.15);
+    --simni-danger-border: rgba(239, 68, 68, 0.3);
+
+    /* Dark legacy mappings */
+    --simni-dark-canvas: #09090b;
+    --simni-dark-surface: #121215;
+    --simni-dark-soft: #18181b;
+    --simni-dark-border: #27272a;
+    --simni-active-canvas: var(--simni-dark-canvas);
+    --simni-active-surface: var(--simni-dark-surface);
+    --simni-active-soft: var(--simni-dark-soft);
+    --simni-active-border: var(--simni-dark-border);
+
+    /* Dark shadows */
+    --simni-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --simni-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+    --simni-shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+    --simni-shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.65);
+    --simni-shadow-hover: 0 10px 24px -4px rgba(0, 0, 0, 0.6);
+}
 
         html[data-simni-role="none"] [data-requires-feature],
         html[data-simni-role="vip"] [data-requires-feature="lps"],
@@ -572,6 +680,38 @@
             font-size: 0.9rem;
         }
 
+        .has-toggle-password {
+            padding-right: 2.9rem !important;
+        }
+
+        .btn-toggle-password {
+            position: absolute;
+            z-index: 2;
+            top: 50%;
+            right: 0.85rem;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.35rem 0.5rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .btn-toggle-password:hover {
+            color: var(--simni-primary);
+            background-color: rgba(99, 102, 241, 0.08);
+        }
+
+        .btn-toggle-password:focus-visible {
+            outline: 2px solid var(--simni-primary);
+            outline-offset: 1px;
+        }
+
         .login-submit {
             display: flex;
             align-items: center;
@@ -979,8 +1119,36 @@ input[type="radio"], input[type="checkbox"] { min-width:24px; min-height:24px; a
 .dark .simni-notification { background:#111827; color:#f1f5f9; border-color:#64748b; }
 .simni-save-status { margin-top:12px; font-size:14px; color:#047857; }
 .dark .simni-save-status { color:#6ee7b7; }
-.simni-connection-status { width:fit-content; border:1px solid #cbd5e1; padding:10px 14px; border-radius:12px; color:#334155; background:#fff; font-size:14px; }
-.dark .simni-connection-status { color:#e2e8f0; background:#111827; border-color:#475569; }
+.simni-connection-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+    padding: 0.35rem 0.75rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+    color: #059669 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    white-space: nowrap !important;
+    width: fit-content !important;
+}
+.dark .simni-connection-status {
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #34d399 !important;
+}
+.simni-connection-status[data-connected="false"] {
+    border-color: rgba(239, 68, 68, 0.25) !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    color: #dc2626 !important;
+}
+.dark .simni-connection-status[data-connected="false"] {
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #f87171 !important;
+}
 #input-kelompok { color:#92400e; }
 .dark #input-kelompok { color:#fcd34d; }
 #view-pengaturan .text-slate-400, #view-pengaturan .text-slate-500 { color:#475569; }
@@ -1090,3 +1258,1272 @@ button.text-white[data-simni-action="exportArsipTotalExcel"] { background-color:
 #modal-preview-siswa-import button:focus-visible { outline:3px solid #6366f1; outline-offset:2px; }
 #modal-preview-tp-import .tp-import-panel > :last-child,
 #modal-preview-siswa-import .siswa-import-panel > :last-child { padding-bottom:max(12px,env(safe-area-inset-bottom)); }
+
+/* ========================================================
+   DESKTOP SHELL HEADER & COMPACT LAPTOP DASHBOARD STYLING
+   ======================================================== */
+.desktop-shell-header {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+@media (min-width: 768px) {
+    /* Responsive comfortable laptop scaling */
+    #main-scroll-area {
+        padding: 1.25rem 1.75rem 2rem 1.75rem;
+    }
+}
+
+@media (min-width: 768px) and (max-height: 860px) {
+    /* Compact mode for typical laptop screens (1366x768 / 1280x800 / 1080p scaled) */
+    .desktop-shell-header {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    #main-scroll-area {
+        padding-top: 0.85rem;
+        padding-bottom: 1.25rem;
+    }
+}
+
+/* ========================================================
+   ELEGANT MODERN STATUS BADGES & MICRO-SHADOWS
+   ======================================================== */
+.shadow-2xs {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+}
+
+.simni-badge-dot {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    transition: all 0.15s ease-in-out;
+}
+
+.simni-badge-dot::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background-color: currentColor;
+    margin-right: 6px;
+    flex-shrink: 0;
+    box-shadow: 0 0 5px currentColor;
+    opacity: 0.9;
+}
+
+/* ========================================================
+   ENTERPRISE DESIGN SYSTEM COMPONENT CLASSES
+   ======================================================== */
+.simni-card-elevated {
+    background-color: var(--simni-surface);
+    border: 1px solid var(--simni-border-subtle);
+    border-radius: var(--simni-radius-xl);
+    box-shadow: var(--simni-shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.simni-card-elevated:hover {
+    box-shadow: var(--simni-shadow-hover);
+    border-color: var(--simni-border-default);
+}
+
+/* Form Controls with Enhanced State & Hitboxes */
+.simni-input-field {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.625rem 0.875rem;
+    font-size: var(--simni-text-sm);
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--simni-text-main);
+    background-color: var(--simni-surface);
+    border: 1px solid var(--simni-border-subtle);
+    border-radius: var(--simni-radius-md);
+    box-shadow: var(--simni-shadow-xs);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+html.dark .simni-input-field {
+    background-color: #0c0c0e;
+    border-color: var(--simni-border-subtle);
+    color: var(--simni-text-main);
+}
+
+.simni-input-field:focus {
+    outline: none;
+    border-color: var(--simni-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.simni-input-field:disabled,
+.simni-input-field[readonly] {
+    background-color: var(--simni-bg-subtle);
+    color: var(--simni-text-muted);
+    cursor: not-allowed;
+    border-color: var(--simni-border-subtle);
+}
+
+html.dark .simni-input-field:disabled,
+html.dark .simni-input-field[readonly] {
+    background-color: #141417;
+}
+
+/* Interactive Button Micro-states */
+.simni-btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--simni-space-2);
+    min-height: 42px;
+    padding: 0.5rem 1.25rem;
+    font-size: var(--simni-text-sm);
+    font-weight: 700;
+    line-height: 1;
+    border-radius: var(--simni-radius-md);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.simni-btn-action:active {
+    transform: scale(0.98);
+}
+
+.simni-btn-action:focus-visible {
+    outline: 2px solid var(--simni-primary);
+    outline-offset: 2px;
+}
+
+/* Danger Zone Container */
+.simni-danger-zone {
+    background-color: var(--simni-danger-soft);
+    border: 1.5px dashed var(--simni-danger-border);
+    border-radius: var(--simni-radius-xl);
+    padding: var(--simni-space-6);
+    position: relative;
+    overflow: hidden;
+}
+
+html.dark .simni-danger-zone {
+    background-color: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* ==========================================================================
+   ENTERPRISE UTILITY & SHAPE HARMONIZATION (Bridge for Offline Tailwind)
+   ========================================================================== */
+
+/* Universal Positioning & Centering */
+.top-1\/2 { top: 50% !important; }
+.left-1\/2 { left: 50% !important; }
+.right-1\/2 { right: 50% !important; }
+.bottom-1\/2 { bottom: 50% !important; }
+.-translate-y-1\/2 { transform: translateY(-50%) !important; }
+.-translate-x-1\/2 { transform: translateX(-50%) !important; }
+.-translate-1\/2 { transform: translate(-50%, -50%) !important; }
+
+/* Sizing Utilities */
+.h-7 { height: 1.75rem !important; }
+.h-8 { height: 2rem !important; }
+.h-9 { height: 2.25rem !important; }
+.h-10 { height: 2.5rem !important; }
+.h-11 { height: 2.75rem !important; }
+.h-12 { height: 3rem !important; }
+.h-14 { height: 3.5rem !important; }
+
+.w-7 { width: 1.75rem !important; }
+.w-8 { width: 2rem !important; }
+.w-9 { width: 2.25rem !important; }
+.w-10 { width: 2.5rem !important; }
+.w-11 { width: 2.75rem !important; }
+.w-12 { width: 3rem !important; }
+.w-14 { width: 3.5rem !important; }
+
+.min-h-\[36px\] { min-height: 36px !important; }
+.min-h-\[38px\] { min-height: 38px !important; }
+.min-h-\[40px\] { min-height: 40px !important; }
+.min-h-\[42px\] { min-height: 42px !important; }
+.min-h-\[44px\] { min-height: 44px !important; }
+
+.min-w-\[36px\] { min-width: 36px !important; }
+.min-w-\[40px\] { min-width: 40px !important; }
+
+/* Spacing & Padding for Shapes */
+.px-3\.5 { padding-left: 0.875rem !important; padding-right: 0.875rem !important; }
+.py-2\.5 { padding-top: 0.625rem !important; padding-bottom: 0.625rem !important; }
+.pr-10 { padding-right: 2.5rem !important; }
+.pr-12 { padding-right: 3rem !important; }
+
+/* Dedicated Password Wrapper & Toggle Eye Button */
+.simni-password-wrap {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.simni-password-wrap input {
+    width: 100% !important;
+    padding-right: 2.75rem !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+}
+
+.simni-password-toggle {
+    position: absolute !important;
+    right: 0.5rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0.5rem !important;
+    color: #94a3b8 !important;
+    cursor: pointer !important;
+    transition: color 0.15s ease, background-color 0.15s ease !important;
+    z-index: 10 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.simni-password-toggle:hover {
+    color: var(--simni-primary) !important;
+    background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+html.dark .simni-password-toggle:hover {
+    color: #818cf8 !important;
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+.simni-password-toggle i {
+    font-size: 0.875rem !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================================
+   SIMNI ENTERPRISE CORE UI/UX RECONSTRUCTION COMPONENTS
+   ========================================================================== */
+
+/* 1. Hero Primary Quick Action Card (Scan Presensi) */
+.simni-hero-quick-action {
+    background: linear-gradient(135deg, var(--simni-primary, #4f46e5) 0%, var(--simni-primary-hover, #4338ca) 100%) !important;
+    color: #ffffff !important;
+    padding: 1.25rem !important;
+    border-radius: 1rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.simni-hero-quick-action:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.25) !important;
+}
+
+.simni-hero-quick-action:active {
+    transform: scale(0.98) !important;
+}
+
+.simni-hero-icon-box {
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+    min-height: 3rem !important;
+    border-radius: 0.75rem !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.25rem !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+    transition: transform 0.2s ease !important;
+}
+
+.simni-hero-quick-action:hover .simni-hero-icon-box {
+    transform: scale(1.08) !important;
+}
+
+.simni-hero-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0.25rem 0.625rem !important;
+    border-radius: 9999px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    line-height: 1 !important;
+}
+
+/* 2. Standardized Search Box Component */
+.simni-search-box {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 240px !important;
+}
+
+.simni-search-icon {
+    position: absolute !important;
+    left: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #94a3b8 !important;
+    pointer-events: none !important;
+    font-size: 0.875rem !important;
+    width: 1rem !important;
+    height: 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 2 !important;
+}
+
+.simni-search-input {
+    width: 100% !important;
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    padding-left: 2.75rem !important;
+    padding-right: 1.25rem !important;
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: rgba(248, 250, 252, 0.8) !important;
+    color: #1e293b !important;
+    font-weight: 500 !important;
+    outline: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+.simni-search-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+.simni-search-input:focus {
+    background-color: #ffffff !important;
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+}
+
+html.dark .simni-search-input {
+    border-color: #27272a !important;
+    background-color: #161618 !important;
+    color: #f1f5f9 !important;
+}
+
+html.dark .simni-search-input:focus {
+    background-color: #1c1c20 !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* 3. Enterprise QR Scanner Button */
+.simni-qr-scanner-btn {
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    padding: 0 1.25rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.625rem !important;
+    background-color: #4f46e5 !important;
+    color: #ffffff !important;
+    border: 1px solid #4338ca !important;
+    border-radius: 0.75rem !important;
+    font-weight: 700 !important;
+    font-size: 0.875rem !important;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25) !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
+}
+
+.simni-qr-scanner-btn:hover {
+    background-color: #4338ca !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+
+.simni-qr-scanner-btn:active {
+    transform: scale(0.98) !important;
+}
+
+.simni-qr-scanner-btn i {
+    font-size: 1rem !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   ENTERPRISE DESIGN SYSTEM COMPONENTS (ADOPTED FROM AI STUDIO HARMONIZATION)
+   ========================================================================== */
+
+/* 1. Tabular Figures & Micro Shadows */
+.tabular-nums {
+    font-variant-numeric: tabular-nums !important;
+}
+
+.shadow-2xs {
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+}
+
+/* 2. Snappy View Transition */
+.simni-fade-in {
+    animation: simniFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes simniFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 3. Section Title with Vertical Accent Pill Bar */
+.simni-section-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: var(--simni-text-main) !important;
+}
+
+.simni-section-title::before {
+    content: '' !important;
+    display: block !important;
+    width: 0.375rem !important;
+    height: 1rem !important;
+    border-radius: 9999px !important;
+    background-color: var(--simni-primary) !important;
+    flex-shrink: 0 !important;
+}
+
+/* 4. KPI Summary Statistics Cards */
+.simni-kpi-card {
+    background-color: var(--simni-surface) !important;
+    padding: 1.25rem !important;
+    border-radius: 1rem !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
+}
+
+.simni-kpi-card:hover {
+    box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.08) !important;
+    border-color: var(--simni-border-default) !important;
+}
+
+.simni-kpi-icon {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.125rem !important;
+    border: 1px solid transparent !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+    transition: transform 0.2s ease !important;
+}
+
+.simni-kpi-card:hover .simni-kpi-icon {
+    transform: scale(1.05) !important;
+}
+
+.simni-kpi-value {
+    font-size: 1.875rem !important;
+    line-height: 2.25rem !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.025em !important;
+    font-variant-numeric: tabular-nums !important;
+    color: var(--simni-text-main) !important;
+}
+
+.simni-kpi-label {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: var(--simni-text-muted) !important;
+}
+
+/* 5. Secondary Action Cards */
+.simni-action-card {
+    background-color: var(--simni-surface) !important;
+    padding: 1.25rem !important;
+    border-radius: 1rem !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.simni-action-card:hover {
+    box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.08) !important;
+    transform: translateY(-2px) !important;
+}
+
+.simni-action-card:active {
+    transform: scale(0.98) !important;
+}
+
+/* 6. Student Cards & Roster Grid */
+.simni-student-card {
+    padding: 1rem !important;
+    border-radius: 1rem !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+    background-color: var(--simni-surface) !important;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.875rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.simni-student-card:hover {
+    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06) !important;
+    transform: translateY(-2px) !important;
+    border-color: rgba(79, 70, 229, 0.4) !important;
+}
+
+.simni-student-avatar {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    border-radius: 0.875rem !important;
+    background-color: var(--simni-primary-soft) !important;
+    color: var(--simni-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    flex-shrink: 0 !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+}
+
+.simni-student-nisn {
+    font-size: 0.625rem !important;
+    font-family: monospace !important;
+    font-weight: 700 !important;
+    color: var(--simni-text-muted) !important;
+    background-color: var(--simni-surface-hover) !important;
+    padding: 0.125rem 0.5rem !important;
+    border-radius: 0.5rem !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+    display: inline-block !important;
+}
+
+/* 7. Floating Batch Operation Bar */
+.simni-floating-bar {
+    position: fixed !important;
+    bottom: 1.5rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background-color: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    color: #ffffff !important;
+    padding: 0.625rem 1rem !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 20px 36px -6px rgba(0, 0, 0, 0.25) !important;
+    z-index: 40 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.625rem !important;
+    border: 1px solid rgba(100, 116, 139, 0.3) !important;
+    max-width: 95vw !important;
+    animation: simniFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* 8. Tab & Segmented Controls */
+.simni-tab-group {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0.25rem !important;
+    background-color: var(--simni-bg-subtle) !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+    gap: 0.25rem !important;
+}
+
+.simni-tab {
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    color: var(--simni-text-muted) !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.simni-tab:hover {
+    color: var(--simni-text-main) !important;
+}
+
+.simni-tab.active,
+.simni-tab[aria-selected="true"] {
+    background-color: var(--simni-surface) !important;
+    color: var(--simni-primary) !important;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05) !important;
+}
+
+/* 9. Standardized Buttons */
+.simni-btn-primary {
+    height: 2.5rem !important;
+    padding: 0 1.25rem !important;
+    background-color: var(--simni-primary) !important;
+    color: #ffffff !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.15s ease !important;
+}
+
+.simni-btn-primary:hover {
+    background-color: var(--simni-primary-hover) !important;
+}
+
+.simni-btn-primary:active {
+    transform: scale(0.95) !important;
+}
+
+.simni-btn-secondary {
+    height: 2.5rem !important;
+    padding: 0 1rem !important;
+    background-color: var(--simni-surface-hover) !important;
+    color: var(--simni-text-body) !important;
+    border: 1px solid var(--simni-border-subtle) !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.15s ease !important;
+}
+
+.simni-btn-secondary:hover {
+    background-color: var(--simni-border-subtle) !important;
+}
+
+.simni-btn-secondary:active {
+    transform: scale(0.95) !important;
+}
+
+.simni-btn-danger {
+    height: 2.5rem !important;
+    padding: 0 1rem !important;
+    background-color: var(--simni-danger-soft) !important;
+    color: var(--simni-danger) !important;
+    border: 1px solid var(--simni-danger-border) !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.15s ease !important;
+}
+
+.simni-btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* 10. Status Badges & Chips */
+.simni-chip-hadir {
+    background-color: var(--simni-success-soft) !important;
+    color: var(--simni-success) !important;
+    border: 1px solid var(--simni-success-border) !important;
+    padding: 0.25rem 0.625rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+}
+
+.simni-chip-sakit {
+    background-color: var(--simni-warning-soft) !important;
+    color: var(--simni-warning) !important;
+    border: 1px solid var(--simni-warning-border) !important;
+    padding: 0.25rem 0.625rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+}
+
+.simni-chip-izin {
+    background-color: var(--simni-info-soft) !important;
+    color: var(--simni-info) !important;
+    border: 1px solid rgba(2, 132, 199, 0.3) !important;
+    padding: 0.25rem 0.625rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+}
+
+.simni-chip-alpa {
+    background-color: var(--simni-danger-soft) !important;
+    color: var(--simni-danger) !important;
+    border: 1px solid var(--simni-danger-border) !important;
+    padding: 0.25rem 0.625rem !important;
+    border-radius: 9999px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+}
+
+/* 11. Danger Zone Container */
+.simni-danger-zone {
+    background-color: var(--simni-danger-soft) !important;
+    border: 1.5px dashed var(--simni-danger-border) !important;
+    border-radius: 1.25rem !important;
+    padding: 1.5rem !important;
+}
+
+/* 12. PRO Typography Badge */
+.simni-pro-badge {
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.15em !important;
+    text-transform: uppercase !important;
+    color: var(--simni-primary, #4f46e5) !important;
+    margin-left: 0.375rem !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    user-select: none !important;
+    line-height: 1 !important;
+}
+
+/* 13. Dynamic Theme Compatibility Bridges */
+.bg-primary {
+    background-color: var(--simni-primary, #4f46e5) !important;
+}
+
+.text-primary {
+    color: var(--simni-primary, #4f46e5) !important;
+}
+
+.border-primary {
+    border-color: var(--simni-primary, #4f46e5) !important;
+}
+
+/* 14. Responsive Grid Column Systems (Essential - Missing from tailwind-offline.css) */
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+.grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+.grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+
+@media (min-width: 640px) {
+    .sm\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+    .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+
+@media (min-width: 768px) {
+    .md\:grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+
+@media (min-width: 1024px) {
+    .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+
+/* 15. Sizing, Transform & Number Utilities (Essential - Missing from tailwind-offline.css) */
+.h-4 { height: 1rem !important; }
+.w-4 { width: 1rem !important; }
+.h-5 { height: 1.25rem !important; }
+.w-5 { width: 1.25rem !important; }
+.h-6 { height: 1.5rem !important; }
+.w-6 { width: 1.5rem !important; }
+.h-8 { height: 2rem !important; }
+.w-8 { width: 2rem !important; }
+.h-9 { height: 2.25rem !important; }
+.w-9 { width: 2.25rem !important; }
+.h-10 { height: 2.5rem !important; }
+.w-10 { width: 2.5rem !important; }
+.h-11 { height: 2.75rem !important; }
+.w-11 { width: 2.75rem !important; }
+.h-12 { height: 3rem !important; }
+.w-12 { width: 3rem !important; }
+.h-full { height: 100% !important; }
+.w-full { width: 100% !important; }
+.w-auto { width: auto !important; }
+.w-fit { width: fit-content !important; }
+.translate-x-0 { transform: translateX(0px) !important; }
+.translate-x-4 { transform: translateX(1rem) !important; }
+.tabular-nums { font-variant-numeric: tabular-nums !important; }
+
+/* 16. Gap & Flex Alignment Utilities */
+.gap-0 { gap: 0 !important; }
+.gap-1 { gap: 0.25rem !important; }
+.gap-1\.5 { gap: 0.375rem !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-2\.5 { gap: 0.625rem !important; }
+.gap-3 { gap: 0.75rem !important; }
+.gap-3\.5 { gap: 0.875rem !important; }
+.gap-4 { gap: 1rem !important; }
+.gap-5 { gap: 1.25rem !important; }
+.gap-6 { gap: 1.5rem !important; }
+.items-stretch { align-items: stretch !important; }
+
+/* 17. Margin Utilities */
+.ml-1 { margin-left: 0.25rem !important; }
+.ml-1\.5 { margin-left: 0.375rem !important; }
+.ml-2 { margin-left: 0.5rem !important; }
+.ml-2\.5 { margin-left: 0.625rem !important; }
+.ml-3 { margin-left: 0.75rem !important; }
+.ml-4 { margin-left: 1rem !important; }
+.mr-1 { margin-right: 0.25rem !important; }
+.mr-1\.5 { margin-right: 0.375rem !important; }
+.mr-2 { margin-right: 0.5rem !important; }
+.mr-2\.5 { margin-right: 0.625rem !important; }
+.mr-3 { margin-right: 0.75rem !important; }
+
+/* 18. Soft Palette Backgrounds & Borders */
+.bg-emerald-50 { background-color: rgba(16, 185, 129, 0.08) !important; }
+.bg-amber-50 { background-color: rgba(245, 158, 11, 0.08) !important; }
+.bg-purple-50 { background-color: rgba(168, 85, 247, 0.08) !important; }
+.bg-indigo-50 { background-color: rgba(99, 102, 241, 0.08) !important; }
+.border-emerald-100 { border-color: rgba(16, 185, 129, 0.2) !important; }
+.border-amber-100 { border-color: rgba(245, 158, 11, 0.2) !important; }
+.border-purple-100 { border-color: rgba(168, 85, 247, 0.2) !important; }
+.border-indigo-100 { border-color: rgba(99, 102, 241, 0.2) !important; }
+
+/* ==========================================================================
+   19. MODERN UI KIT & AESTHETIC POLISH LAYER
+   ========================================================================== */
+:root {
+  --accent: var(--simni-primary, #4f46e5);
+  --accent-hover: var(--simni-primary-hover, #4338ca);
+  --accent-subtle: var(--simni-primary-soft, #eef2ff);
+  --text-on-primary: #ffffff;
+
+  --grad-simni: linear-gradient(135deg, var(--simni-primary, #4f46e5) 0%, var(--simni-primary-hover, #4338ca) 100%);
+  --grad-violet: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  --grad-ocean:  linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  --grad-sunset: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%);
+  --grad-forest: linear-gradient(135deg, #22c55e 0%, #0ea5e9 100%);
+  --grad-mesh-1: radial-gradient(at 20% 20%, rgb(99 102 241 / 0.25) 0px, transparent 50%),
+                 radial-gradient(at 80% 0%,  rgb(236 72 153 / 0.20) 0px, transparent 50%),
+                 radial-gradient(at 0% 100%,  rgb(14 165 233 / 0.20) 0px, transparent 50%),
+                 radial-gradient(at 80% 100%, rgb(168 85 247 / 0.18) 0px, transparent 50%);
+
+  --glow-primary: 0 0 20px rgba(99, 102, 241, 0.35), 0 0 60px rgba(99, 102, 241, 0.15);
+  --glow-success: 0 0 20px rgba(34, 197, 94, 0.35);
+  --glow-danger:  0 0 20px rgba(239, 68, 68, 0.35);
+
+  --glass-bg-light: rgba(255, 255, 255, 0.72);
+  --glass-bg-dark:  rgba(15, 23, 42, 0.75);
+  --glass-border-light: rgba(255, 255, 255, 0.45);
+  --glass-border-dark:  rgba(255, 255, 255, 0.10);
+  --glass-blur: 16px;
+
+  --glass-bg: var(--glass-bg-light);
+  --glass-border: var(--glass-border-light);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass-bg: var(--glass-bg-dark);
+    --glass-border: var(--glass-border-dark);
+  }
+}
+:root[data-theme="dark"], body.dark {
+  --glass-bg: var(--glass-bg-dark);
+  --glass-border: var(--glass-border-dark);
+}
+
+/* Glassmorphism */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+.glass-strong { --glass-blur: 24px; }
+.glass-subtle { --glass-blur: 8px; }
+
+.glass-nav {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border-bottom: 1px solid var(--glass-border) !important;
+}
+
+/* Background surfaces */
+.bg-mesh {
+  position: relative;
+  background-color: var(--simni-canvas, #f8fafc);
+  background-image: var(--grad-mesh-1);
+}
+.bg-dot-grid {
+  background-image: radial-gradient(var(--simni-border-default, #cbd5e1) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.bg-line-grid {
+  background-image:
+    linear-gradient(to right, var(--simni-border-subtle, #e2e8f0) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--simni-border-subtle, #e2e8f0) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Tombol Premium & UI Kit */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled, .btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--text-on-primary);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary {
+  background: var(--simni-surface-muted, #f8fafc);
+  border: 1px solid var(--simni-border-subtle, #e2e8f0);
+  color: var(--simni-text-main, #0f172a);
+}
+.btn-secondary:hover { background: var(--simni-border-subtle, #e2e8f0); }
+.btn-outline {
+  background: transparent;
+  border-color: var(--simni-border-default, #cbd5e1);
+  color: var(--simni-text-main, #0f172a);
+}
+.btn-outline:hover { background: var(--simni-bg-subtle, #f1f5f9); }
+.btn-ghost {
+  background: transparent;
+  color: var(--simni-text-main, #0f172a);
+}
+.btn-ghost:hover { background: var(--simni-bg-subtle, #f1f5f9); }
+.btn-danger {
+  background: var(--simni-danger, #ef4444);
+  color: #fff;
+}
+.btn-danger:hover { background: var(--simni-danger-hover, #dc2626); }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.75rem; border-radius: 0.375rem; }
+.btn-lg { padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 0.625rem; }
+.btn-icon { padding: 0.5rem; aspect-ratio: 1; }
+
+.btn-gradient {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  color: #fff !important;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--grad-simni);
+  background-size: 160% 160%;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.28);
+  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-gradient:hover { background-position: 100% 50%; box-shadow: 0 6px 20px rgba(79, 70, 229, 0.40); }
+.btn-gradient:active { transform: scale(0.97); }
+
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  transition: left 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-shine:hover::after { left: 125%; }
+
+.btn-glow {
+  border: 1px solid rgba(79, 70, 229, 0.4);
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  transition: all 200ms ease;
+}
+.btn-glow:hover { box-shadow: var(--glow-primary); background: rgba(79, 70, 229, 0.15); }
+
+/* Card Modern & Interaktif */
+.card-modern {
+  position: relative;
+  background: var(--simni-surface, #fff);
+  border: 1px solid var(--simni-border-subtle, #e2e8f0);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  overflow: hidden;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 220ms ease;
+}
+.card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.10);
+  border-color: rgba(79, 70, 229, 0.35);
+}
+.dark .card-modern {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+.dark .card-modern:hover {
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.50);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.card-spotlight { position: relative; isolation: isolate; }
+.card-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(320px circle at var(--x, 50%) var(--y, 50%), rgba(99, 102, 241, 0.12), transparent 60%);
+  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-spotlight:hover::before { opacity: 1; }
+
+/* Micro-interactions */
+.hover-lift {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.hover-lift:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.12) !important;
+}
+.hover-scale { transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.hover-scale:hover { transform: scale(1.03); }
+.press-scale { transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.press-scale:active { transform: scale(0.96); }
+
+/* Switch Toggle Terkontrol & Proporsional */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch-track {
+  position: absolute;
+  inset: 0;
+  background: var(--simni-border-strong, #cbd5e1);
+  border-radius: 9999px;
+  transition: background-color 200ms ease;
+  cursor: pointer;
+}
+.switch-track::before {
+  content: "";
+  position: absolute;
+  height: 1.15rem;
+  width: 1.15rem;
+  left: 0.18rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 200ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.switch input:checked + .switch-track { background: var(--accent); }
+.switch input:checked + .switch-track::before { transform: translateY(-50%) translateX(1.22rem); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Badges & Chips */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15em 0.6em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: var(--simni-bg-subtle, #f1f5f9);
+  color: var(--simni-text-muted, #64748b);
+}
+.badge-primary { background: var(--accent-subtle); color: var(--accent); }
+.badge-success { background: #dcfce7; color: #15803d; }
+.badge-warning { background: #fef3c7; color: #b45309; }
+.badge-danger  { background: #fee2e2; color: #b91c1c; }
+.badge-dot::before {
+  content: "";
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: currentColor;
+}
+.chip-gradient {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--grad-simni);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+.chip-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Modern WebKit & Standard Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--simni-border-default, #cbd5e1);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--simni-text-subtle, #94a3b8); }
+* { scrollbar-width: thin; scrollbar-color: var(--simni-border-default, #cbd5e1) transparent; }
+
+/* Loader & Shimmer */
+.skeleton-shell {
+  position: relative;
+  overflow: hidden;
+  background: var(--simni-bg-subtle, #f1f5f9);
+  border-radius: 0.5rem;
+}
+.skeleton-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sweep { 100% { transform: translateX(100%); } }
+
+.spinner-gradient {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, var(--accent));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+
+
+
+

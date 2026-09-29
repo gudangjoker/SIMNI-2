@@ -20,7 +20,7 @@
 
     <meta
         name="application-version"
-        content="4.8.0-rc.1"
+        content="4.8.2"
     >
 
     <meta
@@ -60,6 +60,7 @@
         href="./tailwind-offline.css"
     >
 
+    <link rel="stylesheet" href="./vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="js/ui/shell.css">
 </head>
 
@@ -108,40 +109,90 @@
             </div>
 
             <div class="login-form-panel">
-                <p class="login-eyebrow">Portal terautentikasi</p>
-                <h2 id="login-heading">Selamat datang kembali</h2>
-                <p class="login-description">Gunakan akun SIMNI yang telah ditetapkan untuk melanjutkan ke ruang kerja Anda.</p>
+                <!-- Panel Form Login Utama -->
+                <div id="panel-login-main">
+                    <p class="login-eyebrow">Portal terautentikasi</p>
+                    <h2 id="login-heading">Selamat datang kembali</h2>
+                    <p class="login-description">Gunakan akun SIMNI yang telah ditetapkan untuk melanjutkan ke ruang kerja Anda.</p>
 
-                <form id="form-login-auth" class="space-y-4">
-                    <div>
-                        <label class="login-field-label" for="auth-email">Alamat email</label>
-                        <div class="login-input-wrap">
-                            <i class="fas fa-envelope" aria-hidden="true"></i>
-                            <input type="email" id="auth-email" required autocomplete="username" placeholder="nama@sekolah.sch.id" class="login-input">
+                    <form id="form-login-auth" class="space-y-4">
+                        <div>
+                            <label class="login-field-label" for="auth-email">Alamat email</label>
+                            <div class="login-input-wrap">
+                                <i class="fas fa-envelope" aria-hidden="true"></i>
+                                <input type="email" id="auth-email" required autocomplete="username" placeholder="nama@sekolah.sch.id" class="login-input">
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="login-field-label" for="auth-password">Kata sandi</label>
-                        <div class="login-input-wrap">
-                            <i class="fas fa-lock" aria-hidden="true"></i>
-                            <input type="password" id="auth-password" required autocomplete="current-password" placeholder="Masukkan kata sandi" class="login-input">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="login-field-label !mb-0" for="auth-password">Kata sandi</label>
+                                <button type="button" data-shell-action="show-reset-panel" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold transition-colors focus:outline-none cursor-pointer">
+                                    Lupa kata sandi?
+                                </button>
+                            </div>
+                            <div class="login-input-wrap simni-password-wrap">
+                                <i class="fas fa-lock" aria-hidden="true"></i>
+                                <input type="password" id="auth-password" required autocomplete="current-password" placeholder="Masukkan kata sandi" class="login-input has-toggle-password">
+                                <button type="button" data-shell-action="toggle-password" data-target="auth-password" class="btn-toggle-password simni-password-toggle" aria-label="Tampilkan kata sandi" title="Lihat/Sembunyikan kata sandi">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="submit" class="login-submit" id="btn-login">
-                        Masuk ke SIMNI
-                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        <button type="submit" class="login-submit cursor-pointer btn-shine" id="btn-login">
+                            Masuk ke SIMNI
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </form>
+
+                    <div class="mt-4 flex flex-col items-center gap-2">
+                        <button type="button" data-shell-action="show-reset-panel" class="login-reset text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold transition-colors cursor-pointer">
+                            <i class="fas fa-key mr-1" aria-hidden="true"></i> Lupa kata sandi? Reset di sini
+                        </button>
+
+                        <a href="./register.html" class="login-reset inline-flex justify-center items-center gap-2 text-xs">
+                            <i class="fas fa-user-plus" aria-hidden="true"></i> Daftar sebagai guru dengan undangan
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Panel Pemulihan / Lupa Kata Sandi (Firebase Auth) -->
+                <div id="panel-reset-password" class="hidden space-y-4">
+                    <button type="button" data-shell-action="hide-reset-panel" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-2 mb-2 transition-colors cursor-pointer">
+                        <i class="fas fa-arrow-left"></i> Kembali ke Halaman Masuk
                     </button>
-                </form>
+                    
+                    <div>
+                        <p class="login-eyebrow text-amber-600 dark:text-amber-400 font-bold">Pemulihan Akun</p>
+                        <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mb-1">Atur Ulang Kata Sandi</h2>
+                        <p class="login-description text-xs">Masukkan alamat email akun SIMNI Anda (guru, VIP, atau superuser). Kami akan mengirimkan tautan pemulihan resmi dari Firebase ke email tersebut.</p>
+                    </div>
 
-                <button type="button" data-shell-action="password-reset" class="login-reset">
-                    Lupa kata sandi?
-                </button>
+                    <form id="form-reset-auth" class="space-y-4">
+                        <div>
+                            <label class="login-field-label" for="reset-auth-email">Alamat email terdaftar</label>
+                            <div class="login-input-wrap">
+                                <i class="fas fa-envelope" aria-hidden="true"></i>
+                                <input type="email" id="reset-auth-email" required autocomplete="email" placeholder="nama@sekolah.sch.id / unggaran.sditbm@gmail.com" class="login-input">
+                            </div>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                                <i class="fas fa-info-circle text-indigo-500 dark:text-indigo-400 mr-1"></i>Tautan reset akan dikirimkan secara aman oleh sistem Google Firebase Authentication.
+                            </p>
+                        </div>
 
-                <a href="./register.html" class="login-reset inline-flex justify-center items-center gap-2">
-                    <i class="fas fa-user-plus" aria-hidden="true"></i> Daftar sebagai guru dengan undangan
-                </a>
+                        <div id="reset-feedback" class="hidden text-xs p-3.5 rounded-xl border leading-relaxed" role="alert"></div>
+
+                        <button type="submit" class="login-submit cursor-pointer" id="btn-submit-reset">
+                            Kirim Tautan Reset Sandi
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                        </button>
+                    </form>
+
+                    <button type="button" data-shell-action="hide-reset-panel" class="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 py-1 transition-colors cursor-pointer">
+                        Sudah ingat kata sandi? Masuk sekarang
+                    </button>
+                </div>
 
                 <p id="auth-error" class="text-red-600 text-sm hidden font-medium text-center bg-red-50 dark:bg-red-950/40 p-3 rounded-xl border border-red-200 dark:border-red-900/60 w-full mt-3" role="alert" aria-live="polite"></p>
 
@@ -190,7 +241,7 @@
          ====================================== -->
 
     <aside
-        class="hidden md:flex w-64 bg-white dark:bg-[#000000] border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm no-print relative z-10 transition-colors duration-300"
+        class="hidden"
     >
         <div
             class="p-6 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800"
@@ -332,6 +383,20 @@
 
             <button
                 type="button"
+                data-shell-view="btq"
+                data-target="btq"
+                class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-colors text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-[#111111]"
+            >
+                <i
+                    class="fas fa-quran w-5 text-center text-emerald-500"
+                    aria-hidden="true"
+                ></i>
+
+                Laporan BTQ
+            </button>
+
+            <button
+                type="button"
                 data-shell-view="catatan"
                 data-target="catatan"
                 data-requires-feature="notes"
@@ -383,11 +448,11 @@
                     data-shell-action="toggle-theme"
                     title="Beralih Mode Gelap / Terang"
                     aria-label="Beralih Mode Gelap / Terang"
-                    class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-[11px] font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-300 transition-all border border-slate-200 dark:border-slate-700 text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                 >
-                    <i class="fas fa-moon dark:hidden text-xs"></i>
+                    <i class="fas fa-moon dark:hidden text-slate-500 text-xs"></i>
                     <span class="dark:hidden">Gelap</span>
-                    <i class="fas fa-sun hidden dark:inline text-xs text-amber-400"></i>
+                    <i class="fas fa-sun hidden dark:inline text-amber-400 text-xs"></i>
                     <span class="hidden dark:inline">Terang</span>
                 </button>
             </div>
@@ -402,7 +467,10 @@
                 class="w-full flex items-center justify-between px-3 py-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors shadow-sm border border-indigo-100 dark:border-indigo-900 cursor-pointer"
             >
                 <span class="flex items-center gap-2"><i class="fas fa-users-cog" aria-hidden="true"></i> Kelola Akun</span>
-                <i class="fas fa-chevron-right text-indigo-400" aria-hidden="true"></i>
+                <span class="flex items-center gap-1.5">
+                    <span id="badge-nav-accounts-desktop" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">0</span>
+                    <i class="fas fa-chevron-right text-indigo-400" aria-hidden="true"></i>
+                </span>
             </button>
 
             <button
@@ -441,18 +509,133 @@
         class="flex-1 flex flex-col h-full w-full overflow-hidden relative dark:bg-[#000000]"
     >
 
-        <!-- MOBILE HEADER -->
-
+        <!-- DESKTOP HEADER (MD & UP ONLY) -->
         <header
-            class="mobile-shell-header md:hidden bg-white dark:bg-[#000000] px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-sm no-print z-10 transition-colors"
+            class="desktop-shell-header glass-nav hidden md:flex items-center justify-between px-6 py-2.5 bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-xs z-20 transition-colors no-print"
         >
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                <!-- Tombol Hamburger Menu Desktop -->
+                <button
+                    type="button"
+                    id="btn-desktop-menu-drawer"
+                    data-simni-action="toggleMenuDrawer"
+                    data-simni-trigger="click"
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#18181b] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer shrink-0 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:scale-105 active:scale-95"
+                    aria-label="Buka Menu Navigasi"
+                    title="Menu Navigasi"
+                >
+                    <i class="fas fa-bars text-sm text-slate-600 dark:text-slate-300" aria-hidden="true"></i>
+                </button>
+
+                <!-- Divider -->
+                <div class="h-5 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" aria-hidden="true"></div>
+
+                <!-- Logo & Identitas Aplikasi -->
+                <div class="flex items-center gap-2.5">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-0.5 flex items-center justify-center shadow-2xs shrink-0 overflow-hidden"
+                        id="icon-desktop-container"
+                    >
+                        <img src="./icons/simni-logo.png" alt="Logo SIMNI" class="h-full w-full object-contain" width="32" height="32">
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <div class="flex items-center leading-normal">
+                            <span class="text-sm font-black text-slate-900 dark:text-white tracking-tight" id="ui-desktop-nama-kelas">SIMNI</span>
+                            <span class="simni-pro-badge">PRO</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-normal mt-0.5 truncate" id="ui-desktop-nama-aplikasi">Administrasi Kelas Digital</p>
+                    </div>
+                </div>
+
+                <!-- Selector Kelas Desktop (untuk multi-kelas VIP/Superuser) -->
+                <div id="kelas-selector-desktop-container" class="hidden ml-2">
+                    <select id="desktop-kelas-select" data-simni-action="setActiveKelas" data-simni-trigger="change" data-simni-argument="value" class="px-2.5 py-1 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer">
+                        <option value="1A">Kelas 1A</option>
+                        <option value="1B">Kelas 1B</option>
+                        <option value="2A">Kelas 2A</option>
+                        <option value="2B">Kelas 2B</option>
+                        <option value="3A">Kelas 3A</option>
+                        <option value="3B">Kelas 3B</option>
+                        <option value="4A">Kelas 4A</option>
+                        <option value="4B">Kelas 4B</option>
+                        <option value="5A">Kelas 5A</option>
+                        <option value="5B">Kelas 5B</option>
+                        <option value="6A">Kelas 6A</option>
+                        <option value="6B">Kelas 6B</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sisi Kanan: Sapaan Guru, Indikator Sinkronisasi, Profil, Logout, Tema -->
+            <div class="flex items-center gap-3">
+                <!-- Sapaan Personal Guru -->
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-[#161618] border border-slate-200/60 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-300 shadow-2xs">
+                    <i class="fas fa-hand-sparkles text-amber-500 text-xs" aria-hidden="true"></i>
+                    <span class="truncate max-w-[200px] lg:max-w-xs">Selamat datang kembali, <strong id="ui-greeting-teacher" class="font-bold text-slate-800 dark:text-white">Guru SIMNI</strong></span>
+                </div>
+
+                <!-- Ikon Bulat Indikator Status Sinkronisasi -->
+                <div
+                    id="sync-status-desktop"
+                    data-simni-action="showSyncStatusInfo"
+                    data-simni-trigger="click"
+                    class="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Status Sinkronisasi (Klik untuk info)"
+                >
+                    <div class="relative flex items-center justify-center w-5 h-5">
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
+                    </div>
+                </div>
+
+                <!-- Toggle Dark Mode -->
+                <button
+                    type="button"
+                    data-shell-action="toggle-theme"
+                    title="Beralih Mode Gelap / Terang"
+                    aria-label="Beralih Mode Gelap / Terang"
+                    class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-xs cursor-pointer shrink-0 shadow-2xs"
+                >
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:inline text-amber-400"></i>
+                </button>
+
+                <!-- Tombol Gerigi Shortcut ke Profil Guru -->
+                <button
+                    type="button"
+                    data-simni-action="goToProfile"
+                    data-simni-trigger="click"
+                    class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 flex items-center justify-center transition-colors border border-slate-200 dark:border-slate-700 text-xs cursor-pointer shrink-0 shadow-2xs"
+                    title="Pengaturan & Profil Guru"
+                    aria-label="Pengaturan & Profil Guru"
+                >
+                    <i class="fas fa-cog"></i>
+                </button>
+
+                <!-- Tombol Logout -->
+                <button
+                    type="button"
+                    data-simni-action="logoutAuth"
+                    data-simni-trigger="click"
+                    class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors border border-red-200/60 dark:border-red-900/40 text-xs cursor-pointer shrink-0 shadow-2xs"
+                    title="Keluar Aplikasi"
+                    aria-label="Keluar Aplikasi"
+                >
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- MOBILE HEADER -->
+        <header
+            class="mobile-shell-header glass-nav md:hidden px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shadow-sm no-print z-10 transition-colors"
+        >
+            <div class="flex items-center gap-2.5">
                 <button
                     type="button"
                     id="btn-menu-drawer"
                     data-simni-action="toggleMenuDrawer"
                     data-simni-trigger="click"
-                    class="md:hidden text-primary text-base p-1.5 bg-indigo-50 dark:bg-primary/20 hover:bg-indigo-100 dark:hover:bg-primary/30 rounded-xl w-8 h-8 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    class="md:hidden text-primary text-base bg-indigo-50 dark:bg-primary/20 hover:bg-indigo-100 dark:hover:bg-primary/30 rounded-xl w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center transition-colors cursor-pointer shrink-0 relative active:scale-95"
                     aria-label="Buka Menu Navigasi"
                     title="Menu"
                 >
@@ -460,10 +643,11 @@
                         class="fas fa-bars text-sm"
                         aria-hidden="true"
                     ></i>
+                    <span id="badge-hamburger-dot" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white dark:ring-black"></span>
                 </button>
 
                 <div
-                    class="mobile-header-brand flex items-center gap-2 ml-0.5"
+                    class="mobile-header-brand flex items-center gap-2.5 ml-0.5"
                 >
                     <div
                         class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-bold shadow-sm overflow-hidden shrink-0"
@@ -474,7 +658,7 @@
 
                     <div class="mobile-app-identity flex items-center gap-1.5">
                         <h1
-                            class="mobile-app-title text-sm font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[120px]"
+                            class="mobile-app-title text-sm font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[140px]"
                             id="ui-mobile-nama-kelas"
                         >
                             SIMNI
@@ -487,7 +671,7 @@
                 class="flex items-center gap-2 ml-auto"
             >
                 <div id="kelas-selector-mobile-container" class="hidden">
-                    <select id="mobile-kelas-select" data-simni-action="setActiveKelas" data-simni-trigger="change" data-simni-argument="value" class="px-2 py-1 bg-slate-100 dark:bg-[#111111] border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary appearance-none">
+                    <select id="mobile-kelas-select" data-simni-action="setActiveKelas" data-simni-trigger="change" data-simni-argument="value" class="px-2.5 py-1.5 min-h-[36px] bg-slate-100 dark:bg-[#111111] border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary appearance-none">
                         <option value="1A">Kelas 1A</option>
                         <option value="1B">Kelas 1B</option>
                         <option value="2A">Kelas 2A</option>
@@ -509,7 +693,7 @@
                         data-shell-action="toggle-theme"
                         title="Beralih Mode Gelap / Terang"
                         aria-label="Beralih Mode Gelap / Terang"
-                        class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-xs shadow-xs cursor-pointer shrink-0"
+                        class="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700 text-xs shadow-xs cursor-pointer shrink-0 active:scale-95"
                     >
                         <i class="fas fa-moon dark:hidden"></i>
                         <i class="fas fa-sun hidden dark:inline text-amber-400"></i>
@@ -559,8 +743,8 @@
         <!-- Drawer Navigation Panel -->
         <nav
             id="mobile-menu-drawer"
-            aria-label="Navigasi utama mobile"
-            class="hidden fixed top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white dark:bg-[#111111] border-r border-slate-200 dark:border-slate-800 shadow-2xl z-[9999] flex flex-col no-print"
+            aria-label="Navigasi utama"
+            class="hidden fixed top-0 left-0 bottom-0 w-72 md:w-80 max-w-[85vw] bg-white dark:bg-[#111111] border-r border-slate-200 dark:border-slate-800 shadow-2xl z-[9999] flex flex-col no-print"
             aria-hidden="true"
         >
             <!-- Drawer Header -->
@@ -662,6 +846,18 @@
                     Jurnal Mengajar
                 </button>
 
+                <button
+                    type="button"
+                    data-simni-action="switchView"
+                    data-simni-trigger="click"
+                    data-simni-args='["btq"]'
+                    data-target="btq"
+                    class="nav-btn-drawer w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-sm font-medium transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1a1f36]"
+                >
+                    <i class="fas fa-quran w-5 text-center text-base text-emerald-500" aria-hidden="true"></i>
+                    Laporan BTQ
+                </button>
+
                 <!-- Section: Aksi Cepat -->
                 <div class="pt-3 pb-1">
                     <p class="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Aksi Cepat</p>
@@ -742,7 +938,10 @@
                     class="nav-btn-drawer w-full flex items-center justify-between px-4 py-3 mb-2 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 rounded-xl text-sm font-bold border border-indigo-100 dark:border-indigo-900"
                 >
                     <span class="flex items-center gap-3"><i class="fas fa-users-cog" aria-hidden="true"></i> Kelola Akun</span>
-                    <i class="fas fa-chevron-right text-xs" aria-hidden="true"></i>
+                    <span class="flex items-center gap-1.5">
+                        <span id="badge-nav-accounts-mobile" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">0</span>
+                        <i class="fas fa-chevron-right text-xs" aria-hidden="true"></i>
+                    </span>
                 </button>
 
                 <button
@@ -877,6 +1076,11 @@
     <!-- ======================================
          NATIVE & PLATFORM SERVICES
          ====================================== -->
+
+    <script
+        src="js/platform/haptics-service.js"
+        defer
+    ></script>
 
     <script
         src="js/platform/download-service.js"

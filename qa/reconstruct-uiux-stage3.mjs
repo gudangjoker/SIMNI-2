@@ -1,4 +1,0 @@
-import{readFile,writeFile}from'node:fs/promises';
-let s=await readFile('features/settings/settings.html','utf8');s=s.replace(/<label([^>]*?)>([^<]+)<\/label>\s*(<(?:input|select|textarea)\b[^>]*\bid="([^"]+)")/g,(m,attrs,text,control,id)=>attrs.includes('for=')?m:'<label'+attrs+' for="'+id+'">'+text+'</label>'+control).replace('id="theme-selector-dropdown"','id="theme-selector-dropdown" aria-label="Tema warna aplikasi"');await writeFile('features/settings/settings.html',s);
-s=await readFile('features/grades/grades.js','utf8');s=s.replace('type="number" min="0" max="100" class="n-scr','type="number" aria-label="Nilai ${nama}" min="0" max="100" class="n-scr');await writeFile('features/grades/grades.js',s);
-s=await readFile('features/gadm/gadm-engine.js','utf8');s=s.replaceAll('<div class="gadm-table-wrap">','<div class="gadm-table-wrap" tabindex="0" role="region" aria-label="Tabel dokumen">');await writeFile('features/gadm/gadm-engine.js',s);

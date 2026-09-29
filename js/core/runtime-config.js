@@ -23,10 +23,10 @@
     const VERSION_MANIFEST =
         Object.freeze({
             appVersion:
-                '4.8.0-rc.1',
+                '4.8.2',
 
             cacheVersion:
-                '4.8.0-rc.1',
+                '4.8.2',
 
             backupSchemaVersion:
                 3,

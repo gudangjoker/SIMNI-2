@@ -56,7 +56,7 @@
         changes.set('X'+(footer+1), report.hijriDate || '');
         if (kind === 'LPS') {
             changes.set('C'+(105+offset), school.nama_kepala_sekolah || '');
-            changes.set('C'+(106+offset), 'NUPTK. '+(school.nuptk_kepala_sekolah || '-'));
+            changes.set('C'+(106+offset), 'NUKS. '+(school.nuks_kepala_sekolah || school.nuptk_kepala_sekolah || school.nip_kepala_sekolah || school.nuks_kamad || school.nip_kamad || '-'));
             changes.set('R'+(105+offset), school.nama_wali_kelas || '');
             changes.set('R'+(106+offset), 'NUPTK. '+(school.nuptk_wali_kelas || '-'));
         } else {

@@ -111,7 +111,7 @@ function gradeProgressForTP(tp) {
 function setNilaiTab(tab) {
     ['input', 'rekap', 'induk'].forEach((name) => {
         const button = document.getElementById(`tab-nilai-${name}`);
-        if (button) button.className = `whitespace-nowrap px-4 py-2 border-b-2 text-sm font-bold ${tab === name ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`;
+        if (button) button.classList.toggle('active', tab === name);
         const panel = document.getElementById(`nilai-tab-${name}`);
         if (panel) panel.classList.toggle('hidden', tab !== name);
     });
@@ -1356,6 +1356,368 @@ async function unduhRekapNilai() {
     }
 }
 
+async function exportTPExcel() {
+    await window.ensureSIMNIVendors?.("xlsx");
+    if (!window.XLSX?.utils) return toast('Pustaka Excel belum siap. Muat ulang saat online.', 'error');
+
+    const normalize = typeof normalizeClassLabel === 'function' ? normalizeClassLabel : (v) => String(v || '').trim();
+    const currentKelas = normalize(typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '');
+    const tps = visibleLearningObjectives().sort((a, b) => 
+        (a.mapel || '').localeCompare(b.mapel || '') || 
+        Number(a.bab || 0) - Number(b.bab || 0) || 
+        (a.kode_tp || '').localeCompare(b.kode_tp || '')
+    );
+
+    if (!tps.length) return toast('Tidak ada Tujuan Pembelajaran untuk diekspor.', 'warning');
+
+    showLoad('Menyiapkan file Excel TP...');
+    try {
+        const rows = tps.map((tp, idx) => ({
+            'No': idx + 1,
+            'Mata Pelajaran': tp.mapel || '',
+            'Bab / Unit': tp.bab ? `Bab ${tp.bab}` : 'Umum',
+            'Kode TP': tp.kode_tp || '',
+            'Semester': tp.semester || '',
+            'Deskripsi Tujuan Pembelajaran': tp.deskripsi_tp || '',
+            'Kelas': tp.kelas || currentKelas || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [
+            { wch: 6 },   // No
+            { wch: 22 },  // Mapel
+            { wch: 12 },  // Bab
+            { wch: 14 },  // Kode
+            { wch: 10 },  // Semester
+            { wch: 50 },  // Deskripsi
+            { wch: 8 }    // Kelas
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const sheetName = currentKelas ? `TP_Kelas_${currentKelas}` : 'Daftar_TP';
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+        const filename = `Daftar_TP_${safeFilename(currentKelas || 'Semua')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        toast(`Berhasil mengekspor ${tps.length} butir TP.`, 'success');
+    } catch (err) {
+        console.error(err);
+        toast(`Gagal mengekspor TP: ${err.message || err}`, 'error');
+    } finally {
+        hideLoad();
+    }
+}
+
+function previewPrintTP() {
+    const normalize = typeof normalizeClassLabel === 'function' ? normalizeClassLabel : (v) => String(v || '').trim();
+    const currentKelas = normalize(typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '');
+    const tps = visibleLearningObjectives().sort((a, b) => 
+        (a.mapel || '').localeCompare(b.mapel || '') || 
+        Number(a.bab || 0) - Number(b.bab || 0) || 
+        (a.kode_tp || '').localeCompare(b.kode_tp || '')
+    );
+
+    if (!tps.length) return toast('Tidak ada data Tujuan Pembelajaran untuk dicetak.', 'warning');
+
+    const area = document.getElementById('area-preview-cetak-tp');
+    if (!area) return;
+
+    const logoUrl = escapeHTML(state?.pengaturan?.logo_url || './icons/school-logo.png');
+    const namaYayasan = escapeHTML(state?.pengaturan?.nama_yayasan || 'YAYASAN SOSIAL DAN PENDIDIKAN BINA MUDA');
+    const jenjangSekolah = escapeHTML(state?.pengaturan?.jenjang_sekolah || 'SEKOLAH DASAR ISLAM TERPADU');
+    const namaSekolah = escapeHTML(state?.pengaturan?.nama_sekolah || 'SDIT BINA MUDA CICALENGKA');
+    const statusAkreditasiRaw = state?.pengaturan?.status_akreditasi || 'A';
+    const statusAkreditasi = escapeHTML(statusAkreditasiRaw.toLowerCase().includes('terakreditasi') ? statusAkreditasiRaw : `Terakreditasi "${statusAkreditasiRaw}"`);
+    const nomorIzinRaw = state?.pengaturan?.nomor_izin || 'No.421.2/1143-Disdikbud/2011';
+    const nomorIzin = escapeHTML(nomorIzinRaw.toLowerCase().includes('ijin') || nomorIzinRaw.toLowerCase().includes('izin') ? nomorIzinRaw : `Ijin Operasional/RPS : ${nomorIzinRaw}`);
+    const kotaSekolah = escapeHTML(state?.pengaturan?.kota || 'Cicalengka');
+    const tahunPelajaran = escapeHTML(state?.pengaturan?.tahun_pelajaran || '2026/2027');
+    const semester = escapeHTML(state?.pengaturan?.semester || '1 (Ganjil)');
+    const namaKelas = escapeHTML(state?.pengaturan?.nama_kelas || currentKelas || 'Semua Kelas');
+    const namaGuru = escapeHTML(state?.pengaturan?.nama_wali_kelas || state?.pengaturan?.nama_guru || state?.user?.displayName || 'Guru Mata Pelajaran');
+    const nuptkGuru = escapeHTML(state?.pengaturan?.nuptk_wali_kelas || state?.pengaturan?.nuptk_guru || state?.pengaturan?.nip_guru || '-');
+    const namaKamad = escapeHTML(state?.pengaturan?.nama_kepala_sekolah || state?.pengaturan?.nama_kamad || 'Kepala SDIT Bina Muda');
+    const nuksKamad = escapeHTML(state?.pengaturan?.nuks_kepala_sekolah || state?.pengaturan?.nuks_kamad || state?.pengaturan?.nip_kamad || '-');
+    const tglCetak = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
+    const rowsHtml = tps.map((tp, idx) => `
+        <tr style="border-bottom: 1px solid #333;">
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${idx + 1}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; font-weight: bold;">${escapeHTML(tp.mapel || '')}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">${escapeHTML(tp.kode_tp || '')}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${tp.bab ? `Bab ${escapeHTML(String(tp.bab))}` : '-'}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${escapeHTML(String(tp.semester || ''))}</td>
+            <td style="border: 1px solid #333; padding: 6px 8px; text-align: left; line-height: 1.4;">${escapeHTML(tp.deskripsi_tp || '')}</td>
+        </tr>
+    `).join('');
+
+    area.innerHTML = `
+        <div style="font-family: 'Times New Roman', serif; color: #111; line-height: 1.3;">
+            <!-- KOP SURAT RESMI IDENTIK LPS / BLP -->
+            <header class="lps-letterhead" style="display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 85px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 16px;">
+                <div class="lps-logo-box" style="display: flex; align-items: center; justify-content: center; width: 75px; height: 75px;">
+                    <img src="${logoUrl}" alt="Logo sekolah" style="display: block; max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div class="lps-school-copy" style="min-width: 0; text-align: center;">
+                    <p style="margin: 0; font-size: 10pt; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${namaYayasan}</p>
+                    <p style="margin: 1px 0 0 0; font-size: 9.5pt; font-weight: 600; text-transform: uppercase;">${jenjangSekolah}</p>
+                    <h1 style="margin: 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 16pt; font-weight: bold; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px;">${namaSekolah}</h1>
+                    <strong style="display: block; margin: 1px 0 0 0; font-size: 9pt; font-weight: bold;">${statusAkreditasi}</strong>
+                    <em style="display: block; margin: 1px 0 0 0; font-size: 8.5pt; font-style: normal; font-weight: 500;">${nomorIzin}</em>
+                </div>
+            </header>
+
+            <!-- JUDUL DOKUMEN -->
+            <div style="text-align: center; margin-bottom: 16px;">
+                <h3 style="font-size: 13pt; font-weight: bold; text-decoration: underline; margin: 0; text-transform: uppercase;">DAFTAR TUJUAN PEMBELAJARAN (TP)</h3>
+                <p style="font-size: 10pt; font-weight: bold; margin: 4px 0 0 0;">Kelas ${namaKelas} — Tahun Pelajaran ${tahunPelajaran} (Semester ${semester})</p>
+            </div>
+
+            <!-- TABEL TP -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 25px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; font-weight: bold; text-transform: uppercase;">
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 35px; text-align: center;">No</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; width: 140px; text-align: left;">Mata Pelajaran</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 90px; text-align: center;">Kode TP</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 60px; text-align: center;">Bab</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 45px; text-align: center;">Smt</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; text-align: left;">Deskripsi Tujuan Pembelajaran</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- TANDA TANGAN -->
+            <div style="display: flex; justify-content: space-between; page-break-inside: avoid; margin-top: 30px; font-size: 10pt;">
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">Mengetahui,</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Kepala SDIT Bina Muda</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaKamad}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUKS. ${nuksKamad}</p>
+                </div>
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">${kotaSekolah}, ${tglCetak}</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Guru Pengampu / Wali Kelas</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaGuru}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUPTK. ${nuptkGuru}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    openModal('modal-preview-cetak-tp');
+}
+
+async function executePrintTPPreview() {
+    await window.ensureSIMNIVendors?.("pdf");
+    const container = document.getElementById('area-preview-cetak-tp');
+    if (!container) return;
+
+    if (typeof html2pdf === 'function') {
+        showLoad('Membuat dokumen PDF TP...');
+        const currentKelas = normalizeClassLabel(state?.activeKelas) || 'Semua';
+        const dateStr = new Date().toISOString().slice(0, 10);
+        try {
+            await html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: `Daftar_TP_${currentKelas}_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(container).save();
+            toast('Dokumen PDF TP berhasil disimpan.', 'success');
+        } catch (err) {
+            console.error(err);
+            window.print();
+        } finally {
+            hideLoad();
+        }
+    } else {
+        window.print();
+    }
+}
+
+function previewPrintRekapNilai() {
+    const mapel = document.getElementById('rekap-mapel-nilai')?.value;
+    if (!mapel) return toast('Pilih mata pelajaran terlebih dahulu.', 'warning');
+
+    const selectedTpId = document.getElementById('rekap-tp-nilai')?.value;
+    const filterNisn = document.getElementById('rekap-siswa-nilai')?.value;
+    const normalize = typeof normalizeClassLabel === 'function' ? normalizeClassLabel : (v) => String(v || '').trim();
+    const currentKelas = normalize(typeof state !== 'undefined' && state.activeKelas ? state.activeKelas : '');
+
+    let targetTPs = visibleLearningObjectives().filter(tp => tp.mapel === mapel);
+    if (selectedTpId) targetTPs = targetTPs.filter(tp => tpId(tp) === selectedTpId);
+    if (!targetTPs.length) return toast('Tidak ada TP untuk mata pelajaran yang dipilih.', 'warning');
+
+    let students = (state.students || []).filter(s => {
+        const k = normalize(s.Kelas);
+        return !currentKelas || !k || k === currentKelas;
+    });
+    if (filterNisn) students = students.filter(s => String(s.NISN || '').trim() === filterNisn);
+    students.sort((a, b) => (a['Nama Lengkap'] || '').localeCompare(b['Nama Lengkap'] || ''));
+
+    if (!students.length) return toast('Tidak ada data siswa untuk dicetak.', 'warning');
+
+    const area = document.getElementById('area-preview-cetak-rekap-nilai');
+    if (!area) return;
+
+    const logoUrl = escapeHTML(state?.pengaturan?.logo_url || './icons/school-logo.png');
+    const namaYayasan = escapeHTML(state?.pengaturan?.nama_yayasan || 'YAYASAN SOSIAL DAN PENDIDIKAN BINA MUDA');
+    const jenjangSekolah = escapeHTML(state?.pengaturan?.jenjang_sekolah || 'SEKOLAH DASAR ISLAM TERPADU');
+    const namaSekolah = escapeHTML(state?.pengaturan?.nama_sekolah || 'SDIT BINA MUDA CICALENGKA');
+    const statusAkreditasiRaw = state?.pengaturan?.status_akreditasi || 'A';
+    const statusAkreditasi = escapeHTML(statusAkreditasiRaw.toLowerCase().includes('terakreditasi') ? statusAkreditasiRaw : `Terakreditasi "${statusAkreditasiRaw}"`);
+    const nomorIzinRaw = state?.pengaturan?.nomor_izin || 'No.421.2/1143-Disdikbud/2011';
+    const nomorIzin = escapeHTML(nomorIzinRaw.toLowerCase().includes('ijin') || nomorIzinRaw.toLowerCase().includes('izin') ? nomorIzinRaw : `Ijin Operasional/RPS : ${nomorIzinRaw}`);
+    const kotaSekolah = escapeHTML(state?.pengaturan?.kota || 'Cicalengka');
+    const tahunPelajaran = escapeHTML(state?.pengaturan?.tahun_pelajaran || '2026/2027');
+    const semester = escapeHTML(state?.pengaturan?.semester || '1 (Ganjil)');
+    const namaKelas = escapeHTML(state?.pengaturan?.nama_kelas || currentKelas || 'Semua Kelas');
+    const namaGuru = escapeHTML(state?.pengaturan?.nama_wali_kelas || state?.pengaturan?.nama_guru || state?.user?.displayName || 'Guru Pengampu');
+    const nuptkGuru = escapeHTML(state?.pengaturan?.nuptk_wali_kelas || state?.pengaturan?.nuptk_guru || state?.pengaturan?.nip_guru || '-');
+    const namaKamad = escapeHTML(state?.pengaturan?.nama_kepala_sekolah || state?.pengaturan?.nama_kamad || 'Kepala SDIT Bina Muda');
+    const nuksKamad = escapeHTML(state?.pengaturan?.nuks_kepala_sekolah || state?.pengaturan?.nuks_kamad || state?.pengaturan?.nip_kamad || '-');
+    const tglCetak = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
+    const activeTP = selectedTpId ? targetTPs[0] : null;
+    const tpSubtitle = activeTP ? `Kode TP: ${escapeHTML(activeTP.kode_tp || '')} - ${escapeHTML(activeTP.deskripsi_tp || '')}` : 'Semua Tujuan Pembelajaran';
+
+    // Statistik nilai
+    const scores = [];
+    let rowsHtml = '';
+    let no = 1;
+
+    students.forEach((student) => {
+        targetTPs.forEach((tp) => {
+            const grade = gradeForStudentTP(student, tp);
+            const score = (grade && academicScore(grade.nilai) !== null) ? Number(grade.nilai) : null;
+            if (score !== null) scores.push(score);
+
+            const scoreDisplay = score !== null ? score : '-';
+            const statusDisplay = score === null ? 'Belum Dinilai' : (score >= 75 ? '<span style="color:#059669; font-weight:bold;">Tuntas</span>' : '<span style="color:#d97706; font-weight:bold;">Perlu Bimbingan</span>');
+
+            rowsHtml += `
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${no++}</td>
+                    <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; font-family: monospace;">${escapeHTML(String(student.NISN || '-'))}</td>
+                    <td style="border: 1px solid #333; padding: 6px 8px; font-weight: bold;">${escapeHTML(student['Nama Lengkap'] || '')}</td>
+                    <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${escapeHTML(tp.kode_tp || '')}</td>
+                    <td style="border: 1px solid #333; padding: 6px 8px; text-align: center; font-weight: bold; font-size: 11pt;">${scoreDisplay}</td>
+                    <td style="border: 1px solid #333; padding: 6px 8px; text-align: center;">${statusDisplay}</td>
+                </tr>
+            `;
+        });
+    });
+
+    const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
+    const maxScore = scores.length ? Math.max(...scores) : '-';
+    const minScore = scores.length ? Math.min(...scores) : '-';
+
+    area.innerHTML = `
+        <div style="font-family: 'Times New Roman', serif; color: #111; line-height: 1.3;">
+            <!-- KOP SURAT RESMI IDENTIK LPS / BLP -->
+            <header class="lps-letterhead" style="display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 85px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 16px;">
+                <div class="lps-logo-box" style="display: flex; align-items: center; justify-content: center; width: 75px; height: 75px;">
+                    <img src="${logoUrl}" alt="Logo sekolah" style="display: block; max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div class="lps-school-copy" style="min-width: 0; text-align: center;">
+                    <p style="margin: 0; font-size: 10pt; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${namaYayasan}</p>
+                    <p style="margin: 1px 0 0 0; font-size: 9.5pt; font-weight: 600; text-transform: uppercase;">${jenjangSekolah}</p>
+                    <h1 style="margin: 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 16pt; font-weight: bold; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.5px;">${namaSekolah}</h1>
+                    <strong style="display: block; margin: 1px 0 0 0; font-size: 9pt; font-weight: bold;">${statusAkreditasi}</strong>
+                    <em style="display: block; margin: 1px 0 0 0; font-size: 8.5pt; font-style: normal; font-weight: 500;">${nomorIzin}</em>
+                </div>
+            </header>
+
+            <!-- JUDUL REKAP -->
+            <div style="text-align: center; margin-bottom: 14px;">
+                <h3 style="font-size: 13pt; font-weight: bold; text-decoration: underline; margin: 0; text-transform: uppercase;">REKAPITULASI NILAI AKADEMIK</h3>
+                <p style="font-size: 10.5pt; font-weight: bold; margin: 4px 0 0 0;">Mata Pelajaran: ${escapeHTML(mapel)} | Kelas: ${namaKelas}</p>
+                <p style="font-size: 9.5pt; margin: 2px 0 0 0; color: #333;">${tpSubtitle}</p>
+                <p style="font-size: 9pt; font-weight: bold; margin: 2px 0 0 0;">Tahun Pelajaran ${tahunPelajaran} (Semester ${semester})</p>
+            </div>
+
+            <!-- STATISTIK RINGKAS -->
+            <div style="display: flex; justify-content: space-around; background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 12px; margin-bottom: 16px; border-radius: 6px; font-size: 9.5pt;">
+                <div>Total Siswa: <strong>${students.length}</strong></div>
+                <div>Sudah Dinilai: <strong>${scores.length}</strong></div>
+                <div>Rata-rata: <strong>${avgScore}</strong></div>
+                <div>Tertinggi: <strong>${maxScore}</strong></div>
+                <div>Terendah: <strong>${minScore}</strong></div>
+            </div>
+
+            <!-- TABEL NILAI -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 25px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; font-weight: bold; text-transform: uppercase;">
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 35px; text-align: center;">No</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 110px; text-align: center;">NISN</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; text-align: left;">Nama Lengkap Siswa</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 80px; text-align: center;">Kode TP</th>
+                        <th style="border: 1px solid #000; padding: 8px 6px; width: 70px; text-align: center;">Nilai</th>
+                        <th style="border: 1px solid #000; padding: 8px 8px; width: 120px; text-align: center;">Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <!-- TANDA TANGAN -->
+            <div style="display: flex; justify-content: space-between; page-break-inside: avoid; margin-top: 30px; font-size: 10pt;">
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">Mengetahui,</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Kepala SDIT Bina Muda</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaKamad}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUKS. ${nuksKamad}</p>
+                </div>
+                <div style="text-align: center; width: 220px;">
+                    <p style="margin: 0;">${kotaSekolah}, ${tglCetak}</p>
+                    <p style="font-weight: bold; margin: 0 0 55px 0;">Guru Mata Pelajaran</p>
+                    <p style="font-weight: bold; text-decoration: underline; margin: 0;">${namaGuru}</p>
+                    <p style="margin: 0; font-size: 9pt;">NUPTK. ${nuptkGuru}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    openModal('modal-preview-cetak-rekap-nilai');
+}
+
+async function executePrintRekapNilaiPreview() {
+    await window.ensureSIMNIVendors?.("pdf");
+    const container = document.getElementById('area-preview-cetak-rekap-nilai');
+    if (!container) return;
+
+    if (typeof html2pdf === 'function') {
+        showLoad('Membuat dokumen PDF Rekap Nilai...');
+        const mapel = document.getElementById('rekap-mapel-nilai')?.value || 'Nilai';
+        const currentKelas = normalizeClassLabel(state?.activeKelas) || 'Semua';
+        const dateStr = new Date().toISOString().slice(0, 10);
+        try {
+            await html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: `Rekap_Nilai_${safeFilename(mapel)}_${currentKelas}_${dateStr}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(container).save();
+            toast('Dokumen PDF Rekap Nilai berhasil disimpan.', 'success');
+        } catch (err) {
+            console.error(err);
+            window.print();
+        } finally {
+            hideLoad();
+        }
+    } else {
+        window.print();
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.openEditTPModal = openEditTPModal;
     window.submitEditTP = submitEditTP;
@@ -1382,4 +1744,9 @@ if (typeof window !== 'undefined') {
     window.populateIndukDropdown = populateIndukDropdown;
     window.renderBukuInduk = renderBukuInduk;
     window.cetakBukuInduk = cetakBukuInduk;
+    window.exportTPExcel = exportTPExcel;
+    window.previewPrintTP = previewPrintTP;
+    window.executePrintTPPreview = executePrintTPPreview;
+    window.previewPrintRekapNilai = previewPrintRekapNilai;
+    window.executePrintRekapNilaiPreview = executePrintRekapNilaiPreview;
 }

@@ -1,112 +1,307 @@
-<!-- SIMNI PWA modular fragment: students -->
-
 <template data-simni-view>
-<div id="view-siswa" class="view-section hidden" hidden>
-                <div class="flex flex-col mb-6">
-                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Data Siswa</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">Kelola data tunggal atau impor massal dari Excel.</p>
-                    
-                    <div class="flex flex-col gap-3 w-full">
-                        <div class="relative w-full">
-                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" id="search-siswa" data-simni-action="renderSiswaList" data-simni-trigger="keyup" placeholder="Cari NISN atau Nama Siswa dengan cepat..." class="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm font-medium text-slate-800 dark:text-slate-200 transition-colors">
-                        </div>
-                        <div class="simni-student-actions flex flex-wrap gap-2 w-full justify-between">
-                            <button data-simni-action="generatePrintQR" data-simni-trigger="click" class="flex-1 md:flex-none px-4 py-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-[#222222] transition-colors"><i class="fas fa-qrcode"></i> Cetak QR</button>
-
-                            <button data-simni-action="exportSiswaExcel" data-simni-trigger="click" class="flex-1 md:flex-none px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 transition-colors"><i class="fas fa-file-export"></i> Unduh Data Siswa</button>
-                            
-                            <div class="simni-student-template-controls flex flex-1 md:flex-none min-w-[250px] gap-2">
-                                <label class="sr-only" for="student-import-template">Jenis template impor siswa</label>
-                                <select id="student-import-template" aria-label="Template impor siswa" data-simni-action="updateStudentTemplateLink" data-simni-trigger="change" class="min-w-0 flex-1 px-3 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 rounded-xl text-xs md:text-sm font-bold">
-                                    <option value="one">Template 1 kelas</option>
-                                    <option value="multi">Template 12 kelas</option>
-                                </select>
-                                <a id="student-import-template-download" href="templates/Template_Data_Siswa_1_Kelas.xlsx" download class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2" aria-label="Unduh template impor siswa"><i class="fas fa-download"></i><span>Unduh</span></a>
-                            </div>
-                            
-                            <label class="flex-1 md:flex-none px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"><i class="fas fa-file-excel"></i> Impor<input type="file" class="hidden" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel" data-simni-action="importSiswaExcel" data-simni-trigger="change" data-simni-argument="event"></label>
-                            
-                            <button data-simni-action="openAddSiswaModal" data-simni-trigger="click" class="flex-1 md:flex-none px-4 py-3 bg-primary hover:bg-indigo-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-sm flex items-center justify-center gap-2 transition-colors"><i class="fas fa-user-plus"></i> Tambah</button>
-                        </div>
-                    </div>
+<div id="view-siswa" class="view-section hidden max-w-7xl mx-auto space-y-6 fade-in pb-16" hidden>
+    <!-- Header & Action Center -->
+    <div class="bg-white dark:bg-[#111113] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-5">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center text-lg shrink-0">
+                    <i class="fas fa-user-graduate" aria-hidden="true"></i>
                 </div>
-                <div id="siswa-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Data Siswa</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Kelola identitas tunggal, pencetakan QR presensi, atau impor data massal.</p>
+                </div>
             </div>
+
+            <!-- Primary Action Button: Tambah Siswa -->
+            <button data-simni-action="openAddSiswaModal" data-simni-trigger="click" class="h-10 px-4 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-2xs hover:shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shrink-0 w-full md:w-auto">
+                <i class="fas fa-user-plus text-xs"></i>
+                <span>Tambah Siswa</span>
+            </button>
+        </div>
+
+        <!-- Filter & Utility Toolbar -->
+        <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80">
+            <!-- Search Bar -->
+            <div class="simni-search-box flex-1 min-w-[260px]">
+                <i class="fas fa-search simni-search-icon" aria-hidden="true"></i>
+                <input type="text" id="search-siswa" data-simni-action="renderSiswaList" data-simni-trigger="keyup" placeholder="Cari NISN atau Nama Siswa..." class="simni-search-input">
+            </div>
+
+            <!-- Action Chips Group (Harmonized Enterprise Toolbar) -->
+            <div class="simni-student-actions flex flex-wrap items-center gap-2">
+                <button data-simni-action="toggleStudentSelectMode" data-simni-trigger="click" id="btn-toggle-select-siswa" class="simni-btn-secondary">
+                    <i class="fas fa-check-square text-xs text-primary"></i>
+                    <span id="label-toggle-select-siswa">Pilih Massal</span>
+                </button>
+
+                <button data-simni-action="previewPrintSiswa" data-simni-trigger="click" class="simni-btn-secondary">
+                    <i class="fas fa-print text-xs text-slate-400"></i>
+                    <span>Pratinjau Cetak</span>
+                </button>
+
+                <button data-simni-action="generatePrintQR" data-simni-trigger="click" class="simni-btn-secondary">
+                    <i class="fas fa-qrcode text-xs text-primary"></i>
+                    <span>Cetak QR</span>
+                </button>
+
+                <button data-simni-action="exportSiswaExcel" data-simni-trigger="click" class="simni-btn-secondary">
+                    <i class="fas fa-file-export text-xs text-amber-600 dark:text-amber-400"></i>
+                    <span>Unduh Excel</span>
+                </button>
+
+                <!-- Template Selector & Download -->
+                <div class="simni-student-template-controls flex items-center gap-1 bg-slate-50 dark:bg-[#18181b] border border-slate-200/80 dark:border-slate-700/80 p-1 rounded-xl h-10">
+                    <label class="sr-only" for="student-import-template">Jenis template impor siswa</label>
+                    <select id="student-import-template" aria-label="Template impor siswa" data-simni-action="updateStudentTemplateLink" data-simni-trigger="change" class="h-8 px-2 bg-transparent text-slate-700 dark:text-slate-300 text-xs font-bold focus:outline-none cursor-pointer">
+                        <option value="one">Template 1 Kelas</option>
+                        <option value="multi">Template 12 Kelas</option>
+                    </select>
+                    <a id="student-import-template-download" href="templates/Template_Data_Siswa_1_Kelas.xlsx" download class="h-8 px-2.5 bg-primary hover:bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs" aria-label="Unduh template impor siswa">
+                        <i class="fas fa-download text-[10px]"></i>
+                        <span>Unduh</span>
+                    </a>
+                </div>
+
+                <!-- Impor Button -->
+                <label class="simni-btn-secondary cursor-pointer">
+                    <i class="fas fa-file-excel text-xs text-emerald-600 dark:text-emerald-400"></i>
+                    <span>Impor</span>
+                    <input type="file" class="hidden" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel" data-simni-action="importSiswaExcel" data-simni-trigger="change" data-simni-argument="event">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Cards Grid -->
+    <div id="siswa-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <!-- Floating Batch Action Bar for Students -->
+    <div id="student-batch-bar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 dark:bg-[#111113]/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2 md:gap-3 transition-all duration-300 transform translate-y-28 opacity-0 pointer-events-none border border-slate-700/50 dark:border-slate-800 max-w-[95vw] overflow-x-auto hide-scrollbar">
+        <span id="student-batch-count" class="text-xs font-extrabold bg-primary px-3 py-1 rounded-full whitespace-nowrap shadow-xs">0 dipilih</span>
+        <button type="button" data-simni-action="toggleSelectAllStudents" data-simni-trigger="click" id="btn-batch-select-all" class="h-8 px-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold text-slate-200 whitespace-nowrap cursor-pointer transition-colors">Pilih Semua</button>
+        <button type="button" data-simni-action="openBatchChangeClassModal" data-simni-trigger="click" class="h-8 px-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-bold text-white whitespace-nowrap cursor-pointer transition-colors flex items-center gap-1"><i class="fas fa-school text-xs"></i> Kelas</button>
+        <button type="button" data-simni-action="openBatchChangeKelompokModal" data-simni-trigger="click" class="h-8 px-3 bg-amber-600 hover:bg-amber-500 rounded-xl text-xs font-bold text-white whitespace-nowrap cursor-pointer transition-colors flex items-center gap-1"><i class="fas fa-users text-xs"></i> Kelompok</button>
+        <button type="button" data-simni-action="deleteBatchStudents" data-simni-trigger="click" class="h-8 px-3 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold text-white whitespace-nowrap cursor-pointer transition-colors flex items-center gap-1"><i class="fas fa-trash text-xs"></i> Hapus</button>
+        <button type="button" data-simni-action="clearStudentSelection" data-simni-trigger="click" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer" aria-label="Batal pemilihan"><i class="fas fa-times text-sm"></i></button>
+    </div>
+</div>
 </template>
 
 <template data-simni-modal>
-<div id="modal-form-siswa" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-transform duration-300 border border-slate-100 dark:border-slate-800">
-            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]"><h3 id="modal-form-siswa-title" class="font-bold text-lg dark:text-white">Tambah Siswa</h3><button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button></div>
-            <form id="form-add-siswa" data-simni-action="submitSiswa" data-simni-trigger="submit" data-simni-argument="event" class="p-5 space-y-4">
+    <!-- MODAL FORM TAMBAH / EDIT SISWA -->
+    <div id="modal-form-siswa" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-200/80 dark:border-slate-800 flex flex-col max-h-[92vh]">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <h3 id="modal-form-siswa-title" class="font-bold text-base text-slate-900 dark:text-white">Tambah Siswa</h3>
+                </div>
+                <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer text-xs"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-add-siswa" data-simni-action="submitSiswa" data-simni-trigger="submit" data-simni-argument="event" class="p-5 sm:p-6 space-y-4 overflow-y-auto hide-scrollbar">
                 <input type="hidden" id="input-old-nisn">
                 <input type="hidden" id="input-foto-public-id">
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-nisn">NISN</label><input type="text" id="input-nisn" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-nama">Nama Lengkap</label><input type="text" id="input-nama" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-panggilan">Nama Panggilan</label><input type="text" id="input-panggilan" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm"></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-kelas">Kelas</label><select id="input-kelas" required class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm font-bold text-primary"><option value="">-- Pilih Kelas --</option><option value="1A">1A</option><option value="1B">1B</option><option value="2A">2A</option><option value="2B">2B</option><option value="3A">3A</option><option value="3B">3B</option><option value="4A">4A</option><option value="4B">4B</option><option value="5A">5A</option><option value="5B">5B</option><option value="6A">6A</option><option value="6B">6B</option></select></div>
-                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-kelompok">Kelompok BTQ</label><select id="input-kelompok" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm font-bold text-amber-600"><option value="">-- Belum Diatur --</option><option value="Kelompok 1">Kelompok 1</option><option value="Kelompok 2">Kelompok 2</option><option value="Kelompok 3">Kelompok 3</option></select></div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Foto Siswa (Cloudinary / URL)</label>
-                    <div class="flex gap-2 items-center mb-2">
-                        <label class="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-primary dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center gap-1.5">
-                            <i class="fas fa-cloud-upload-alt"></i> Unggah ke Cloudinary
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-nisn">NISN (10 Digit Angka)</label>
+                    <input type="text" id="input-nisn" required maxlength="10" placeholder="Contoh: 0012345678" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-nama">Nama Lengkap</label>
+                    <input type="text" id="input-nama" required placeholder="Nama lengkap sesuai akta / rapor" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-panggilan">Nama Panggilan</label>
+                    <input type="text" id="input-panggilan" required placeholder="Nama panggilan harian di kelas" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-kelas">Kelas</label>
+                        <select id="input-kelas" required class="w-full h-11 px-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                            <option value="">-- Pilih Kelas --</option>
+                            <option value="1A">1A</option><option value="1B">1B</option>
+                            <option value="2A">2A</option><option value="2B">2B</option>
+                            <option value="3A">3A</option><option value="3B">3B</option>
+                            <option value="4A">4A</option><option value="4B">4B</option>
+                            <option value="5A">5A</option><option value="5B">5B</option>
+                            <option value="6A">6A</option><option value="6B">6B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-kelompok">Kelompok BTQ</label>
+                        <select id="input-kelompok" class="w-full h-11 px-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-bold text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                            <option value="">-- Belum Diatur --</option>
+                            <option value="Kelompok 1">Kelompok 1</option>
+                            <option value="Kelompok 2">Kelompok 2</option>
+                            <option value="Kelompok 3">Kelompok 3</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Foto Siswa</label>
+                    <div class="flex items-center gap-2 mb-2">
+                        <label class="h-9 px-3 bg-indigo-50/80 dark:bg-indigo-950/40 text-primary dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/50 rounded-xl text-xs font-bold cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center gap-1.5 shrink-0 shadow-2xs">
+                            <i class="fas fa-cloud-upload-alt text-xs"></i>
+                            <span>Unggah Foto</span>
                             <input type="file" id="input-foto-file" accept="image/png,image/jpeg,image/webp" class="hidden" data-simni-action="uploadStudentPhotoAction" data-simni-trigger="change" data-simni-argument="event">
                         </label>
                         <span id="foto-upload-status" class="text-xs text-slate-400 font-medium truncate"></span>
                     </div>
-                    <input type="url" id="input-foto" placeholder="URL foto https://res.cloudinary.com/..." class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border dark:border-slate-800 rounded-xl text-sm">
+                    <input type="url" id="input-foto" placeholder="Atau tempel URL foto (https://...)" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                 </div>
-                <div class="pt-4 flex gap-3"><button aria-label="Tutup dialog" type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="flex-1 py-2 bg-slate-100 dark:bg-[#000000] border dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold">Batal</button><button type="submit" class="flex-1 py-2 bg-primary text-white rounded-xl font-bold">Simpan Data</button></div>
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2.5">
+                    <button aria-label="Tutup dialog" type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-form-siswa"]' class="h-10 px-4 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer">Batal</button>
+                    <button type="submit" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95">Simpan Data</button>
+                </div>
             </form>
         </div>
     </div>
-<div id="modal-profil-siswa" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="bg-white dark:bg-[#111111] rounded-3xl shadow-xl w-full max-w-sm overflow-hidden relative max-h-[90vh] flex flex-col border border-slate-100 dark:border-slate-800">
-            <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-profil-siswa"]' class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/50 text-slate-800 hover:bg-white z-10"><i class="fas fa-times"></i></button>
+
+    <!-- MODAL PROFIL SISWA & QR -->
+    <div id="modal-profil-siswa" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10000] hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden relative max-h-[92vh] flex flex-col border border-slate-200/80 dark:border-slate-800">
+            <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-profil-siswa"]' class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center z-10 transition-colors cursor-pointer text-xs"><i class="fas fa-times"></i></button>
             <div class="overflow-y-auto hide-scrollbar">
-                <div class="h-24 shrink-0 bg-gradient-to-r from-primary to-indigo-400"></div>
+                <div class="h-28 shrink-0 bg-gradient-to-r from-primary via-indigo-600 to-indigo-400 relative"></div>
                 <div class="px-6 pb-6 pt-0 flex flex-col items-center relative">
-                    <img id="profil-foto" src="./icons/simni-logo.png" class="w-24 h-24 rounded-full border-4 border-white shadow-md -mt-12 mb-3 object-cover bg-white">
-                    <h3 id="profil-nama" class="font-bold text-xl text-slate-800 dark:text-white text-center leading-tight">Nama</h3>
-                    <p id="profil-nisn" class="text-sm text-slate-500 font-bold mb-4">NISN: 0</p>
-                    <div class="bg-slate-50 dark:bg-[#000000] p-4 rounded-2xl w-full flex flex-col items-center mb-4 border dark:border-slate-800"><p class="text-xs font-bold text-slate-400 uppercase mb-2">QR Presensi</p><div id="profil-qr" class="bg-white p-2 rounded-xl shadow-sm border mb-2"></div></div>
-                    <div class="grid grid-cols-2 gap-3 w-full mb-3">
-                        <button data-simni-action="jumpToPresensi" data-simni-trigger="click" class="py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border dark:border-emerald-800/50 rounded-xl font-bold text-sm"><i class="fas fa-calendar-check mr-1"></i> Kehadiran</button>
-                        <button data-simni-action="jumpToBukuInduk" data-simni-trigger="click" class="py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border dark:border-indigo-800/50 rounded-xl font-bold text-sm"><i class="fas fa-book mr-1"></i> Buku Induk</button>
+                    <img id="profil-foto" src="./icons/simni-logo.png" class="w-24 h-24 rounded-full border-4 border-white dark:border-[#111113] shadow-md -mt-12 mb-3 object-cover bg-white">
+                    <h3 id="profil-nama" class="font-bold text-lg text-slate-900 dark:text-white text-center leading-tight">Nama Siswa</h3>
+                    <p id="profil-nisn" class="text-xs text-slate-500 dark:text-slate-400 font-bold mb-4">NISN: 0</p>
+                    
+                    <div class="bg-slate-50 dark:bg-[#161618] p-4 rounded-2xl w-full flex flex-col items-center mb-4 border border-slate-200/60 dark:border-slate-800">
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">QR Presensi Cepat</p>
+                        <div id="profil-qr" class="bg-white p-3 rounded-2xl shadow-2xs border border-slate-200 mb-1"></div>
                     </div>
-                    <div class="flex flex-col gap-2 w-full mt-2 border-t dark:border-slate-800 pt-4">
-                        <button data-simni-action="editSiswa" data-simni-trigger="click" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-sm transition-colors"><i class="fas fa-user-edit mr-1"></i> Edit Data Siswa</button>
-                        <button data-simni-action="hapusSiswaPaten" data-simni-trigger="click" class="w-full py-2 bg-slate-100 dark:bg-[#000000] text-red-600 rounded-xl font-bold text-sm border dark:border-slate-800 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"><i class="fas fa-trash mr-1"></i> Hapus Permanen</button>
+
+                    <div class="grid grid-cols-2 gap-2.5 w-full mb-3">
+                        <button data-simni-action="jumpToPresensi" data-simni-trigger="click" class="h-10 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/50 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                            <i class="fas fa-calendar-check text-xs"></i>
+                            <span>Kehadiran</span>
+                        </button>
+                        <button data-simni-action="jumpToBukuInduk" data-simni-trigger="click" class="h-10 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-400 border border-indigo-200/70 dark:border-indigo-800/50 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                            <i class="fas fa-book text-xs"></i>
+                            <span>Buku Induk</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col gap-2 w-full mt-1 border-t border-slate-100 dark:border-slate-800 pt-3">
+                        <button data-simni-action="editSiswa" data-simni-trigger="click" class="h-10 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95">
+                            <i class="fas fa-user-edit text-xs"></i>
+                            <span>Edit Profil Siswa</span>
+                        </button>
+                        <button data-simni-action="hapusSiswaPaten" data-simni-trigger="click" class="h-10 bg-slate-50 dark:bg-[#161618] text-rose-600 dark:text-rose-400 rounded-xl font-bold text-xs border border-rose-200/70 dark:border-rose-900/40 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                            <i class="fas fa-trash text-xs"></i>
+                            <span>Hapus Permanen</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="modal-preview-siswa-import" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10010] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="siswa-import-panel bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden border border-slate-100 dark:border-slate-800">
-            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]">
-                <h3 class="font-bold text-lg dark:text-white">Pratinjau Impor Siswa</h3>
-                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200 cursor-pointer"><i class="fas fa-times"></i></button>
+    <!-- MODAL PRATINJAU IMPOR SISWA -->
+    <div id="modal-preview-siswa-import" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10010] hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="siswa-import-panel bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col max-h-[92vh]">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-sm">
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Pratinjau Impor Siswa</h3>
+                </div>
+                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer text-xs"><i class="fas fa-times"></i></button>
             </div>
-            <div class="siswa-import-scroll p-5">
+            <div class="siswa-import-scroll p-5 sm:p-6 overflow-y-auto">
                 <div id="preview-siswa-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-                <div id="preview-siswa-errors" class="text-red-500 text-xs font-bold mb-4"></div>
-                <div class="overflow-x-auto border dark:border-slate-800 rounded-xl">
+                <div id="preview-siswa-errors" class="text-rose-500 text-xs font-bold mb-4"></div>
+                <div class="overflow-x-auto border border-slate-200/80 dark:border-slate-800 rounded-xl">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 dark:bg-[#000000] text-slate-500 text-xs uppercase">
-                            <tr><th class="p-2">NISN</th><th class="p-2">Nama</th><th class="p-2">Kelas</th><th class="p-2">Status</th></tr>
+                        <thead class="bg-slate-50 dark:bg-[#161618] text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                            <tr><th class="p-3">NISN</th><th class="p-3">Nama Lengkap</th><th class="p-3">Kelas</th><th class="p-3">Status</th></tr>
                         </thead>
-                        <tbody id="preview-siswa-body" class="text-sm divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                        <tbody id="preview-siswa-body" class="text-xs sm:text-sm divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300"></tbody>
                     </table>
                 </div>
             </div>
-            <div class="p-4 border-t dark:border-slate-800 bg-slate-50 dark:bg-[#000000] flex justify-end gap-2">
-                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm cursor-pointer">Batal</button>
-                <button type="button" data-simni-action="commitSiswaImport" data-simni-trigger="click" id="btn-commit-siswa-import" class="px-4 py-2 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Simpan Data</button>
+            <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#141416]/50 flex justify-end gap-2.5">
+                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-siswa-import"]' class="h-10 px-4 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition-all cursor-pointer">Batal</button>
+                <button type="button" data-simni-action="commitSiswaImport" data-simni-trigger="click" id="btn-commit-siswa-import" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white font-bold rounded-xl text-xs shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">Simpan Data</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRATINJAU CETAK SISWA -->
+    <div id="modal-preview-cetak-siswa" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10010] hidden flex-col items-center justify-center p-2 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden border border-slate-200/80 dark:border-slate-800">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Pratinjau Cetak Data Siswa</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-simni-action="executePrintSiswaPreview" data-simni-trigger="click" class="h-9 px-4 bg-primary hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95">
+                        <i class="fas fa-file-pdf text-xs"></i><span>Cetak / Simpan PDF</span>
+                    </button>
+                    <button type="button" aria-label="Tutup pratinjau cetak" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-cetak-siswa"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 cursor-pointer text-xs">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-100 dark:bg-[#0b0f19]">
+                <div id="area-preview-cetak-siswa" class="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 max-w-[210mm] mx-auto min-h-[297mm]">
+                    <!-- Konten dinamis di-render oleh previewPrintSiswa() -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BATCH UPDATE SISWA (Kelas / Kelompok) -->
+    <div id="modal-batch-update-siswa" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10020] hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-sm">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3 id="modal-batch-update-title" class="font-bold text-base text-slate-900 dark:text-white">Ubah Data Massal</h3>
+                </div>
+                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-batch-update-siswa"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer text-xs"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-batch-update-siswa" data-simni-action="commitBatchUpdateStudents" data-simni-trigger="submit" data-simni-argument="event" class="p-5 sm:p-6 space-y-4">
+                <input type="hidden" id="batch-update-mode" value="kelas">
+                <div class="bg-indigo-50/80 dark:bg-indigo-950/30 p-3.5 rounded-xl border border-indigo-200/70 dark:border-indigo-800/50 text-xs text-indigo-700 dark:text-indigo-300 font-medium leading-relaxed">
+                    Aksi ini akan diterapkan pada <strong id="batch-update-count-info" class="font-bold">0</strong> siswa yang dipilih.
+                </div>
+                <div id="batch-field-kelas">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-batch-kelas">Pilih Kelas Baru</label>
+                    <select id="input-batch-kelas" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        <option value="">-- Pilih Kelas --</option>
+                        <option value="1A">1A</option><option value="1B">1B</option>
+                        <option value="2A">2A</option><option value="2B">2B</option>
+                        <option value="3A">3A</option><option value="3B">3B</option>
+                        <option value="4A">4A</option><option value="4B">4B</option>
+                        <option value="5A">5A</option><option value="5B">5B</option>
+                        <option value="6A">6A</option><option value="6B">6B</option>
+                    </select>
+                </div>
+                <div id="batch-field-kelompok" class="hidden">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5" for="input-batch-kelompok">Pilih Kelompok BTQ Baru</label>
+                    <select id="input-batch-kelompok" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-bold text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        <option value="">-- Belum Diatur --</option>
+                        <option value="Kelompok 1">Kelompok 1</option>
+                        <option value="Kelompok 2">Kelompok 2</option>
+                        <option value="Kelompok 3">Kelompok 3</option>
+                    </select>
+                </div>
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end gap-2.5">
+                    <button type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-batch-update-siswa"]' class="h-10 px-4 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer">Batal</button>
+                    <button type="submit" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95">Terapkan Perubahan</button>
+                </div>
+            </form>
         </div>
     </div>
 </template>

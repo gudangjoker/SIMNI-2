@@ -64,14 +64,14 @@ function renderCatatanList() {
         const empty = document.createElement('div'); empty.className = 'col-span-full text-center p-6 text-slate-400'; empty.textContent = 'Tidak ada catatan untuk siswa ini.'; grid.appendChild(empty); return;
     }
     filtered.forEach((item) => {
-        const card = document.createElement('div'); card.className = 'bg-white dark:bg-[#111111] p-5 border border-slate-200 dark:border-slate-800 rounded-xl relative group shadow-sm';
-        const head = document.createElement('div'); head.className = 'flex justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3';
+        const card = document.createElement('div'); card.className = 'bg-white dark:bg-[#111113] p-5 border border-slate-200/80 dark:border-slate-800 rounded-2xl relative group shadow-2xs hover:shadow-md transition-all duration-200';
+        const head = document.createElement('div'); head.className = 'flex justify-between items-start border-b border-slate-100 dark:border-slate-800/80 pb-3 mb-3';
         const meta = document.createElement('div');
-        const date = document.createElement('span'); date.className = 'text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded tracking-widest'; date.textContent = normalizeDate(item.Tanggal);
-        const name = document.createElement('h4'); name.className = 'font-bold text-sm mt-2 text-slate-800 dark:text-slate-200'; name.textContent = item.Nama || '';
+        const date = document.createElement('span'); date.className = 'text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-primary dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40 px-2 py-0.5 rounded-md tracking-wider'; date.textContent = normalizeDate(item.Tanggal);
+        const name = document.createElement('h4'); name.className = 'font-bold text-sm mt-1.5 text-slate-800 dark:text-slate-100'; name.textContent = item.Nama || '';
         meta.append(date, name);
-        const del = document.createElement('button'); del.type = 'button'; del.className = 'text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity'; del.setAttribute('aria-label','Hapus catatan');
-        const icon = document.createElement('i'); icon.className = 'fas fa-trash'; del.appendChild(icon); del.addEventListener('click', () => hapusCatatan(item.ID_Catatan));
+        const del = document.createElement('button'); del.type = 'button'; del.className = 'w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer'; del.setAttribute('aria-label','Hapus catatan');
+        const icon = document.createElement('i'); icon.className = 'fas fa-trash text-xs'; del.appendChild(icon); del.addEventListener('click', () => hapusCatatan(item.ID_Catatan));
         head.append(meta, del);
         const body = document.createElement('p'); body.className = 'text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed'; body.textContent = item.Catatan || '';
         card.append(head, body); grid.appendChild(card);

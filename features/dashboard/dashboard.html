@@ -1,40 +1,271 @@
 <!-- SIMNI PWA modular fragment: dashboard -->
 
 <template data-simni-view>
-<div id="view-dashboard" class="view-section fade-in">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-                    <div><h2 class="text-2xl font-bold text-slate-800 dark:text-white" id="ui-dash-title">Dashboard SIMNI</h2><p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="ui-dash-subtitle">Tapel 2026-2027</p></div>
-                    <p id="dashboard-sync-status" class="simni-connection-status" role="status" aria-live="polite">Memeriksa koneksi data…</p>
-                </div>
+<div id="view-dashboard" class="view-section fade-in max-w-7xl mx-auto space-y-7 pb-10">
+    <!-- EXECUTIVE DASHBOARD CONTEXT BAR -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+        <div>
+            <div class="flex flex-wrap items-center gap-2.5">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight" id="ui-dash-title">Dashboard SIMNI</h2>
+                <span class="inline-flex items-center ml-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold chip-glass" id="ui-dash-subtitle">Tapel 2026-2027</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ringkasan aktivitas akademik dan administrasi ruang kelas terpadu</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <p id="dashboard-sync-status" class="simni-connection-status chip-glass" role="status" aria-live="polite">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Data Tersinkron
+            </p>
+        </div>
+    </div>
 
-                <!-- WIDGET PERINGATAN DINI -->
-                <div id="peringatan-dini-container" class="mb-6 hidden simni-academic-warning">
-                    <button id="dismiss-academic-warning" type="button" aria-label="Tutup peringatan akademik">×</button>
-                    <h3 class="text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Peringatan Dini Akademik</h3>
-                    <div id="peringatan-dini-list" class="grid grid-cols-1 gap-3"></div>
-                </div>
+    <!-- WIDGET PERINGATAN DINI AKADEMIK -->
+    <div id="peringatan-dini-container" class="hidden simni-academic-warning">
+        <button id="dismiss-academic-warning" type="button" aria-label="Tutup peringatan akademik">×</button>
+        <h3 class="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Peringatan Dini Akademik
+        </h3>
+        <div id="peringatan-dini-list" class="grid grid-cols-1 gap-2.5"></div>
+    </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><div class="flex items-center justify-between mb-2"><h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Siswa</h3><div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center"><i class="fas fa-users"></i></div></div><p id="stat-siswa" class="text-3xl font-bold text-slate-800 dark:text-white">0</p></div>
-                    <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><div class="flex items-center justify-between mb-2"><h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Hadir Hari Ini</h3><div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><i class="fas fa-user-check"></i></div></div><p id="stat-hadir" class="text-3xl font-bold text-slate-800 dark:text-white">0</p></div>
-                    <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><div class="flex items-center justify-between mb-2"><h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Tujuan Pembelajaran</h3><div class="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i class="fas fa-star"></i></div></div><p id="stat-tp" class="text-3xl font-bold text-slate-800 dark:text-white">0</p></div>
-                    <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"><div class="flex items-center justify-between mb-2"><h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Jurnal Mengajar</h3><div class="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center"><i class="fas fa-book-open"></i></div></div><p id="stat-jurnal" class="text-3xl font-bold text-slate-800 dark:text-white">0</p></div>
+    <!-- SUMMARY KPI CARDS (ADAPTIVE AUTO-FIT GRID) -->
+    <section aria-labelledby="kpi-section-title">
+        <h3 id="kpi-section-title" class="sr-only">Indikator Kinerja Utama</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            <!-- 1. Total Siswa -->
+            <div class="simni-kpi-card group hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="simni-kpi-label">Total Siswa</span>
+                    <div class="simni-kpi-icon bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50">
+                        <i class="fas fa-users" aria-hidden="true"></i>
+                    </div>
                 </div>
-                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider mb-3">Aksi Cepat</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                    <button data-requires-feature="attendance" data-simni-action="openAttendanceScanner" data-simni-trigger="click" class="flex flex-col items-center gap-3 bg-primary text-white p-4 rounded-2xl shadow-md shadow-indigo-500/20 hover:scale-[1.02] transition-transform text-center"><div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl"><i class="fas fa-qrcode"></i></div><p class="font-bold text-xs">Scan Presensi</p></button>
-                    <button data-requires-feature="grades" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["nilai"]' class="flex flex-col items-center gap-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center"><div class="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-xl text-emerald-500"><i class="fas fa-star"></i></div><p class="font-bold text-xs">Input Nilai TP</p></button>
-                    <button data-requires-feature="journal" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["jurnal"]' class="flex flex-col items-center gap-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center"><div class="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-xl text-purple-600"><i class="fas fa-book-open"></i></div><p class="font-bold text-xs">Isi Jurnal</p></button>
-                    <button data-requires-feature="gadm" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["gadm"]' class="flex flex-col items-center gap-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center"><div class="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-xl text-indigo-600"><i class="fas fa-wand-magic-sparkles"></i></div><p class="font-bold text-xs">Buat Administrasi GADM</p></button>
-                    <button data-requires-feature="notes" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["catatan"]' class="flex flex-col items-center gap-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center"><div class="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-xl text-amber-500"><i class="fas fa-clipboard-list"></i></div><p class="font-bold text-xs">Catatan Guru</p></button>
-                    <button data-requires-feature="documents" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["dokumen"]' class="flex flex-col items-center gap-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center"><div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-xl text-blue-500"><i class="fas fa-folder-open"></i></div><p class="font-bold text-xs">File & LKPD</p></button>
-                    <button data-requires-feature="students" data-simni-action="openStudentsCreate" data-simni-trigger="click" class="flex flex-col items-center gap-3 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow text-center"><div class="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-xl text-rose-500"><i class="fas fa-user-plus"></i></div><p class="font-bold text-xs">Tambah Siswa</p></button>
-                </div>
-                
-                <div class="mt-8 mb-4 text-center">
-                    <div class="w-16 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto mb-4 opacity-50"></div>
-                    <h3 id="dashboard-app-version" class="text-sm font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-1">SIMNI V.4.8.0-rc.1 ENTERPRISE</h3>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-600">Dirancang secara eksklusif oleh <span class="font-bold text-primary">Unggaran Reka Negara</span></p>
+                <div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-siswa" class="simni-kpi-value">0</span>
+                        <span class="text-xs text-slate-400 font-medium">Siswa</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-id-card text-[10px]" aria-hidden="true"></i> Terdaftar aktif di rombel kelas
+                    </p>
                 </div>
             </div>
+
+            <!-- 2. Hadir Hari Ini -->
+            <div class="simni-kpi-card group hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="simni-kpi-label">Hadir Hari Ini</span>
+                    <div class="simni-kpi-icon bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">
+                        <i class="fas fa-user-check" aria-hidden="true"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-hadir" class="simni-kpi-value text-emerald-600 dark:text-emerald-400">0</span>
+                        <span class="text-xs text-slate-400 font-medium">Hadir</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-calendar-day text-[10px]" aria-hidden="true"></i> Berdasarkan presensi hari aktif
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3. Tujuan Pembelajaran -->
+            <div class="simni-kpi-card group hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="simni-kpi-label">Tujuan Pembelajaran</span>
+                    <div class="simni-kpi-icon bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-tp" class="simni-kpi-value text-amber-600 dark:text-amber-400">0</span>
+                        <span class="text-xs text-slate-400 font-medium">TP Terdata</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-bullseye text-[10px]" aria-hidden="true"></i> Kurikulum Merdeka aktif
+                    </p>
+                </div>
+            </div>
+
+            <!-- 4. Jurnal Mengajar -->
+            <div class="simni-kpi-card group hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="simni-kpi-label">Jurnal Mengajar</span>
+                    <div class="simni-kpi-icon bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/50">
+                        <i class="fas fa-book-open" aria-hidden="true"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="stat-jurnal" class="simni-kpi-value text-purple-600 dark:text-purple-400">0</span>
+                        <span class="text-xs text-slate-400 font-medium">Entri</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-clock text-[10px]" aria-hidden="true"></i> Agenda dan materi kelas
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- QUICK ACTIONS HUB (HIERARKI JELAS: HERO PRIMARY, SECONDARY CORE, TERTIARY UTILITY) -->
+    <section class="space-y-4" aria-labelledby="quick-actions-title">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-4 rounded-full bg-primary"></span>
+                <h3 id="quick-actions-title" class="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">Pusat Aksi Cepat</h3>
+            </div>
+            <span class="text-xs text-slate-400 font-medium">Pintasan operasi harian & administrasi</span>
+        </div>
+
+        <!-- 1. PRIMARY & SECONDARY WORKFLOW TILES (HIGH-EMPHASIS) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+            <!-- HERO PRIMARY ACTION: SCAN PRESENSI -->
+            <button
+                type="button"
+                data-requires-feature="attendance"
+                data-simni-action="openAttendanceScanner"
+                data-simni-trigger="click"
+                class="simni-hero-quick-action md:col-span-1 h-full group hover-lift btn-shine"
+            >
+                <div class="flex items-start justify-between w-full">
+                    <div class="simni-hero-icon-box">
+                        <i class="fas fa-qrcode" aria-hidden="true"></i>
+                    </div>
+                    <span class="simni-hero-badge">Aksi Utama</span>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center gap-2 text-base font-extrabold text-white">
+                        <span>Scan Presensi Siswa</span>
+                        <i class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-xs text-indigo-100/90 mt-1 leading-relaxed">Pindai QR code kartu siswa atau buka rekap kehadiran harian secara langsung.</p>
+                </div>
+            </button>
+
+            <!-- SECONDARY ACTION 1: INPUT NILAI TP -->
+            <button
+                type="button"
+                data-requires-feature="grades"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["nilai"]'
+                class="p-5 rounded-2xl bg-white dark:bg-[#111114] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover-lift active:scale-[0.98] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between h-full group"
+            >
+                <div class="flex items-start justify-between w-full">
+                    <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg border border-emerald-100 dark:border-emerald-900/50 shadow-xs group-hover:scale-110 transition-transform shrink-0">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-xs text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"><i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+                <div class="mt-4">
+                    <h4 class="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Input Nilai TP</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Kelola penilaian capaian materi pembelajaran sumatif & formatif kelas.</p>
+                </div>
+            </button>
+
+            <!-- SECONDARY ACTION 2: ISI JURNAL MENGAJAR -->
+            <button
+                type="button"
+                data-requires-feature="journal"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["jurnal"]'
+                class="p-5 rounded-2xl bg-white dark:bg-[#111114] border border-slate-200/80 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-800 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover-lift active:scale-[0.98] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between h-full group"
+            >
+                <div class="flex items-start justify-between w-full">
+                    <div class="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg border border-purple-100 dark:border-purple-900/50 shadow-xs group-hover:scale-110 transition-transform shrink-0">
+                        <i class="fas fa-book-open" aria-hidden="true"></i>
+                    </div>
+                    <span class="text-xs text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors"><i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+                <div class="mt-4">
+                    <h4 class="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Isi Jurnal Mengajar</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Dokumentasikan agenda pembelajaran harian dan materi yang diajarkan.</p>
+                </div>
+            </button>
+        </div>
+
+        <!-- 2. TERTIARY UTILITY ACTIONS (BALANCED 4-COLUMN GRID) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <!-- GADM -->
+            <button
+                type="button"
+                data-requires-feature="gadm"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["gadm"]'
+                class="p-3.5 rounded-xl bg-white dark:bg-[#111114] border border-slate-200/70 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-800 shadow-2xs hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all text-left flex items-center gap-3 group cursor-pointer"
+            >
+                <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">Admin GADM</p>
+                    <p class="text-[10px] text-slate-400 truncate">Rapor & Analisis</p>
+                </div>
+            </button>
+
+            <!-- Catatan Guru -->
+            <button
+                type="button"
+                data-requires-feature="notes"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["catatan"]'
+                class="p-3.5 rounded-xl bg-white dark:bg-[#111114] border border-slate-200/70 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-800 shadow-2xs hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all text-left flex items-center gap-3 group cursor-pointer"
+            >
+                <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">Catatan Guru</p>
+                    <p class="text-[10px] text-slate-400 truncate">Observasi & Catatan</p>
+                </div>
+            </button>
+
+            <!-- File & LKPD -->
+            <button
+                type="button"
+                data-requires-feature="documents"
+                data-simni-action="switchView"
+                data-simni-trigger="click"
+                data-simni-args='["dokumen"]'
+                class="p-3.5 rounded-xl bg-white dark:bg-[#111114] border border-slate-200/70 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 shadow-2xs hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all text-left flex items-center gap-3 group cursor-pointer"
+            >
+                <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-folder-open" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">File & LKPD</p>
+                    <p class="text-[10px] text-slate-400 truncate">Berkas Pembelajaran</p>
+                </div>
+            </button>
+
+            <!-- Tambah Siswa -->
+            <button
+                type="button"
+                data-requires-feature="students"
+                data-simni-action="openStudentsCreate"
+                data-simni-trigger="click"
+                class="p-3.5 rounded-xl bg-white dark:bg-[#111114] border border-slate-200/70 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-800 shadow-2xs hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all text-left flex items-center gap-3 group cursor-pointer"
+            >
+                <div class="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-user-plus" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors truncate">Tambah Siswa</p>
+                    <p class="text-[10px] text-slate-400 truncate">Entri Data Baru</p>
+                </div>
+            </button>
+        </div>
+    </section>
+
+    <!-- FOOTER BRANDING (MINIMALIS & DI BLOK PALING BAWAH - TANPA GARIS MELINTANG) -->
+    <footer class="mt-12 pt-4 text-center pb-6">
+        <p id="dashboard-app-version" class="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">SIMNI V.4.8.2 ENTERPRISE</p>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Dirancang secara eksklusif oleh <span class="font-semibold text-slate-600 dark:text-slate-300">Unggaran Reka Negara</span></p>
+    </footer>
+</div>
 </template>

@@ -1,5 +1,11 @@
 (function initSIMNIAccessPolicy(root, factory) {
-    const api = factory(root.SIMNIWorkspaceRegistry);
+    let registry = root.SIMNIWorkspaceRegistry;
+    if (!registry && typeof require === 'function') {
+        try {
+            registry = require('./workspace-registry-core.js');
+        } catch (_) {}
+    }
+    const api = factory(registry);
     if (typeof module === 'object' && module.exports) module.exports = api;
     root.SIMNIAccessPolicy = api;
 }(typeof globalThis !== 'undefined' ? globalThis : this, function createSIMNIAccessPolicy(registry) {
@@ -43,7 +49,8 @@
         LPS: 'lps',
         GADM: 'gadm',
         USER_ADMIN: 'userAdmin',
-        ACCOUNTS: 'accounts'
+        ACCOUNTS: 'accounts',
+        BTQ: 'btq'
     });
 
     const COMMON = Object.freeze([
@@ -52,6 +59,7 @@
         FEATURES.ATTENDANCE,
         FEATURES.GRADES,
         FEATURES.JOURNAL,
+        FEATURES.BTQ,
         FEATURES.GADM,
         FEATURES.SETTINGS,
         FEATURES.BACKUP
@@ -83,6 +91,7 @@
         presensi: FEATURES.ATTENDANCE,
         nilai: FEATURES.GRADES,
         jurnal: FEATURES.JOURNAL,
+        btq: FEATURES.BTQ,
         catatan: FEATURES.NOTES,
         dokumen: FEATURES.DOCUMENTS,
         lps: FEATURES.LPS,

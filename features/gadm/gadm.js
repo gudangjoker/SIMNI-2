@@ -254,7 +254,7 @@ function wordDocumentHTML(snapshot) {
 }
 
 function exportWord() {
-    window.SIMNIAccess.assertFeature('gadm', 'export');
+    window.SIMNIAccess?.assertFeature?.('gadm', 'export');
     const snapshot = requireValidSnapshot();
     const blob = new Blob(['\ufeff', wordDocumentHTML(snapshot)], { type: 'application/msword;charset=utf-8' });
     downloadBlob(blob, `${safeFilename(snapshot.result.title)}.doc`);
@@ -266,7 +266,7 @@ function safeCell(value) {
 }
 
 async function exportExcel() {
-    window.SIMNIAccess.assertFeature('gadm', 'export');
+    window.SIMNIAccess?.assertFeature?.('gadm', 'export');
     await window.ensureSIMNIVendors?.("xlsx");
     const snapshot = requireValidSnapshot();
     if (!window.XLSX?.utils || typeof window.XLSX.writeFile !== 'function') {
@@ -334,7 +334,7 @@ async function renderHistory(before = null, selectedScope = null) {
     selector.onchange = () => renderHistory(null, scopes.find(entry => entry.key === selector.value)).catch(error => notify(error.message, 'error'));
     list.append(selector);
     const exportJson = (payload, filename) => {
-    window.SIMNIAccess.assertFeature('gadm', 'export');
+        window.SIMNIAccess?.assertFeature?.('gadm', 'export');
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: 'application/json' }));
         const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click();
         setTimeout(() => URL.revokeObjectURL(url), 60000);

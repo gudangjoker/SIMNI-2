@@ -418,7 +418,7 @@ Berikut adalah dokumentasi analitis terhadap setiap berkas kode sumber yang meny
 #### Modul Pengaturan & Profil (\`features/settings/\`)
 67. **\`features/settings/settings.html\`**
     - **Fungsi:** Template formulir pengaturan sekolah dan aplikasi.
-    - **Logika:** Input Nama Sekolah (\`SDIT Bina Madani\`), NPSN, Alamat, Nama Kepala Sekolah, NIP, Nama Guru Kelas, NIP, Tahun Pelajaran aktif, Semester, Titimangsa Rapor, dan opsi reset cache.
+    - **Logika:** Input Nama Sekolah (\`SDIT Bina Madani\`), NPSN, Alamat, Nama Kepala Sekolah, NUKS, Nama Guru Kelas, NUPTK, Tahun Pelajaran aktif, Semester, Titimangsa Rapor, dan opsi reset cache.
 68. **\`features/settings/settings.js\`**
     - **Fungsi:** Controller konfigurasi profil sekolah.
     - **Logika:** Melakukan validasi format teks, menyimpan pembaruan identitas sekolah ke RTDB di bawah node \`workspaces/{ws}/settings/identity\`, dan menyinkronkannya ke seluruh modul rapor dan modul ajar.

@@ -7,7 +7,22 @@ const initialLink=new URLSearchParams(location.hash.slice(1));
 const linkSlot=initialLink.get('slot')||'';
 $('registration-code').value=initialLink.get('code')||'';
 if(location.hash)history.replaceState(null,'',location.pathname+location.search);
-function message(text){$('registration-status').hidden=false;$('registration-status').classList.remove('hidden');$('registration-status').textContent=text;}
+const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function message(text, type='info'){
+    const el=$('registration-status');
+    if(!el)return;
+    el.hidden=false;el.classList.remove('hidden','border-red-300','bg-red-50','text-red-700','dark:bg-red-950/40','dark:text-red-300','border-amber-300','bg-amber-50','text-amber-700','border-emerald-300','bg-emerald-50','text-emerald-700','border-blue-300','bg-blue-50','text-blue-700');
+    if(type==='error'||type==='rejected'){
+        el.classList.add('border-red-300','bg-red-50','text-red-700','dark:bg-red-950/40','dark:text-red-300');
+    }else if(type==='pending'){
+        el.classList.add('border-amber-300','bg-amber-50','text-amber-700','dark:bg-amber-950/40','dark:text-amber-300');
+    }else if(type==='success'){
+        el.classList.add('border-emerald-300','bg-emerald-50','text-emerald-700','dark:bg-emerald-950/40','dark:text-emerald-300');
+    }else{
+        el.classList.add('border-blue-300','bg-blue-50','text-blue-700','dark:bg-blue-950/40','dark:text-blue-300');
+    }
+    el.innerHTML=text;
+}
 function setBusy(value){busy=value;document.querySelectorAll('button').forEach(b=>b.disabled=value);}
 function payload(){return {slotId:$('registration-slot').value,inviteCode:$('registration-code').value.trim(),displayName:$('registration-name').value.trim()||auth.currentUser?.displayName||''};}
 function operationId(uid){
@@ -20,7 +35,7 @@ function operationId(uid){
 async function loadSlots(){
     try{const result=await getRegistrationSlots();const select=$('registration-slot');select.replaceChildren(new Option('Pilih kelas',''));for(const slot of result.slots){const option=new Option(`Kelas ${slot.classId}${slot.available?'':' · terisi'}`,slot.slotId);option.disabled=!slot.available;select.append(option);}if(linkSlot)select.value=linkSlot;
         if(!result.enabled)message('Pendaftaran umum ditutup. Undangan penggantian yang masih berlaku dapat dilanjutkan.');
-    }catch(e){message(e.message);}
+    }catch(e){message(e.message, 'error');}
 }
 async function inspect(){
     const user=auth.currentUser;if(!user)return;
@@ -31,10 +46,13 @@ async function inspect(){
     const result=await getRegistrationStatus();currentStatus=result.status;
     const pending=['pending_approval','active','disabled','deleting'].includes(result.status);
     $('registration-form').classList.toggle('hidden',pending);
-    if(result.status==='active' && result.profile?.classId)message(`Akun disetujui untuk kelas ${result.profile.classId}. Buka SIMNI melalui tautan di bawah.`);
-    else if(result.status==='pending_approval')message(`Permohonan kelas ${result.request?.classId||''} menunggu persetujuan superuser.`);
-    else if(result.status==='disabled'||result.status==='deleting')message('Akses akun dihentikan. Hubungi superuser.');
-    else if(result.status==='rejected')message(`Permohonan ditolak. ${result.request?.reason||'Hubungi superuser untuk undangan baru.'}`);
+    if(result.status==='active' && result.profile?.classId)message(`<strong>Akun Disetujui!</strong> Akses aktif untuk Kelas ${result.profile.classId}. Buka SIMNI melalui tautan di bawah.`, 'success');
+    else if(result.status==='pending_approval')message(`Permohonan Kelas ${result.request?.classId||''} sedang menunggu persetujuan superuser.`, 'pending');
+    else if(result.status==='disabled'||result.status==='deleting')message('Akses akun dihentikan. Hubungi superuser.', 'error');
+    else if(result.status==='rejected'){
+        const reason = result.request?.reason ? `<div class="mt-2 p-2 bg-red-100 dark:bg-red-900/50 rounded-lg text-xs"><strong>Alasan penolakan:</strong> ${escapeHtml(result.request.reason)}</div>` : '';
+        message(`<div><strong>Permohonan Ditolak</strong>${reason}<p class="text-xs mt-1 text-slate-600 dark:text-slate-400">Silakan hubungi superuser untuk mendapatkan undangan baru.</p></div>`, 'rejected');
+    }
     else message('Akun tersedia. Lengkapi nama dan kode undangan, lalu tekan Periksa Status / Kirim Permohonan.');
 }
 async function resend(){

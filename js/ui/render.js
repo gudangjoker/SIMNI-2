@@ -109,11 +109,25 @@ function renderIdentitas() {
     if (document.getElementById('ui-nama-aplikasi')) {
         document.getElementById('ui-nama-aplikasi').innerText = p.nama_aplikasi;
     }
+    if (document.getElementById('ui-desktop-nama-kelas')) {
+        document.getElementById('ui-desktop-nama-kelas').innerText = shellBrand || 'SIMNI';
+    }
+    if (document.getElementById('ui-desktop-nama-aplikasi')) {
+        const rawApp = p.nama_aplikasi || '';
+        const cleanedApp = rawApp.replace(/^SIMNI\s*/i, '').trim() || 'Administrasi Kelas Digital';
+        document.getElementById('ui-desktop-nama-aplikasi').innerText = cleanedApp;
+    }
     if (document.getElementById('ui-dash-title')) {
         document.getElementById('ui-dash-title').innerText = `Dashboard ${shellBrand}`;
     }
     if (document.getElementById('ui-dash-subtitle')) {
         document.getElementById('ui-dash-subtitle').innerText = `Tapel ${activeAcademicYearId}`;
+    }
+
+    const teacherGreeting = p.nama_wali_kelas || p.nama_guru || window.SIMNIAuthState?.displayName || (window.SIMNIAuthState?.email ? window.SIMNIAuthState.email.split('@')[0] : 'Guru SIMNI');
+    const greetingEl = document.getElementById('ui-greeting-teacher');
+    if (greetingEl) {
+        greetingEl.textContent = teacherGreeting;
     }
 
     const shellLogo = './icons/simni-logo.png';
@@ -123,13 +137,14 @@ function renderIdentitas() {
         const image = document.createElement('img');
         image.src = shellLogo;
         image.alt = 'Logo SIMNI';
-        image.className = `w-full h-full object-contain ${rounding} shadow-sm bg-white`;
-        image.width = container.id === 'icon-mobile-container' ? 32 : 40;
+        image.className = `w-full h-full object-contain ${rounding}`;
+        image.width = (container.id === 'icon-mobile-container' || container.id === 'icon-desktop-container') ? 32 : 40;
         image.height = image.width;
         container.appendChild(image);
     };
 
     drawLogo(document.getElementById('icon-sidebar-container'), 'rounded-xl');
+    drawLogo(document.getElementById('icon-desktop-container'), 'rounded-lg');
     drawLogo(document.getElementById('icon-mobile-container'), 'rounded-lg');
 
     const setValue = (id, value) => {
@@ -148,6 +163,8 @@ function renderIdentitas() {
     setValue('set-kota', p.kota);
     setValue('set-nama-wali-kelas', p.nama_wali_kelas);
     setValue('set-nuptk-wali-kelas', p.nuptk_wali_kelas);
+    setValue('set-nama-kepala-sekolah', p.nama_kepala_sekolah || p.nama_kamad || 'Kepala SDIT Bina Muda');
+    setValue('set-nuks-kepala-sekolah', p.nuks_kepala_sekolah || p.nuks_kamad || '-');
 }
 
 function renderAllViews() {

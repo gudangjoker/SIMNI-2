@@ -6,7 +6,7 @@
 function setPresensiTab(tab) {
     ['input', 'rekap'].forEach((name) => {
         const button = document.getElementById(`tab-presensi-${name}`);
-        if (button) button.className = `px-4 py-2 border-b-2 text-sm font-bold ${tab === name ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`;
+        if (button) button.className = `simni-tab ${tab === name ? 'active' : ''} flex-1 sm:flex-none`;
         const panel = document.getElementById(`presensi-tab-${name}`);
         if (panel) panel.classList.toggle('hidden', tab !== name);
     });

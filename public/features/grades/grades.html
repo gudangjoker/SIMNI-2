@@ -1,146 +1,416 @@
 <!-- SIMNI PWA modular fragment: grades -->
 
 <template data-simni-view>
-<div id="view-nilai" class="view-section hidden" hidden>
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-                    <div><h2 class="text-2xl font-bold text-slate-800 dark:text-white">Sistem Nilai Akademik</h2><p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Input Nilai TP, Rekapitulasi, dan Profil Buku Induk Siswa.</p></div>
-                    <div class="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto w-full md:w-auto hide-scrollbar">
-                        <button data-simni-action="setNilaiTab" data-simni-trigger="click" data-simni-args='["input"]' id="tab-nilai-input" class="whitespace-nowrap px-4 py-2 border-b-2 border-primary text-primary font-bold text-sm">Input Nilai</button>
-                        <button data-simni-action="setNilaiTab" data-simni-trigger="click" data-simni-args='["rekap"]' id="tab-nilai-rekap" class="whitespace-nowrap px-4 py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Rekap TP</button>
-                        <button data-simni-action="setNilaiTab" data-simni-trigger="click" data-simni-args='["induk"]' id="tab-nilai-induk" class="whitespace-nowrap px-4 py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Buku Induk</button>
-                    </div>
+<div id="view-nilai" class="view-section hidden max-w-7xl mx-auto space-y-6 fade-in pb-16" hidden>
+    <!-- Header Card -->
+    <div class="bg-white dark:bg-[#111113] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-5">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center text-lg shrink-0">
+                    <i class="fas fa-star" aria-hidden="true"></i>
                 </div>
-
-                <div id="nilai-tab-input">
-                    <div class="flex flex-wrap gap-2 w-full justify-end mb-4"><button data-simni-action="openModal" data-simni-trigger="click" data-simni-args='["modal-kelola-tp"]' class="px-4 py-2 bg-white dark:bg-[#111111] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm flex items-center justify-center gap-2"><i class="fas fa-list"></i> Kelola TP</button></div>
-                      <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-4 flex flex-col md:flex-row gap-4">
-                          <div class="flex-1"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="filter-mapel-nilai">Mata Pelajaran</label><select id="filter-mapel-nilai" aria-label="Mata pelajaran nilai" data-simni-action="updateTPDropdown" data-simni-trigger="change" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"><option value="">Pilih Mapel...</option><option value="Matematika">Matematika</option><option value="Bahasa Indonesia">Bahasa Indonesia</option><option value="Pendidikan Pancasila">Pendidikan Pancasila</option><option value="IPAS">IPAS</option><option value="Seni Rupa">Seni Rupa</option><option value="PJOK">PJOK</option><option value="PAI">PAI</option><option value="Bahasa Inggris">Bahasa Inggris</option><option value="Bahasa Sunda">Bahasa Sunda</option><option value="Komputer">Komputer</option><option value="BTQ">BTQ</option><option value="Murojaah">Murojaah</option></select></div>
-                          <div class="flex-1"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="filter-tp-nilai">Tujuan Pembelajaran</label><select id="filter-tp-nilai" aria-label="Tujuan pembelajaran nilai" data-simni-action="renderNilaiGrid" data-simni-trigger="change" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"><option value="">Pilih Mapel Dahulu...</option></select></div>
-                      </div>
-                    <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative">
-                        <div id="nilai-empty-state" class="p-8 text-center text-slate-500 dark:text-slate-400"><i class="fas fa-hand-pointer text-4xl mb-3 opacity-50"></i><p class="font-medium">Pilih Mata Pelajaran dan TP untuk mulai menginput nilai.</p></div>
-                        <div id="nilai-grid-container" class="hidden">
-                            <div id="nilai-draft-status-container" class="px-4 pt-3 empty:hidden"><div id="nilai-table-body-draft-status" data-simni-draft-status class="hidden"></div></div>
-                            <div class="overflow-x-auto max-h-[500px]"><table class="w-full text-left border-collapse relative"><thead class="sticky top-0 z-10 bg-slate-50 dark:bg-[#000000] shadow-sm text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider"><tr><th class="p-4 font-bold border-b border-slate-200 dark:border-slate-800">No</th><th class="p-4 font-bold border-b border-slate-200 dark:border-slate-800 min-w-[200px]">Nama Siswa</th><th class="p-4 font-bold border-b border-slate-200 dark:border-slate-800 w-32 text-center">Nilai (0-100)</th></tr></thead><tbody id="nilai-table-body" class="text-sm divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
-                            <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#000000] flex justify-between items-center"><p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">*Ketuk simpan jika selesai.</p><button data-simni-action="saveNilaiBatch" data-simni-trigger="click" class="px-6 py-2 bg-primary hover:bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"><i class="fas fa-save"></i> Simpan Massal</button></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="nilai-tab-rekap" class="hidden">
-                    <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="rekap-mapel-nilai">Mata Pelajaran</label><select id="rekap-mapel-nilai" data-simni-action="updateRekapTPDropdown" data-simni-trigger="change" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"><option value="">Pilih Mata Pelajaran</option><option value="Matematika">Matematika</option><option value="Bahasa Indonesia">Bahasa Indonesia</option><option value="Pendidikan Pancasila">Pendidikan Pancasila</option><option value="IPAS">IPAS</option><option value="Seni Rupa">Seni Rupa</option><option value="PJOK">PJOK</option><option value="PAI">PAI</option><option value="Bahasa Inggris">Bahasa Inggris</option><option value="Bahasa Sunda">Bahasa Sunda</option><option value="Komputer">Komputer</option><option value="BTQ">BTQ</option><option value="Murojaah">Murojaah</option></select></div>
-                        <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="rekap-tp-nilai">Tujuan Pembelajaran</label><select id="rekap-tp-nilai" data-simni-action="invalidateRekapNilai" data-simni-trigger="change" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"><option value="">Pilih Mapel Dahulu</option></select></div>
-                        <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="rekap-siswa-nilai">Filter Siswa</label><select id="rekap-siswa-nilai" data-simni-action="invalidateRekapNilai" data-simni-trigger="change" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"><option value="">Semua Siswa</option></select></div>
-                        <div class="flex gap-2">
-                            <button type="button" data-simni-action="showRekapNilai" data-simni-trigger="click" class="flex-1 bg-primary hover:bg-indigo-600 text-white rounded-xl px-4 py-3 font-bold">Tampilkan</button>
-                            <button type="button" data-simni-action="unduhRekapNilai" data-simni-trigger="click" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 py-3 font-bold flex items-center justify-center gap-2"><i class="fas fa-file-excel"></i> Unduh Rekap</button>
-                        </div>
-                    </div>
-                    <p id="rekap-nilai-hint" class="p-4 text-slate-500" role="status">Pilih mata pelajaran, TP, dan siswa, lalu tekan Tampilkan atau Unduh Rekap.</p>
-                    <section id="rekap-nilai-result" class="simni-tp-recap" hidden>
-                        <header class="simni-tp-summary flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                            <div>
-                                <h3 id="rekap-tp-title"></h3>
-                                <p id="rekap-tp-description"></p>
-                            </div>
-                            <button type="button" data-simni-action="unduhRekapNilai" data-simni-trigger="click" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2">
-                                <i class="fas fa-file-excel"></i> Unduh Rekap Nilai
-                            </button>
-                        </header>
-                        <table><thead><tr><th scope="col">Nama Siswa</th><th scope="col">Nilai</th><th scope="col">Aksi</th></tr></thead><tbody id="rekap-nilai-body"></tbody></table>
-                    </section>
-                </div>
-
-                <div id="nilai-tab-induk" class="hidden">
-                    <div class="bg-white dark:bg-[#111111] p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-4 flex flex-col md:flex-row gap-4 items-end">
-                        <div class="flex-1 w-full"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1" for="induk-siswa-select">Cari / Pilih Siswa</label><select id="induk-siswa-select" data-simni-action="renderBukuInduk" data-simni-trigger="change" class="w-full px-4 py-3 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary font-bold shadow-inner"><option value="">-- Sentuh untuk Pilih Siswa --</option></select></div>
-                        <button data-simni-action="cetakBukuInduk" data-simni-trigger="click" class="w-full md:w-auto px-6 py-3 bg-primary hover:bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md flex items-center justify-center gap-2"><i class="fas fa-file-pdf"></i> Unduh PDF Induk</button>
-                    </div>
-                    <div id="induk-content-area" class="bg-slate-100 dark:bg-[#000000] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative min-h-[400px]">
-                        <div class="p-8 text-center text-slate-400 dark:text-slate-500 absolute inset-0 flex flex-col items-center justify-center"><i class="fas fa-user-graduate text-6xl mb-4 opacity-50"></i><p class="font-bold text-lg">Pilih nama murid di atas untuk memanggil Profil Buku Induk.</p></div>
-                    </div>
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Sistem Nilai Akademik</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Penilaian berbasis Tujuan Pembelajaran (TP), rekapitulasi capaian, dan buku induk.</p>
                 </div>
             </div>
+
+            <!-- Segmented Navigation Tabs -->
+            <div class="simni-tab-group">
+                <button data-simni-action="setNilaiTab" data-simni-trigger="click" data-simni-args='["input"]' id="tab-nilai-input" class="simni-tab active">
+                    <i class="fas fa-edit mr-1.5"></i>Input Nilai
+                </button>
+                <button data-simni-action="setNilaiTab" data-simni-trigger="click" data-simni-args='["rekap"]' id="tab-nilai-rekap" class="simni-tab">
+                    <i class="fas fa-table mr-1.5"></i>Rekap TP
+                </button>
+                <button data-simni-action="setNilaiTab" data-simni-trigger="click" data-simni-args='["induk"]' id="tab-nilai-induk" class="simni-tab">
+                    <i class="fas fa-address-book mr-1.5"></i>Buku Induk
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: INPUT NILAI TP -->
+    <div id="nilai-tab-input" class="space-y-4">
+        <!-- Filter Card with Master TP Action -->
+        <div class="bg-white dark:bg-[#111113] p-5 rounded-2xl shadow-2xs border border-slate-200/80 dark:border-slate-800 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-3.5 rounded-full bg-primary"></span>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Filter Penilaian Siswa</span>
+                </div>
+                <button data-simni-action="openModal" data-simni-trigger="click" data-simni-args='["modal-kelola-tp"]' class="h-9 px-3.5 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto">
+                    <i class="fas fa-cog text-primary text-xs"></i>
+                    <span>Kelola Master TP</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="filter-mapel-nilai">Mata Pelajaran</label>
+                <select id="filter-mapel-nilai" aria-label="Mata pelajaran nilai" data-simni-action="updateTPDropdown" data-simni-trigger="change" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">Pilih Mapel...</option>
+                    <option value="Matematika">Matematika</option>
+                    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                    <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                    <option value="IPAS">IPAS</option>
+                    <option value="Seni Rupa">Seni Rupa</option>
+                    <option value="PJOK">PJOK</option>
+                    <option value="PAI">PAI</option>
+                    <option value="Bahasa Inggris">Bahasa Inggris</option>
+                    <option value="Bahasa Sunda">Bahasa Sunda</option>
+                    <option value="Komputer">Komputer</option>
+                    <option value="BTQ">BTQ</option>
+                    <option value="Murojaah">Murojaah</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="filter-tp-nilai">Tujuan Pembelajaran (TP)</label>
+                <select id="filter-tp-nilai" aria-label="Tujuan pembelajaran nilai" data-simni-action="renderNilaiGrid" data-simni-trigger="change" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">Pilih Mapel Dahulu...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Grade Input Grid Card -->
+        <div class="bg-white dark:bg-[#111113] rounded-2xl shadow-2xs border border-slate-200/80 dark:border-slate-800 overflow-hidden relative">
+            <div id="nilai-empty-state" class="p-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-primary flex items-center justify-center text-xl mx-auto mb-2">
+                    <i class="fas fa-hand-pointer"></i>
+                </div>
+                <p class="font-bold text-slate-700 dark:text-slate-300 text-sm">Pilih Mata Pelajaran dan TP</p>
+                <p class="text-xs text-slate-400 max-w-xs mx-auto">Tentukan mata pelajaran dan tujuan pembelajaran di atas untuk memanggil lembar penilaian siswa.</p>
+            </div>
+
+            <div id="nilai-grid-container" class="hidden">
+                <div id="nilai-draft-status-container" class="px-5 pt-3 empty:hidden">
+                    <div id="nilai-table-body-draft-status" data-simni-draft-status class="hidden"></div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[520px] hide-scrollbar">
+                    <table class="w-full text-left border-collapse relative min-w-[500px]">
+                        <thead class="sticky top-0 z-10 bg-slate-50/95 dark:bg-[#161618]/95 backdrop-blur-sm shadow-2xs text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="py-3 px-4 font-bold border-b border-slate-200/80 dark:border-slate-800 w-16 text-center">No</th>
+                                <th class="py-3 px-5 font-bold border-b border-slate-200/80 dark:border-slate-800 min-w-[240px]">Nama Siswa</th>
+                                <th class="py-3 px-4 font-bold border-b border-slate-200/80 dark:border-slate-800 w-36 text-center">Nilai (0-100)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nilai-table-body" class="text-xs sm:text-sm divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-800 dark:text-slate-200"></tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 sm:px-5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#141416]/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <p class="text-[11px] text-slate-400 font-medium">*Nilai tersimpan lokal secara instan dan siap disinkronkan ke server.</p>
+                    <button data-simni-action="saveNilaiBatch" data-simni-trigger="click" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-2xs hover:shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 w-full sm:w-auto">
+                        <i class="fas fa-save text-xs"></i>
+                        <span>Simpan Massal</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: REKAPITULASI TP -->
+    <div id="nilai-tab-rekap" class="hidden space-y-4">
+        <div class="bg-white dark:bg-[#111113] p-5 rounded-2xl shadow-2xs border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="rekap-mapel-nilai">Mata Pelajaran</label>
+                <select id="rekap-mapel-nilai" data-simni-action="updateRekapTPDropdown" data-simni-trigger="change" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">Pilih Mata Pelajaran</option>
+                    <option value="Matematika">Matematika</option>
+                    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                    <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                    <option value="IPAS">IPAS</option>
+                    <option value="Seni Rupa">Seni Rupa</option>
+                    <option value="PJOK">PJOK</option>
+                    <option value="PAI">PAI</option>
+                    <option value="Bahasa Inggris">Bahasa Inggris</option>
+                    <option value="Bahasa Sunda">Bahasa Sunda</option>
+                    <option value="Komputer">Komputer</option>
+                    <option value="BTQ">BTQ</option>
+                    <option value="Murojaah">Murojaah</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="rekap-tp-nilai">Tujuan Pembelajaran</label>
+                <select id="rekap-tp-nilai" data-simni-action="invalidateRekapNilai" data-simni-trigger="change" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">Pilih Mapel Dahulu</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="rekap-siswa-nilai">Filter Siswa</label>
+                <select id="rekap-siswa-nilai" data-simni-action="invalidateRekapNilai" data-simni-trigger="change" class="w-full h-11 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">Semua Siswa</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons Row -->
+            <div class="col-span-full flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                <button type="button" data-simni-action="showRekapNilai" data-simni-trigger="click" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95">
+                    Tampilkan Rekap
+                </button>
+                <button type="button" data-simni-action="previewPrintRekapNilai" data-simni-trigger="click" class="h-10 px-4 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-[#202024] border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs active:scale-95">
+                    <i class="fas fa-print text-xs text-slate-400"></i>
+                    <span>Pratinjau Cetak</span>
+                </button>
+                <button type="button" data-simni-action="unduhRekapNilai" data-simni-trigger="click" class="h-10 px-4 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs active:scale-95">
+                    <i class="fas fa-file-excel text-xs"></i>
+                    <span>Unduh Excel</span>
+                </button>
+            </div>
+        </div>
+
+        <p id="rekap-nilai-hint" class="p-4 text-xs font-medium text-slate-400 dark:text-slate-500 text-center" role="status">Pilih mata pelajaran, TP, dan siswa, lalu tekan Tampilkan Rekap.</p>
+
+        <!-- Rekap Content Section -->
+        <section id="rekap-nilai-result" class="simni-tp-recap bg-white dark:bg-[#111113] rounded-2xl shadow-2xs border border-slate-200/80 dark:border-slate-800 overflow-hidden" hidden>
+            <header class="simni-tp-summary p-5 border-b border-slate-100 dark:border-slate-800/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-50/50 dark:bg-[#141416]/50">
+                <div>
+                    <h3 id="rekap-tp-title" class="font-bold text-base text-slate-900 dark:text-white leading-tight"></h3>
+                    <p id="rekap-tp-description" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed max-w-2xl"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" data-simni-action="previewPrintRekapNilai" data-simni-trigger="click" class="h-9 px-3.5 bg-white dark:bg-[#18181b] border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                        <i class="fas fa-print text-xs"></i><span>Cetak</span>
+                    </button>
+                    <button type="button" data-simni-action="unduhRekapNilai" data-simni-trigger="click" class="h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                        <i class="fas fa-file-excel text-xs"></i><span>Excel</span>
+                    </button>
+                </div>
+            </header>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50/80 dark:bg-[#161618] border-b border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                        <tr>
+                            <th scope="col" class="py-3 px-5">Nama Siswa</th>
+                            <th scope="col" class="py-3 px-4 text-center w-28">Nilai</th>
+                            <th scope="col" class="py-3 px-4 text-right w-24">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rekap-nilai-body" class="text-xs sm:text-sm divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-800 dark:text-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- TAB 3: BUKU INDUK SISWA -->
+    <div id="nilai-tab-induk" class="hidden space-y-4">
+        <div class="bg-white dark:bg-[#111113] p-5 rounded-2xl shadow-2xs border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-1 w-full">
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="induk-siswa-select">Cari / Pilih Siswa</label>
+                <select id="induk-siswa-select" data-simni-action="renderBukuInduk" data-simni-trigger="change" class="w-full h-11 px-4 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    <option value="">-- Sentuh untuk Pilih Siswa --</option>
+                </select>
+            </div>
+            <button data-simni-action="cetakBukuInduk" data-simni-trigger="click" class="w-full md:w-auto h-11 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-2xs hover:shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shrink-0">
+                <i class="fas fa-file-pdf text-xs"></i>
+                <span>Unduh PDF Induk</span>
+            </button>
+        </div>
+
+        <div id="induk-content-area" class="bg-slate-50/50 dark:bg-[#0c0c0e] rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden relative min-h-[420px]">
+            <div class="p-8 text-center text-slate-400 dark:text-slate-500 absolute inset-0 flex flex-col items-center justify-center">
+                <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-[#161618] flex items-center justify-center text-2xl text-slate-400 mb-3">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <p class="font-bold text-slate-700 dark:text-slate-300 text-base">Profil Buku Induk</p>
+                <p class="text-xs text-slate-400 max-w-xs mt-1">Pilih nama murid di atas untuk memanggil seluruh riwayat capaian akademik Buku Induk.</p>
+            </div>
+        </div>
+    </div>
+</div>
 </template>
 
 <template data-simni-modal>
-<div id="modal-kelola-tp" style="z-index: 10000;" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-slate-100 dark:border-slate-800">
-            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]"><h3 class="font-bold text-lg text-slate-800 dark:text-white">Kelola Tujuan Pembelajaran</h3><button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-kelola-tp"]' class="w-8 h-8 rounded-full text-slate-500 dark:bg-[#222222] hover:bg-slate-200"><i class="fas fa-times"></i></button></div>
-            <div class="p-4 overflow-y-auto flex-1 bg-slate-50 dark:bg-[#000000]">
-                <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                    <div class="flex flex-1 gap-2">
-                        <label class="sr-only" for="tp-import-template">Jenis template impor TP</label>
-                        <select id="tp-import-template" data-simni-action="updateTPTemplateLink" data-simni-trigger="change" class="min-w-0 flex-1 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 rounded-lg text-xs font-bold">
-                            <option value="one">Template 1 kelas</option>
-                            <option value="multi">Template 12 kelas</option>
-                        </select>
-                        <a id="tp-import-template-download" href="templates/Template_Impor_TP_1_Kelas.xlsx" download class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2" aria-label="Unduh template impor TP"><i class="fas fa-download"></i><span>Unduh</span></a>
+    <!-- MODAL KELOLA MASTER TP -->
+    <div id="modal-kelola-tp" style="z-index: 10000;" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/80 dark:border-slate-800">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">
+                        <i class="fas fa-list-check"></i>
                     </div>
-                    <div class="flex flex-1 gap-2">
-                        <label class="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"><i class="fas fa-file-excel"></i><span>Impor</span><input type="file" class="hidden" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel" data-simni-action="importTPExcel" data-simni-trigger="change" data-simni-argument="event"></label>
-                        <button type="button" data-simni-action="openSIMNILens" data-simni-trigger="click" class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"><i class="fas fa-camera"></i><span>Scan TP (Lens)</span></button>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Kelola Tujuan Pembelajaran</h3>
+                </div>
+                <button aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-kelola-tp"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer text-xs"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-5 sm:p-6 overflow-y-auto flex-1 bg-slate-50/40 dark:bg-[#0c0c0e]/40 space-y-4 hide-scrollbar">
+                <!-- Template & Impor Controls -->
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="flex flex-1 gap-1.5 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-800/50 p-1 rounded-xl">
+                        <label class="sr-only" for="tp-import-template">Jenis template impor TP</label>
+                        <select id="tp-import-template" data-simni-action="updateTPTemplateLink" data-simni-trigger="change" class="min-w-0 flex-1 px-2.5 bg-transparent text-indigo-700 dark:text-indigo-300 text-xs font-bold focus:outline-none cursor-pointer">
+                            <option value="one">Template 1 Kelas</option>
+                            <option value="multi">Template 12 Kelas</option>
+                        </select>
+                        <a id="tp-import-template-download" href="templates/Template_Impor_TP_1_Kelas.xlsx" download class="h-8 px-3 bg-primary hover:bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-2xs flex items-center justify-center gap-1 transition-colors" aria-label="Unduh template impor TP">
+                            <i class="fas fa-download text-[10px]"></i><span>Unduh</span>
+                        </a>
+                    </div>
+                    <div class="flex gap-2">
+                        <label class="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:scale-95">
+                            <i class="fas fa-file-excel text-xs"></i><span>Impor</span>
+                            <input type="file" class="hidden" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel" data-simni-action="importTPExcel" data-simni-trigger="change" data-simni-argument="event">
+                        </label>
+                        <button type="button" data-simni-action="openSIMNILens" data-simni-trigger="click" class="h-10 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95">
+                            <i class="fas fa-camera text-xs"></i><span>Lens</span>
+                        </button>
                     </div>
                 </div>
-                <form id="form-add-tp" data-simni-action="submitTP" data-simni-trigger="submit" data-simni-argument="event" class="bg-white dark:bg-[#111111] p-4 rounded-xl border border-slate-200 dark:border-slate-800 mb-6 space-y-3 shadow-sm">
+
+                <!-- Export & Print Action Chips -->
+                <div class="flex gap-2">
+                    <button type="button" data-simni-action="exportTPExcel" data-simni-trigger="click" class="flex-1 h-9 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                        <i class="fas fa-file-export text-xs"></i><span>Ekspor Excel</span>
+                    </button>
+                    <button type="button" data-simni-action="previewPrintTP" data-simni-trigger="click" class="flex-1 h-9 bg-white dark:bg-[#18181b] border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:hover:bg-[#202024] transition-colors cursor-pointer">
+                        <i class="fas fa-print text-xs text-slate-400"></i><span>Pratinjau Cetak</span>
+                    </button>
+                </div>
+
+                <!-- Form Add TP -->
+                <form id="form-add-tp" data-simni-action="submitTP" data-simni-trigger="submit" data-simni-argument="event" class="bg-white dark:bg-[#111113] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3.5 shadow-2xs">
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-tp-mapel">Mata Pelajaran</label><select id="input-tp-mapel" required class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm font-bold dark:bg-[#000000]"><option value="Matematika">Matematika</option><option value="Bahasa Indonesia">B. Indonesia</option><option value="Pendidikan Pancasila">Pancasila</option><option value="IPAS">IPAS</option><option value="Seni Rupa">Seni Rupa</option><option value="PJOK">PJOK</option><option value="PAI">PAI</option><option value="Bahasa Inggris">B. Inggris</option><option value="Bahasa Sunda">B. Sunda</option><option value="Komputer">Komputer</option><option value="BTQ">BTQ</option><option value="Murojaah">Murojaah</option></select></div>
-                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-tp-smt">Semester</label><select id="input-tp-smt" required class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm font-bold dark:bg-[#000000]"><option value="1">1 (Ganjil)</option><option value="2">2 (Genap)</option></select></div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="input-tp-mapel">Mata Pelajaran</label>
+                            <select id="input-tp-mapel" required class="w-full h-10 px-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="Matematika">Matematika</option>
+                                <option value="Bahasa Indonesia">B. Indonesia</option>
+                                <option value="Pendidikan Pancasila">Pancasila</option>
+                                <option value="IPAS">IPAS</option>
+                                <option value="Seni Rupa">Seni Rupa</option>
+                                <option value="PJOK">PJOK</option>
+                                <option value="PAI">PAI</option>
+                                <option value="Bahasa Inggris">B. Inggris</option>
+                                <option value="Bahasa Sunda">B. Sunda</option>
+                                <option value="Komputer">Komputer</option>
+                                <option value="BTQ">BTQ</option>
+                                <option value="Murojaah">Murojaah</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="input-tp-smt">Semester</label>
+                            <select id="input-tp-smt" required class="w-full h-10 px-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="1">1 (Ganjil)</option>
+                                <option value="2">2 (Genap)</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-tp-bab">Bab / Unit Pembelajaran</label><select id="input-tp-bab" class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm font-bold dark:bg-[#000000]">
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="input-tp-bab">Bab / Unit Pembelajaran</label>
+                        <select id="input-tp-bab" class="w-full h-10 px-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             <option value="">-- Tanpa Bab (Umum) --</option>
-                            <option value="1">Bab 1</option>
-                            <option value="2">Bab 2</option>
-                            <option value="3">Bab 3</option>
-                            <option value="4">Bab 4</option>
-                            <option value="5">Bab 5</option>
-                            <option value="6">Bab 6</option>
-                            <option value="7">Bab 7</option>
-                            <option value="8">Bab 8</option>
-                            <option value="9">Bab 9</option>
-                            <option value="10">Bab 10</option>
+                            <option value="1">Bab 1</option><option value="2">Bab 2</option>
+                            <option value="3">Bab 3</option><option value="4">Bab 4</option>
+                            <option value="5">Bab 5</option><option value="6">Bab 6</option>
+                            <option value="7">Bab 7</option><option value="8">Bab 8</option>
+                            <option value="9">Bab 9</option><option value="10">Bab 10</option>
                         </select>
                     </div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-tp-kode">Kode TP (Cth: MAT.1)</label><input type="text" id="input-tp-kode" required class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm dark:bg-[#000000]"></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="input-tp-desc">Deskripsi TP</label><textarea id="input-tp-desc" required rows="2" class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm dark:bg-[#000000]"></textarea></div>
-                    <button type="submit" class="w-full py-2 bg-primary hover:bg-indigo-600 text-white rounded-lg font-bold text-sm shadow-sm transition-colors cursor-pointer"><i class="fas fa-plus mr-1"></i> Tambahkan TP</button>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="input-tp-kode">Kode TP (Cth: MAT.1)</label>
+                        <input type="text" id="input-tp-kode" required class="w-full h-10 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="input-tp-desc">Deskripsi Capaian TP</label>
+                        <textarea id="input-tp-desc" required rows="2" class="w-full p-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-medium dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+                    </div>
+                    <button type="submit" class="w-full h-10 bg-primary hover:bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5">
+                        <i class="fas fa-plus text-xs"></i><span>Tambahkan TP</span>
+                    </button>
                 </form>
-                <h4 class="font-bold text-xs text-slate-500 uppercase mb-2">Daftar Tujuan Pembelajaran Aktif</h4>
+
+                <h4 class="font-bold text-[11px] text-slate-400 uppercase tracking-wider pt-2">Daftar Tujuan Pembelajaran Aktif</h4>
                 <div class="space-y-2" id="list-tp-modal"></div>
             </div>
         </div>
     </div>
-    <div id="modal-preview-tp-import" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-[10010] hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="tp-import-panel bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden border border-slate-100 dark:border-slate-800">
-            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]"><h3 class="font-bold text-lg dark:text-white">Pratinjau Impor TP</h3><button type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-tp-import"]' class="w-8 h-8 rounded-full dark:bg-[#222222] hover:bg-slate-200" aria-label="Tutup pratinjau"><i class="fas fa-times"></i></button></div>
-            <div class="tp-import-scroll p-5">
+
+    <!-- MODAL PRATINJAU IMPOR TP -->
+    <div id="modal-preview-tp-import" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10010] hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="tp-import-panel bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col max-h-[92vh]">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-sm">
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Pratinjau Impor TP</h3>
+                </div>
+                <button type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-tp-import"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer text-xs" aria-label="Tutup pratinjau"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tp-import-scroll p-5 sm:p-6 overflow-y-auto">
                 <div id="preview-tp-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
                 <p id="preview-tp-errors" class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-4"></p>
-                <div class="overflow-x-auto border dark:border-slate-800 rounded-xl"><table class="w-full text-left"><thead class="bg-slate-50 dark:bg-black text-xs uppercase"><tr><th class="p-2">Kode TP</th><th class="p-2">Mata Pelajaran</th><th class="p-2">Kelas</th><th class="p-2">Status</th></tr></thead><tbody id="preview-tp-body" class="text-sm divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
+                <div class="overflow-x-auto border border-slate-200/80 dark:border-slate-800 rounded-xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 dark:bg-[#161618] text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                            <tr><th class="p-3">Kode TP</th><th class="p-3">Mata Pelajaran</th><th class="p-3">Kelas</th><th class="p-3">Status</th></tr>
+                        </thead>
+                        <tbody id="preview-tp-body" class="text-xs sm:text-sm divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="p-4 border-t dark:border-slate-800 flex justify-end gap-2"><button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-tp-import"]' class="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-xl text-sm font-bold cursor-pointer">Batal</button><button type="button" id="btn-commit-tp-import" data-simni-action="commitTPImport" data-simni-trigger="click" class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold cursor-pointer">Simpan TP</button></div>
+            <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#141416]/50 flex justify-end gap-2.5">
+                <button type="button" aria-label="Tutup dialog" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-tp-import"]' class="h-10 px-4 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer">Batal</button>
+                <button type="button" id="btn-commit-tp-import" data-simni-action="commitTPImport" data-simni-trigger="click" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-95">Simpan TP</button>
+            </div>
         </div>
     </div>
 
     <!-- MODAL EDIT TP LENGKAP -->
-    <div id="modal-edit-tp" style="z-index: 10020;" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm hidden flex-col items-center justify-center p-4 no-print opacity-0 transition-opacity">
-        <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-slate-100 dark:border-slate-800">
-            <div class="p-4 border-b dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#000000]"><h3 class="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2"><i class="fas fa-edit text-primary"></i><span>Edit Tujuan Pembelajaran</span></h3><button data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-edit-tp"]' class="w-8 h-8 rounded-full text-slate-500 dark:bg-[#222222] hover:bg-slate-200 cursor-pointer" aria-label="Tutup edit"><i class="fas fa-times"></i></button></div>
-            <div class="p-5 overflow-y-auto flex-1 bg-slate-50 dark:bg-[#000000]">
+    <div id="modal-edit-tp" style="z-index: 10020;" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex-col items-center justify-center p-3 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] border border-slate-200/80 dark:border-slate-800">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Edit Tujuan Pembelajaran</h3>
+                </div>
+                <button data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-edit-tp"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer text-xs" aria-label="Tutup edit"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-5 sm:p-6 overflow-y-auto flex-1 bg-slate-50/40 dark:bg-[#0c0c0e]/40">
                 <form id="form-edit-tp" data-simni-action="submitEditTP" data-simni-trigger="submit" data-simni-argument="event" class="space-y-4">
                     <input type="hidden" id="edit-tp-id">
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="edit-tp-mapel">Mata Pelajaran</label><input type="text" id="edit-tp-mapel" readonly class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400"></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="edit-tp-smt">Semester</label><select id="edit-tp-smt" required class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm font-bold dark:bg-[#000000]"><option value="1">1 (Ganjil)</option><option value="2">2 (Genap)</option></select></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="edit-tp-bab">Bab / Unit Pembelajaran</label><select id="edit-tp-bab" class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm font-bold dark:bg-[#000000]"><option value="">-- Tanpa Bab (Umum) --</option><option value="1">Bab 1</option><option value="2">Bab 2</option><option value="3">Bab 3</option><option value="4">Bab 4</option><option value="5">Bab 5</option><option value="6">Bab 6</option><option value="7">Bab 7</option><option value="8">Bab 8</option><option value="9">Bab 9</option><option value="10">Bab 10</option></select></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="edit-tp-kode">Kode TP</label><input type="text" id="edit-tp-kode" required class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm dark:bg-[#000000]"></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="edit-tp-desc">Deskripsi TP</label><textarea id="edit-tp-desc" required rows="4" class="w-full px-3 py-2 border dark:border-slate-700 rounded-lg text-sm dark:bg-[#000000]"></textarea></div>
-                    <div class="flex justify-between items-center pt-2">
-                        <button type="button" data-simni-action="deleteTPEditModal" data-simni-trigger="click" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"><i class="fas fa-trash mr-1"></i> Hapus TP</button>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="edit-tp-mapel">Mata Pelajaran</label>
+                        <input type="text" id="edit-tp-mapel" readonly class="w-full h-10 px-3.5 bg-slate-100 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="edit-tp-smt">Semester</label>
+                        <select id="edit-tp-smt" required class="w-full h-10 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="1">1 (Ganjil)</option>
+                            <option value="2">2 (Genap)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="edit-tp-bab">Bab / Unit Pembelajaran</label>
+                        <select id="edit-tp-bab" class="w-full h-10 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="">-- Tanpa Bab (Umum) --</option>
+                            <option value="1">Bab 1</option><option value="2">Bab 2</option>
+                            <option value="3">Bab 3</option><option value="4">Bab 4</option>
+                            <option value="5">Bab 5</option><option value="6">Bab 6</option>
+                            <option value="7">Bab 7</option><option value="8">Bab 8</option>
+                            <option value="9">Bab 9</option><option value="10">Bab 10</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="edit-tp-kode">Kode TP</label>
+                        <input type="text" id="edit-tp-kode" required class="w-full h-10 px-3.5 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-bold dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1" for="edit-tp-desc">Deskripsi TP</label>
+                        <textarea id="edit-tp-desc" required rows="4" class="w-full p-3 bg-slate-50/70 dark:bg-[#161618] border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-medium dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <button type="button" data-simni-action="deleteTPEditModal" data-simni-trigger="click" class="h-10 px-4 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5">
+                            <i class="fas fa-trash text-xs"></i><span>Hapus TP</span>
+                        </button>
                         <div class="flex gap-2">
-                            <button aria-label="Tutup dialog" type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-edit-tp"]' class="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-xs font-bold cursor-pointer">Batal</button>
-                            <button type="submit" class="px-5 py-2 bg-primary hover:bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer"><i class="fas fa-check mr-1"></i> Simpan Perubahan</button>
+                            <button aria-label="Tutup dialog" type="button" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-edit-tp"]' class="h-10 px-4 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">Batal</button>
+                            <button type="submit" class="h-10 px-5 bg-primary hover:bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow-sm cursor-pointer flex items-center gap-1.5 active:scale-95">
+                                <i class="fas fa-check text-xs"></i><span>Simpan Perubahan</span>
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -155,7 +425,7 @@
                 <i class="fas fa-camera text-indigo-400 text-lg"></i>
                 <span id="ocr-status-label" class="text-xs sm:text-sm font-semibold text-slate-200">Arahkan ke butir TP di buku paket</span>
             </div>
-            <button type="button" data-simni-action="closeSIMNILens" data-simni-trigger="click" class="text-white hover:text-red-400 text-3xl px-2 py-1 leading-none cursor-pointer" aria-label="Tutup SIMNI Lens">&times;</button>
+            <button type="button" data-simni-action="closeSIMNILens" data-simni-trigger="click" class="text-white hover:text-rose-400 text-3xl px-2 py-1 leading-none cursor-pointer" aria-label="Tutup SIMNI Lens">&times;</button>
         </div>
 
         <div class="relative w-full flex-1 flex items-center justify-center overflow-hidden my-2 rounded-2xl bg-slate-950">
@@ -196,6 +466,60 @@
                 <button type="button" data-simni-action="rotateLens90" data-simni-trigger="click" class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-lg backdrop-blur-sm transition-all cursor-pointer" title="Putar Orientasi 90°"><i class="fas fa-sync-alt"></i></button>
                 <button type="button" data-simni-action="captureLensFrameToRAM" data-simni-trigger="click" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white p-1 shadow-2xl flex items-center justify-center transition-transform active:scale-95 cursor-pointer" title="Jepret Frame Teks"><div class="w-full h-full rounded-full bg-indigo-600 border-4 border-white flex items-center justify-center"><i class="fas fa-camera text-white text-xl"></i></div></button>
                 <label class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-lg backdrop-blur-sm cursor-pointer transition-all" title="Pilih Foto dari Galeri"><i class="fas fa-images"></i><input type="file" accept="image/*" class="hidden" data-simni-action="handleLensGalleryFile" data-simni-trigger="change" data-simni-argument="event"></label>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRATINJAU CETAK DAFTAR TP -->
+    <div id="modal-preview-cetak-tp" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10020] hidden flex-col items-center justify-center p-2 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden border border-slate-200/80 dark:border-slate-800">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Pratinjau Cetak Tujuan Pembelajaran</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-simni-action="executePrintTPPreview" data-simni-trigger="click" class="h-9 px-4 bg-primary hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95">
+                        <i class="fas fa-file-pdf text-xs"></i><span>Cetak / Simpan PDF</span>
+                    </button>
+                    <button type="button" aria-label="Tutup pratinjau TP" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-cetak-tp"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 cursor-pointer text-xs">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-100 dark:bg-[#0b0f19]">
+                <div id="area-preview-cetak-tp" class="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 max-w-[210mm] mx-auto min-h-[297mm]">
+                    <!-- Konten dinamis di-render oleh previewPrintTP() -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRATINJAU CETAK REKAP NILAI -->
+    <div id="modal-preview-cetak-rekap-nilai" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[10020] hidden flex-col items-center justify-center p-2 sm:p-4 no-print opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-[#111113] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden border border-slate-200/80 dark:border-slate-800">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex justify-between items-center bg-slate-50/50 dark:bg-[#141416]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Pratinjau Cetak Rekap Nilai TP</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" data-simni-action="executePrintRekapNilaiPreview" data-simni-trigger="click" class="h-9 px-4 bg-primary hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95">
+                        <i class="fas fa-file-pdf text-xs"></i><span>Cetak / Simpan PDF</span>
+                    </button>
+                    <button type="button" aria-label="Tutup pratinjau rekap" data-simni-action="closeModal" data-simni-trigger="click" data-simni-args='["modal-preview-cetak-rekap-nilai"]' class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1c1f] hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 cursor-pointer text-xs">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-100 dark:bg-[#0b0f19]">
+                <div id="area-preview-cetak-rekap-nilai" class="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 max-w-[210mm] mx-auto min-h-[297mm]">
+                    <!-- Konten dinamis di-render oleh previewPrintRekapNilai() -->
+                </div>
             </div>
         </div>
     </div>

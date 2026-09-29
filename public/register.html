@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="referrer" content="no-referrer">
+    <meta name="simni-edge-url" content="https://simni-assets-gateway.2ndgoal.workers.dev">
+    <title>Daftar Guru · SIMNI</title>
+    <link rel="stylesheet" href="./tailwind-offline.css">
+    <link rel="stylesheet" href="./js/ui/shell.css">
+    <script src="./js/core/runtime-config.js"></script>
+</head>
+<body class="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-200">
+    <main class="min-h-screen flex items-center justify-center p-4">
+        <section class="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111111] shadow-xl p-5" aria-labelledby="registration-title">
+            <div class="flex items-center gap-3 mb-5">
+                <img src="./icons/simni-logo.png" alt="Logo SIMNI" width="48" height="48" class="rounded-xl bg-white">
+                <div>
+                    <h1 id="registration-title" class="text-xl font-extrabold">Pendaftaran Guru SIMNI</h1>
+                    <p class="text-xs text-slate-500">Daftar melalui undangan. Akses kelas diberikan setelah persetujuan superuser.</p>
+                </div>
+            </div>
+
+            <div id="registration-status" class="hidden mb-4 rounded-xl border px-3 py-2 text-sm" role="status" aria-live="polite"></div>
+
+            <form id="registration-form" class="space-y-4">
+                <div>
+                    <label for="registration-slot" class="block text-xs font-bold uppercase text-slate-500 mb-1">Pilih Kelas / Penugasan</label>
+                    <select id="registration-slot" required class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-black px-3 py-2.5">
+                        <option value="">Memuat slot…</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="registration-name" class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Lengkap Guru</label>
+                    <input id="registration-name" required minlength="2" maxlength="100" autocomplete="name" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-black px-3 py-2.5">
+                </div>
+                <div>
+                    <label for="registration-email" class="block text-xs font-bold uppercase text-slate-500 mb-1">Email Undangan</label>
+                    <input id="registration-email" type="email" required autocomplete="email" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-black px-3 py-2.5">
+                </div>
+                <div>
+                    <label for="registration-code" class="block text-xs font-bold uppercase text-slate-500 mb-1">Kode Undangan</label>
+                    <input id="registration-code" required autocomplete="one-time-code" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-black px-3 py-2.5">
+                </div>
+                <div>
+                    <label for="registration-password" class="block text-xs font-bold uppercase text-slate-500 mb-1">Kata Sandi</label>
+                    <input id="registration-password" type="password" required minlength="12" autocomplete="new-password" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-black px-3 py-2.5">
+                </div>
+                <div>
+                    <label for="registration-password-confirm" class="block text-xs font-bold uppercase text-slate-500 mb-1">Ulangi Kata Sandi</label>
+                    <input id="registration-password-confirm" type="password" required minlength="12" autocomplete="new-password" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-black px-3 py-2.5">
+                </div>
+                <button id="registration-submit" type="submit" class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3">Buat Akun &amp; Kirim Verifikasi</button>
+            </form>
+
+            <section class="mt-4 space-y-3" aria-label="Lanjutkan akun yang sudah dibuat">
+                <p>Sudah memiliki akun? Isi email dan kata sandi di bawah untuk melanjutkan.</p>
+                <label for="resume-email">Email</label><input id="resume-email" type="email" autocomplete="username" class="w-full rounded-xl border px-3 py-3">
+                <label for="resume-password">Kata sandi</label><input id="resume-password" type="password" autocomplete="current-password" class="w-full rounded-xl border px-3 py-3">
+                <button id="registration-login" type="button" class="w-full rounded-xl border py-3">Masuk &amp; Lanjutkan</button>
+                <button id="registration-logout" type="button" class="w-full rounded-xl border py-3">Keluar / Ganti Akun</button>
+            </section>
+            <section id="registration-verification" class="hidden space-y-3">
+                <p class="text-sm leading-relaxed">Email verifikasi Firebase telah dikirim. Buka email tersebut, klik tautan verifikasi, lalu kembali ke halaman ini.</p>
+                <button id="registration-check" type="button" class="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3">Periksa Status / Kirim Permohonan</button>
+                <button id="registration-resend" type="button" class="w-full rounded-xl border py-3">Kirim Ulang Verifikasi</button>
+            </section>
+
+            <a href="./index.html" class="mt-5 block text-center text-sm font-bold text-indigo-600 dark:text-indigo-400">Kembali ke Login SIMNI</a>
+        </section>
+    </main>
+    <script type="module" src="./features/registration/registration.js"></script>
+</body>
+</html>

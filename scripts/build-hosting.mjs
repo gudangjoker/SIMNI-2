@@ -42,6 +42,7 @@ function validateEdgeUrl(value) {
 
 const sourceEntries = Object.freeze([
     'index.html',
+    'register.html',
     'manifest.json',
     'sw.js',
     'tailwind-offline.css',
@@ -164,6 +165,7 @@ async function resetOutputDirectory() {
 async function assertNoUnexpectedHostingFiles() {
     const allowedRoots = new Set([
         'index.html',
+        'register.html',
         'manifest.json',
         'sw.js',
         'tailwind-offline.css',
@@ -194,38 +196,39 @@ for (const filename of templateAssets) {
 
 for (const vendor of vendors) {
     for (const [sourceRelative, targetRelative] of vendor.copies) {
-        await copyIntoPublic(sourceRelative, targetRelative);
+        if (targetRelative === 'vendor/firebase/firebase-auth.js' || targetRelative === 'vendor/firebase/firebase-database.js') {
+            await ensureExists(sourceRelative);
+            const source = path.join(root, sourceRelative);
+            const target = path.join(out, targetRelative);
+            await mkdir(path.dirname(target), { recursive: true });
+            const content = await readFile(source, 'utf8');
+            const localized = content.replaceAll(
+                'https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js',
+                './firebase-app.js'
+            );
+            if (localized === content) {
+                throw new Error(`Firebase module tidak memiliki app import yang dapat dilokalkan: ${sourceRelative}`);
+            }
+            await writeFile(target, localized, 'utf8');
+        } else {
+            await copyIntoPublic(sourceRelative, targetRelative);
+        }
     }
-}
-
-const firebaseVendorDirectory = path.join(out, 'vendor', 'firebase');
-for (const filename of [
-    'firebase-auth.js',
-    'firebase-database.js',
-]) {
-    const modulePath = path.join(firebaseVendorDirectory, filename);
-    const source = await readFile(modulePath, 'utf8');
-    const localized = source.replaceAll(
-        'https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js',
-        './firebase-app.js'
-    );
-    if (localized === source) {
-        throw new Error(`Firebase module tidak memiliki app import yang dapat dilokalkan: ${filename}`);
-    }
-    await writeFile(modulePath, localized, 'utf8');
 }
 
 const edgeUrl = validateEdgeUrl(requiredDeploymentValue('SIMNI_EDGE_URL'));
 const deploymentMetadata = `  <meta name="simni-edge-url" content="${edgeUrl}">`;
 
-const builtIndexHtmlPath = path.join(out, 'index.html');
-const builtIndexHtml = await readFile(builtIndexHtmlPath, 'utf8');
-if (builtIndexHtml.includes('</head>')) {
-    await writeFile(
-        builtIndexHtmlPath,
-        builtIndexHtml.replace('</head>', `${deploymentMetadata}\n</head>`),
-        'utf8'
-    );
+for (const htmlFile of ['index.html', 'register.html']) {
+    const builtHtmlPath = path.join(out, htmlFile);
+    const builtHtml = await readFile(builtHtmlPath, 'utf8');
+    if (builtHtml.includes('</head>') && !builtHtml.includes('simni-edge-url')) {
+        await writeFile(
+            builtHtmlPath,
+            builtHtml.replace('</head>', `${deploymentMetadata}\n</head>`),
+            'utf8'
+        );
+    }
 }
 
 await assertNoUnexpectedHostingFiles();

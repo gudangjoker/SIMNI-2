@@ -32,6 +32,7 @@
         'exportSiswaExcel',
         'finalisasiLPS',
         'generatePrintQR',
+        'goToProfile',
         'hapusLogo',
         'hapusSiswaPaten',
         'importDataLokal',
@@ -88,12 +89,15 @@
         'savePresensiManual',
         'editPresensiManual',
         'saveThemeFromDropdown',
+        'sendProfilePasswordReset',
         'setActiveKelas',
         'setCatatanTab',
         'setDokumenTab',
         'setJurnalTab',
         'setNilaiTab',
         'setPresensiTab',
+        'setSettingsTab',
+        'showSyncStatusInfo',
         'simpanIdentitas',
         'simpanPengaturanLPS',
         'submitCatatan',
@@ -103,6 +107,7 @@
         'startAnnualRollover',
         'switchView',
         'toggleMenuDrawer',
+        'togglePasswordVisibility',
         'toast',
         'unduhTemplateExcel',
         'updateCredentials',
@@ -114,7 +119,25 @@
         'uploadStudentPhotoAction',
         'verifyAnnualArchiveFile',
         'gunakanTemplateLPSAktif',
-        'logoutAuth'
+        'logoutAuth',
+        'previewPrintRekapNilai',
+        'exportTPExcel',
+        'previewPrintTP',
+        'executePrintTPPreview',
+        'executePrintRekapNilaiPreview',
+        'previewPrintJurnal',
+        'exportJurnalExcel',
+        'executePrintJurnalPreview',
+        'clearAppCacheAndReload',
+        'toggleStudentSelectMode',
+        'previewPrintSiswa',
+        'toggleSelectAllStudents',
+        'openBatchChangeClassModal',
+        'openBatchChangeKelompokModal',
+        'deleteBatchStudents',
+        'clearStudentSelection',
+        'executePrintSiswaPreview',
+        'commitBatchUpdateStudents'
     ]);
 
     const SUPPORTED_TRIGGERS = new Set([
@@ -243,6 +266,29 @@
             invoke(source, event);
         });
     }
+
+    root.togglePasswordVisibility = function togglePasswordVisibility(targetId, eventOrElement) {
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+
+        const btn = (eventOrElement?.currentTarget || eventOrElement?.target || eventOrElement)?.closest?.('button')
+            || document.querySelector(`[data-simni-action="togglePasswordVisibility"][data-simni-args*="${targetId}"]`);
+        const icon = btn?.querySelector?.('i');
+        if (icon) {
+            icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+        }
+    };
+
+    root.goToProfile = function goToProfile() {
+        if (typeof root.switchView === 'function') {
+            root.switchView('pengaturan');
+        }
+        if (typeof root.setSettingsTab === 'function') {
+            root.setSettingsTab('profile');
+        }
+    };
 
     root.SIMNIActionDispatcher = Object.freeze({
         actions: Object.freeze([...ALLOWED_ACTIONS, ...BUILT_IN_ACTIONS]),

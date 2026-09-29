@@ -2,170 +2,551 @@
 
 <template data-simni-view="pengaturan">
 <div id="view-pengaturan" class="view-section hidden max-w-4xl mx-auto space-y-6 fade-in pb-12" hidden>
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-[#111111] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center text-lg">
+    <!-- TOP HEADER CONTEXT BAR -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#111114] p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl border border-indigo-100 dark:border-indigo-900/50 shadow-xs shrink-0">
                 <i class="fas fa-cog" aria-hidden="true"></i>
             </div>
             <div>
-                <h2 class="text-xl font-bold text-slate-800 dark:text-white">Pusat Pengaturan</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Konfigurasi sistem, identitas kelas, tema tampilan, cadangan data, dan keamanan</p>
+                <h2 class="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">Pusat Pengaturan Sistem</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Konfigurasi identitas kelas, profil pendidik, keamanan akun, database, dan personalisasi</p>
             </div>
         </div>
-        <button type="button" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["dashboard"]' class="px-4 py-2 bg-slate-100 dark:bg-[#1f2438] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-2">
-            <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+        <button id="settings-header-back-btn" type="button" data-simni-action="switchView" data-simni-trigger="click" data-simni-args='["dashboard"]' class="inline-flex items-center gap-2 min-h-[40px] px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-[#18181b] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali ke Dashboard
         </button>
     </div>
 
-    <div class="bg-white dark:bg-[#111111] rounded-2xl shadow-sm p-6 border border-slate-200 dark:border-slate-800 space-y-6">
-                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center border border-indigo-100 dark:border-indigo-800/50">
-                    <p class="text-xs text-indigo-500 font-bold mb-1 uppercase tracking-wider"><i class="fas fa-shield-alt mr-1"></i> Admin Terautentikasi</p>
-                    <p id="profile-email-display" class="font-bold text-slate-800 dark:text-white">Identitas akun belum tersedia</p>
-                    <p id="firebase-project-display" class="text-[11px] text-slate-500 mt-1">Proyek Firebase: admin-kelas-3a</p>
-                    <p id="firebase-uid-display" class="text-[10px] text-slate-400 mt-0.5 break-all">UID: Tidak tersedia</p>
-                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-                        <div class="rounded-lg bg-white/70 dark:bg-black/20 p-2 border border-indigo-100 dark:border-indigo-800/50">
-                            <p class="text-[9px] uppercase font-bold text-slate-400">Role aktif</p>
-                            <p id="simni-role-display" class="text-xs font-bold text-slate-700 dark:text-slate-200">-</p>
+    <!-- PANEL HUB: MENU UTAMA PENGATURAN -->
+    <div id="settings-panel-hub" class="space-y-6">
+        <!-- Info Akun Admin (Executive SaaS Card) -->
+        <div class="bg-white dark:bg-[#111114] rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+            <div class="bg-gradient-to-br from-indigo-50/80 to-slate-50 dark:from-indigo-950/20 dark:to-[#16161a] p-5 rounded-2xl border border-indigo-100/80 dark:border-indigo-900/40 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 dark:border-indigo-900/30 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+                        <span class="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fas fa-shield-alt text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i> Sesi Akun Terautentikasi
+                        </span>
+                    </div>
+                    <span id="firebase-project-display" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/40 w-fit">
+                        Proyek: admin-kelas-3a
+                    </span>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Identitas Pengguna</p>
+                    <p id="profile-email-display" class="font-black text-base text-slate-900 dark:text-white mt-0.5 break-all">Identitas akun belum tersedia</p>
+                    <p id="firebase-uid-display" class="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-1 break-all">UID: Tidak tersedia</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div class="rounded-xl bg-white/90 dark:bg-black/30 p-3 border border-indigo-100/80 dark:border-indigo-900/40">
+                        <p class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Role Otorisasi</p>
+                        <p id="simni-role-display" class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mt-0.5">-</p>
+                    </div>
+                    <div class="rounded-xl bg-white/90 dark:bg-black/30 p-3 border border-indigo-100/80 dark:border-indigo-900/40">
+                        <p class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Workspace · Rombel · Tahun</p>
+                        <p id="simni-workspace-display" class="text-xs font-extrabold text-slate-800 dark:text-slate-200 mt-0.5 break-all">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 MODULAR CATEGORY CLUSTER CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Kluster 1: Identitas Sekolah -->
+            <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["school"]' class="text-left bg-white dark:bg-[#111114] hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-800 rounded-2xl p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-md transition-all duration-200 group flex items-start gap-4 cursor-pointer">
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-school" aria-hidden="true"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Identitas Sekolah</h4>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Profil sekolah, yayasan, akreditasi, serta nama Kepala SDIT Bina Muda dan NUKS penandatanganan resmi.</p>
+                </div>
+            </button>
+
+            <!-- Kluster 2: Profil & Personalisasi Guru -->
+            <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["profile"]' class="text-left bg-white dark:bg-[#111114] hover:bg-amber-50/40 dark:hover:bg-amber-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-800 rounded-2xl p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-md transition-all duration-200 group flex items-start gap-4 cursor-pointer">
+                <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-id-badge" aria-hidden="true"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Profil Guru & Keamanan</h4>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Identitas wali kelas, NUPTK, nama kelas aktif, ganti kata sandi / email akun, dan tema warna PWA.</p>
+                </div>
+            </button>
+
+            <!-- Kluster 3: Database & Arsip -->
+            <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["database"]' class="text-left bg-white dark:bg-[#111114] hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800 rounded-2xl p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-md transition-all duration-200 group flex items-start gap-4 cursor-pointer">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-database" aria-hidden="true"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Database & Cadangan</h4>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Arsip database tahun aktif (cloud & Excel), backup/restore JSON offline, dan zona reset tahun buku.</p>
+                </div>
+            </button>
+
+            <!-- Kluster 4: Pemeliharaan Sistem -->
+            <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["maintenance"]' class="text-left bg-white dark:bg-[#111114] hover:bg-blue-50/40 dark:hover:bg-blue-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 rounded-2xl p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] hover:shadow-md transition-all duration-200 group flex items-start gap-4 cursor-pointer">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-wrench" aria-hidden="true"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Pemeliharaan & Diagnosis</h4>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Penyimpanan IndexedDB/LocalStorage, bersihkan cache service worker PWA, dan panduan subsistem.</p>
+                </div>
+            </button>
+        </div>
+
+        <!-- ACTION BAR LOGOUT MANDIRI -->
+        <div class="flex justify-center pt-2">
+            <button data-simni-action="logoutAuth" data-simni-trigger="click" class="inline-flex items-center gap-2 min-h-[42px] px-6 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer active:scale-[0.98]">
+                <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Keluar Aplikasi
+            </button>
+        </div>
+    </div>
+
+    <!-- PANEL 1: IDENTITAS SEKOLAH (HALAMAN MANDIRI) -->
+    <div id="settings-panel-school" class="hidden space-y-6">
+        <!-- CATEGORY NAVIGATION STRIP -->
+        <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+            <div class="inline-flex w-fit max-w-full items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-[#18181b] rounded-xl overflow-x-auto hide-scrollbar border border-slate-200/70 dark:border-slate-800 text-xs font-semibold shrink-0">
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["school"]' class="px-3 py-1.5 rounded-lg bg-white dark:bg-black text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold">Sekolah</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["profile"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Profil Guru</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["database"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Database</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["maintenance"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Pemeliharaan</button>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 space-y-6">
+            <div>
+                <h4 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-school text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i> Identitas Sekolah & Kepala Satuan Pendidikan
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Data institusi permanen dan penandatanganan Kepala SDIT Bina Muda yang digunakan di seluruh rapor, cetak dokumen, dan arsip resmi.</p>
+            </div>
+
+            <form data-simni-action="simpanIdentitas" data-simni-trigger="submit" data-simni-argument="event" class="space-y-6">
+                <!-- Bagian Penandatanganan Kepala SDIT Bina Muda -->
+                <div class="p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-4">
+                    <div class="flex items-center gap-2 border-b border-indigo-100 dark:border-indigo-900/40 pb-2.5">
+                        <i class="fas fa-user-check text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i>
+                        <span class="text-xs font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">Pimpinan Sekolah (Penandatangan Dokumen Resmi)</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="set-nama-kepala-sekolah">
+                                Nama Kepala SDIT Bina Muda <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="set-nama-kepala-sekolah" required class="w-full min-h-[44px] px-3.5 py-2.5 bg-white dark:bg-[#000000] border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500 transition-all" placeholder="Contoh: H. Ahmad Fauzi, S.Pd.I.">
                         </div>
-                        <div class="rounded-lg bg-white/70 dark:bg-black/20 p-2 border border-indigo-100 dark:border-indigo-800/50">
-                            <p class="text-[9px] uppercase font-bold text-slate-400">Workspace · Kelas · Tahun</p>
-                            <p id="simni-workspace-display" class="text-[10px] font-bold text-slate-700 dark:text-slate-200 break-all">-</p>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="set-nuks-kepala-sekolah">
+                                NUKS Kepala Sekolah <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="set-nuks-kepala-sekolah" required class="w-full min-h-[44px] px-3.5 py-2.5 bg-white dark:bg-[#000000] border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500 transition-all" placeholder="Contoh: 19780512 200501 1 003 / -">
                         </div>
                     </div>
+                    <p class="text-[11px] text-indigo-700 dark:text-indigo-300/80 leading-relaxed flex items-center gap-1.5">
+                        <i class="fas fa-info-circle shrink-0" aria-hidden="true"></i> Nama dan NUKS otomatis disinkronkan ke seluruh buku rapor, leger nilai, presensi cetak, dan arsip resmi.
+                    </p>
+                </div>
+
+                <!-- Bagian Institusi Tetap -->
+                <div class="space-y-4 pt-1">
+                    <h5 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Identitas Institusi Tetap</h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-nama-app">Nama Aplikasi <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                            <input type="text" id="set-nama-app" value="SIMNI Administrasi Kelas" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-nama-yayasan">Nama Yayasan <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                            <input type="text" id="set-nama-yayasan" value="Yayasan Sosial dan Pendidikan Bina Muda" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-jenjang-sekolah">Jenjang Sekolah <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                            <input type="text" id="set-jenjang-sekolah" value="Sekolah Dasar" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-nama-sekolah">Nama Sekolah <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                            <input type="text" id="set-nama-sekolah" value="SDIT Bina Muda Cicalengka" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-akreditasi">Status Akreditasi <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                            <input type="text" id="set-akreditasi" value="A" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-kota">Kota Penandatanganan <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                            <input type="text" id="set-kota" value="Cicalengka" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-nomor-izin">Nomor Izin Operasional <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                        <input type="text" id="set-nomor-izin" value="No.421.2/1143-Disdikbud/2011" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                    </div>
+                </div>
+
+                <!-- ACTION BAR SIMPAN IDENTITAS SEKOLAH -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="submit" id="btn-save-id-school" data-default-text="Simpan Identitas Sekolah" class="inline-flex items-center justify-center gap-2 h-11 px-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm hover:shadow transition-all cursor-pointer active:scale-[0.98]">
+                        <i class="fas fa-save" aria-hidden="true"></i> Simpan Identitas Sekolah
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PANEL 2: PROFIL GURU & PERSONALISASI (HALAMAN MANDIRI) -->
+    <div id="settings-panel-profile" class="hidden space-y-6">
+        <!-- CATEGORY NAVIGATION STRIP -->
+        <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+            <div class="inline-flex w-fit max-w-full items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-[#18181b] rounded-xl overflow-x-auto hide-scrollbar border border-slate-200/70 dark:border-slate-800 text-xs font-semibold shrink-0">
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["school"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Sekolah</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["profile"]' class="px-3 py-1.5 rounded-lg bg-white dark:bg-black text-amber-600 dark:text-amber-400 shadow-2xs font-bold">Profil Guru</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["database"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Database</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["maintenance"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Pemeliharaan</button>
+            </div>
+        </div>
+
+        <!-- Sub 1: Informasi Wali Kelas & Kelas -->
+        <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 space-y-6">
+            <div>
+                <h4 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-user-tie text-amber-500" aria-hidden="true"></i> Data Penugasan Guru & Kelas
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Atur nama wali kelas, NUPTK guru pendidik, dan identitas kelas yang sedang diampu.</p>
+            </div>
+
+            <form data-simni-action="simpanIdentitas" data-simni-trigger="submit" data-simni-argument="event" class="space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="set-nama-kelas">Nama Kelas <span class="text-red-500">*</span></label>
+                        <input type="text" id="set-nama-kelas" required class="w-full min-h-[44px] px-3.5 py-2.5 bg-white dark:bg-[#000000] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all" placeholder="Contoh: Kelas 3 Ibnu Katsir">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="set-tapel">Tahun Pelajaran <i class="fas fa-lock ml-1 text-[10px]" aria-hidden="true"></i></label>
+                        <input type="text" id="set-tapel" value="2026-2027" readonly aria-readonly="true" class="w-full min-h-[44px] px-3.5 py-2.5 bg-slate-100 dark:bg-[#161618] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 cursor-not-allowed" title="Mengikuti tahun pelajaran aktif sistem dan berubah melalui Reset Tahun Buku.">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1.5" for="set-nama-wali-kelas">Nama Guru / Wali Kelas <span class="text-red-500">*</span></label>
+                        <input type="text" id="set-nama-wali-kelas" required class="w-full min-h-[44px] px-3.5 py-2.5 bg-white dark:bg-[#000000] border border-amber-200 dark:border-amber-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/15 focus:border-amber-500 transition-all" placeholder="Nama Guru Lengkap Beserta Gelar">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1.5" for="set-nuptk-wali-kelas">NUPTK Guru <span class="text-red-500">*</span></label>
+                        <input type="text" id="set-nuptk-wali-kelas" required class="w-full min-h-[44px] px-3.5 py-2.5 bg-white dark:bg-[#000000] border border-amber-200 dark:border-amber-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/15 focus:border-amber-500 transition-all" placeholder="16 digit NUPTK atau -">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button type="submit" id="btn-save-id-profile" data-default-text="Simpan Profil Guru" class="inline-flex items-center justify-center gap-2 h-11 px-5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-sm hover:shadow transition-all cursor-pointer active:scale-[0.98]">
+                        <i class="fas fa-save" aria-hidden="true"></i> Simpan Profil Guru
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 2-COLUMN RESPONSIVE GRID FOR SECURITY & THEME -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <!-- Sub 2: Keamanan Akun & Kredensial -->
+            <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 border border-slate-200/80 dark:border-slate-800 space-y-5">
+                <div>
+                    <h4 class="font-extrabold text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
+                        <i class="fas fa-lock" aria-hidden="true"></i> Keamanan Akun & Kredensial
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Perbarui kata sandi login atau email pengajar Anda.</p>
+                </div>
+
+                <form data-simni-action="updateCredentials" data-simni-trigger="submit" data-simni-argument="event" class="space-y-4 p-4 md:p-5 bg-red-50/60 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-800/40">
+                    <div>
+                        <label class="block text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1.5" for="edit-current-password">Kata Sandi Saat Ini <span class="text-red-500">*</span></label>
+                        <div class="simni-password-wrap">
+                            <input type="password" id="edit-current-password" required autocomplete="current-password" placeholder="Wajib diisi untuk konfirmasi" class="w-full h-11 px-3.5 py-2.5 pr-10 bg-white dark:bg-[#000000] border border-red-200 dark:border-red-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/15 focus:border-red-500">
+                            <button type="button" data-simni-action="togglePasswordVisibility" data-simni-trigger="click" data-simni-args='["edit-current-password"]' class="simni-password-toggle" title="Lihat/Sembunyikan Kata Sandi" aria-label="Lihat/Sembunyikan Kata Sandi">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1.5" for="edit-email">Ubah Email Akun</label>
+                        <input type="email" id="edit-email" autocomplete="email" placeholder="Kosongkan jika tidak ingin diubah" class="w-full h-11 px-3.5 py-2.5 bg-white dark:bg-[#000000] border border-red-200 dark:border-red-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/15 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1.5" for="edit-password">Kata Sandi Baru</label>
+                        <div class="simni-password-wrap">
+                            <input type="password" id="edit-password" minlength="8" autocomplete="new-password" placeholder="Min. 8 karakter (kosongkan jika tidak diubah)" class="w-full h-11 px-3.5 py-2.5 pr-10 bg-white dark:bg-[#000000] border border-red-200 dark:border-red-800/60 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/15 focus:border-red-500">
+                            <button type="button" data-simni-action="togglePasswordVisibility" data-simni-trigger="click" data-simni-args='["edit-password"]' class="simni-password-toggle" title="Lihat/Sembunyikan Kata Sandi" aria-label="Lihat/Sembunyikan Kata Sandi">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" id="btn-save-cred" class="inline-flex items-center justify-center gap-2 h-10 px-5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer active:scale-[0.98]">
+                            <i class="fas fa-save" aria-hidden="true"></i> Simpan Kredensial Baru
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Pemulihan Sandi Mandiri via Email Firebase -->
+                <div class="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-envelope-open-text text-amber-600 dark:text-amber-400" aria-hidden="true"></i>
+                        <h5 class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Lupa Kata Sandi?</h5>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Kirimkan tautan reset kata sandi resmi Firebase Authentication ke alamat email akun aktif Anda.
+                    </p>
+                    <div class="flex justify-start pt-1">
+                        <button type="button" data-simni-action="sendProfilePasswordReset" data-simni-trigger="click" class="inline-flex items-center justify-center gap-2 h-10 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer active:scale-[0.98]">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim Tautan Reset Sandi
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub 3: Personalisasi Tema Warna PWA -->
+            <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 border border-slate-200/80 dark:border-slate-800 space-y-5">
+                <div>
+                    <h4 class="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-palette text-primary" aria-hidden="true"></i> Tema Warna Antarmuka PWA
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Pilih skema warna utama antarmuka SIMNI sesuai kenyamanan Anda.</p>
                 </div>
                 
-
-
-                <div class="mb-6">
-                    <h4 class="font-bold text-sm text-slate-800 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-800 pb-2"><i class="fas fa-palette text-primary mr-2"></i>Tema Warna PWA</h4>
-                    <p class="text-[11px] text-slate-500 mb-3">Ubah warna utama aplikasi sesuai selera Anda agar mata tidak cepat lelah.</p>
-                    
-                    <div class="space-y-3">
-                        <select id="theme-selector-dropdown" aria-label="Tema warna aplikasi" class="w-full px-3 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                            <option value="ocean">Ocean (Indigo)</option>
-                            <option value="sage">Sage (Teal)</option>
-                            <option value="lavender">Lavender (Violet)</option>
-                            <option value="sakura">Sakura (Rose)</option>
-                            <option value="sunset">Sunset (Orange)</option>
-                            <option value="coffee">Coffee (Stone)</option>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="theme-selector-dropdown">Pilihan Tema</label>
+                        <select id="theme-selector-dropdown" aria-label="Tema warna aplikasi" class="w-full h-11 px-3.5 py-2 bg-slate-50 dark:bg-[#161618] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-primary/15 focus:border-primary transition-all">
+                            <option value="ocean">Ocean (Indigo Enterprise)</option>
+                            <option value="sage">Sage (Teal Natural)</option>
+                            <option value="lavender">Lavender (Violet Soft)</option>
+                            <option value="sakura">Sakura (Rose Elegant)</option>
+                            <option value="sunset">Sunset (Warm Orange)</option>
+                            <option value="coffee">Coffee (Neutral Stone)</option>
                         </select>
-                        <button type="button" data-simni-action="saveThemeFromDropdown" data-simni-trigger="click" class="w-full py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors text-sm">
-                            Simpan Tema
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <p class="text-xs text-slate-500 font-bold" id="current-theme-label">Tema aktif saat ini: Ocean</p>
+                        <button type="button" data-simni-action="saveThemeFromDropdown" data-simni-trigger="click" class="inline-flex items-center justify-center gap-2 h-10 px-5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl text-xs shadow-sm transition-colors cursor-pointer active:scale-[0.98]">
+                            <i class="fas fa-check" aria-hidden="true"></i> Terapkan Tema
                         </button>
-                        <p class="text-[10px] text-slate-500 font-bold text-center mt-2" id="current-theme-label">Tema aktif saat ini: Ocean</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 3: DATABASE & PENGARSIPAN (HALAMAN MANDIRI DENGAN DANGER ZONE) -->
+    <div id="settings-panel-database" class="hidden space-y-6">
+        <!-- CATEGORY NAVIGATION STRIP -->
+        <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+            <div class="inline-flex w-fit max-w-full items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-[#18181b] rounded-xl overflow-x-auto hide-scrollbar border border-slate-200/70 dark:border-slate-800 text-xs font-semibold shrink-0">
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["school"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Sekolah</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["profile"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Profil Guru</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["database"]' class="px-3 py-1.5 rounded-lg bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold">Database</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["maintenance"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Pemeliharaan</button>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 space-y-8">
+            <!-- SECTION 1: CLOUD & EXCEL ARCHIVE -->
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-cloud-download-alt text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i> Pengarsipan Database Akhir Tahun
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Simpan snapshot data akademik tahun buku berjalan ke cloud dan unduh berkas arsip Excel komprehensif.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button data-requires-feature="archive" data-simni-action="createAnnualArchiveCloud" data-simni-trigger="click" class="p-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold flex items-center gap-4 shadow-sm hover:shadow-md transition-all text-xs text-left cursor-pointer active:scale-[0.98] group">
+                        <div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-lg group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <div class="font-extrabold text-sm">Simpan Arsip Cloud</div>
+                            <div class="text-[11px] text-indigo-100 font-normal mt-0.5">Snapshot database tahun aktif</div>
+                        </div>
+                    </button>
+                    <button data-simni-action="exportArsipTotalExcel" data-simni-trigger="click" class="p-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold flex items-center gap-4 shadow-sm hover:shadow-md transition-all text-xs text-left cursor-pointer active:scale-[0.98] group">
+                        <div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-lg group-hover:scale-110 transition-transform">
+                            <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <div class="font-extrabold text-sm">Unduh Arsip Total (Excel)</div>
+                            <div class="text-[11px] text-emerald-100 font-normal mt-0.5">Arsip seluruh lembar akademik</div>
+                        </div>
+                    </button>
                 </div>
 
                 <div>
-                    <h4 class="font-bold text-sm text-slate-800 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-800 pb-2"><i class="fas fa-id-card text-primary mr-2"></i>Identitas Kelas</h4>
-                    <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 mb-3">Data institusi bertanda kunci ditetapkan permanen oleh SIMNI dan tetap dipertahankan saat pergantian tahun buku. Guru hanya mengubah data kelas dan wali kelas.</p>
-                    <form data-simni-action="simpanIdentitas" data-simni-trigger="submit" data-simni-argument="event" class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-nama-app">Nama Aplikasi <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                            <input type="text" id="set-nama-app" value="SIMNI Administrasi Kelas" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-nama-kelas">Nama Kelas</label>
-                                <input type="text" id="set-nama-kelas" required class="w-full px-3 py-2 bg-white dark:bg-[#000000] border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Contoh: Kelas 3 Ibnu Katsir">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-tapel">Tahun Pelajaran <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                                <input type="text" id="set-tapel" value="2026-2027" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed" title="Mengikuti tahun pelajaran aktif sistem dan berubah melalui Reset Tahun Buku.">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-nama-yayasan">Nama Yayasan <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                            <input type="text" id="set-nama-yayasan" value="Yayasan Sosial dan Pendidikan Bina Muda" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-jenjang-sekolah">Jenjang Sekolah <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                                <input type="text" id="set-jenjang-sekolah" value="Sekolah Dasar" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-nama-sekolah">Nama Sekolah <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                                <input type="text" id="set-nama-sekolah" value="SDIT Bina Muda Cicalengka" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-akreditasi">Status Akreditasi <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                                <input type="text" id="set-akreditasi" value="A" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-kota">Kota Penandatanganan <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                                <input type="text" id="set-kota" value="Cicalengka" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1" for="set-nomor-izin">Nomor Izin Operasional <i class="fas fa-lock ml-1" aria-hidden="true"></i></label>
-                            <input type="text" id="set-nomor-izin" value="No.421.2/1143-Disdikbud/2011" readonly aria-readonly="true" class="w-full px-3 py-2 bg-slate-100 dark:bg-[#181818] border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30">
-                            <div>
-                                <label class="block text-xs font-bold text-amber-700 dark:text-amber-400 uppercase mb-1" for="set-nama-wali-kelas">Nama Wali Kelas</label>
-                                <input type="text" id="set-nama-wali-kelas" required class="w-full px-3 py-2 bg-white dark:bg-[#000000] border border-amber-200 dark:border-amber-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-amber-700 dark:text-amber-400 uppercase mb-1" for="set-nuptk-wali-kelas">NUPTK Wali Kelas</label>
-                                <input type="text" id="set-nuptk-wali-kelas" required class="w-full px-3 py-2 bg-white dark:bg-[#000000] border border-amber-200 dark:border-amber-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                        </div>
-                        <button type="submit" id="btn-save-id" class="w-full py-2 bg-slate-800 dark:bg-[#222222] hover:bg-slate-900 text-white rounded-lg font-bold shadow-sm transition-colors mt-2 border dark:border-slate-700"><i class="fas fa-save mr-1"></i> Simpan Identitas</button>
-                    </form>
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer rounded-xl border border-emerald-300 bg-emerald-50 dark:border-emerald-800/60 dark:bg-emerald-950/20 px-4 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 transition-colors hover:bg-emerald-100 dark:hover:bg-emerald-900/30">
+                        <i class="fas fa-check-double text-emerald-600" aria-hidden="true"></i> Verifikasi Ulang JSON untuk Izin Reset
+                        <input type="file" class="hidden" accept="application/json,.json" data-simni-action="verifyAnnualArchiveFile" data-simni-trigger="change" data-simni-argument="event">
+                    </label>
+                </div>
+            </div>
+
+            <!-- SECTION 2: CADANGAN OFFLINE JSON -->
+            <div class="pt-6 border-t border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div>
+                    <h5 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-file-export text-slate-500" aria-hidden="true"></i> Cadangan Mandiri & Pemulihan Offline
+                    </h5>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Simpan salinan data lokal ke berkas JSON atau pulihkan data dari cadangan.</p>
                 </div>
 
-                <div>
-                    <h4 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2"><i class="fas fa-database mr-2"></i>Ekspor & Cadangan Offline</h4>
-                    <button data-requires-feature="archive" data-simni-action="createAnnualArchiveCloud" data-simni-trigger="click" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex justify-center items-center gap-2 mb-2 shadow-md transition-colors"><i class="fas fa-cloud-upload-alt text-lg"></i> Simpan Arsip Database Tahun Aktif</button>
-                    <button data-simni-action="exportArsipTotalExcel" data-simni-trigger="click" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex justify-center items-center gap-2 mb-3 shadow-md transition-colors"><i class="fas fa-file-excel text-lg"></i> Unduh Arsip Total Tahun Buku</button>
-                    <label class="mb-3 block w-full cursor-pointer rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-3 text-center text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/10 dark:text-emerald-300"><i class="fas fa-check-double mr-1"></i> Verifikasi Ulang JSON untuk Izin Reset<input type="file" class="hidden" accept="application/json,.json" data-simni-action="verifyAnnualArchiveFile" data-simni-trigger="change" data-simni-argument="event"></label>
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <button data-simni-action="exportDataLokal" data-simni-trigger="click" class="py-2 bg-slate-100 dark:bg-[#000000] text-slate-700 dark:text-slate-300 border dark:border-slate-800 text-xs font-bold rounded-lg shadow-sm"><i class="fas fa-download"></i> Backup JSON</button>
-                        <label class="py-2 bg-slate-100 dark:bg-[#000000] text-slate-700 dark:text-slate-300 border dark:border-slate-800 text-xs font-bold rounded-lg shadow-sm text-center cursor-pointer"><i class="fas fa-upload"></i> Restore JSON<input type="file" class="hidden" accept="application/json,.json" data-simni-action="importDataLokal" data-simni-trigger="change" data-simni-argument="event"></label>
-                    </div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1" for="restore-mode">Mode Restore</label>
-                    <select id="restore-mode" class="w-full px-3 py-2 mb-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold">
+                <div class="grid grid-cols-2 gap-3 max-w-md">
+                    <button data-simni-action="exportDataLokal" data-simni-trigger="click" class="h-10 px-4 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-xl shadow-2xs flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-[0.98]">
+                        <i class="fas fa-download" aria-hidden="true"></i> Backup JSON
+                    </button>
+                    <label class="h-10 px-4 bg-slate-100 dark:bg-[#18181b] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-xl shadow-2xs text-center cursor-pointer flex items-center justify-center gap-2 transition-colors active:scale-[0.98]">
+                        <i class="fas fa-upload" aria-hidden="true"></i> Restore JSON
+                        <input type="file" class="hidden" accept="application/json,.json" data-simni-action="importDataLokal" data-simni-trigger="change" data-simni-argument="event">
+                    </label>
+                </div>
+                <div class="max-w-md">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1" for="restore-mode">Mode Restore</label>
+                    <select id="restore-mode" class="w-full min-h-[40px] px-3.5 py-2 bg-slate-50 dark:bg-[#000000] border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold">
                         <option value="merge" selected>Gabungkan aman (disarankan)</option>
                         <option value="replace">Ganti seluruh data aplikasi dari backup</option>
                     </select>
-                    <p class="text-[10px] leading-relaxed text-slate-500 mb-3">Backup JSON dapat direstore dan diperiksa hash-nya. Sebelum restore, aplikasi otomatis mengunduh backup pengaman.</p>
-                    <p class="text-[10px] leading-relaxed text-amber-700 dark:text-amber-300 mb-3"><i class="fas fa-file-shield mr-1"></i>Backup JSON menyimpan metadata/URL Dokumen cloud, bukan byte file fisik yang berada di Cloudinary. Pemulihan file fisik mengikuti lifecycle penyimpanan cloud.</p>
-                    <p class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/40 text-[10px] leading-relaxed text-emerald-800 dark:text-emerald-300"><i class="fas fa-info-circle mr-1"></i>Backup dan restore dibatasi otomatis ke workspace, role, kelas, dan tahun pelajaran akun aktif.</p>
                 </div>
+                <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300 space-y-1">
+                    <p><i class="fas fa-info-circle mr-1" aria-hidden="true"></i>Backup dan restore dibatasi otomatis ke workspace, role, kelas, dan tahun pelajaran akun aktif.</p>
+                    <p class="text-amber-700 dark:text-amber-400"><i class="fas fa-file-shield mr-1" aria-hidden="true"></i>Backup JSON menyimpan metadata dokumen cloud, bukan byte file fisik di Cloudinary.</p>
+                </div>
+            </div>
 
-                <div>
-                    <h4 class="font-bold text-sm text-red-600 dark:text-red-400 mb-3 border-b border-red-100 dark:border-red-900/30 pb-2"><i class="fas fa-lock mr-2"></i>Keamanan Akun</h4>
-                    <form data-simni-action="updateCredentials" data-simni-trigger="submit" data-simni-argument="event" class="space-y-3 p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800/50">
-                        <div><label class="block text-xs font-bold text-red-700 dark:text-red-400 uppercase mb-1" for="edit-current-password">Kata Sandi Saat Ini</label><input type="password" id="edit-current-password" required autocomplete="current-password" placeholder="Wajib untuk konfirmasi" class="w-full px-3 py-2 bg-white dark:bg-[#000000] border border-red-200 dark:border-red-800/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></div>
-                        <div><label class="block text-xs font-bold text-red-700 dark:text-red-400 uppercase mb-1" for="edit-email">Ubah Email Akun</label><input type="email" id="edit-email" autocomplete="email" placeholder="Kosongkan jika tidak diubah" class="w-full px-3 py-2 bg-white dark:bg-[#000000] border border-red-200 dark:border-red-800/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></div>
-                        <div><label class="block text-xs font-bold text-red-700 dark:text-red-400 uppercase mb-1" for="edit-password">Ubah Kata Sandi</label><input type="password" id="edit-password" minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter" class="w-full px-3 py-2 bg-white dark:bg-[#000000] border border-red-200 dark:border-red-800/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"></div>
-                        <button type="submit" id="btn-save-cred" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors"><i class="fas fa-save mr-1"></i> Simpan Kredensial Baru</button>
+            <!-- SECTION 3: DEDICATED DANGER ZONE (TUTUP BUKU AKHIR TAHUN) -->
+            <div data-requires-feature="reset" class="pt-4 border-t border-slate-200/80 dark:border-slate-800">
+                <div class="simni-danger-zone space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-red-200/80 dark:border-red-900/40 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center text-sm font-bold shrink-0">
+                                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-extrabold text-sm text-red-800 dark:text-red-300 uppercase tracking-wide">Zona Berbahaya: Reset Tahun Buku</h4>
+                                <p class="text-[11px] text-red-700/80 dark:text-red-400/80">Tutup buku akhir tahun dan pembaruan tahun akademik baru</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600 text-white w-fit shadow-2xs">Tindakan Kritis</span>
+                    </div>
+
+                    <form data-simni-action="startAnnualRollover" data-simni-trigger="submit" data-simni-argument="event" class="space-y-4">
+                        <div>
+                            <label for="rollover-next-year" class="block text-xs font-bold uppercase tracking-wider text-red-800 dark:text-red-300 mb-1.5">Tahun Pelajaran Baru <span class="text-red-600">*</span></label>
+                            <input id="rollover-next-year" required pattern="[0-9]{4}-[0-9]{4}" placeholder="Contoh: 2027-2028" class="w-full sm:max-w-xs min-h-[44px] px-3.5 py-2.5 rounded-xl border border-red-300 dark:border-red-800/80 bg-white dark:bg-black text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-red-500/15 focus:border-red-600 transition-all">
+                            <p class="text-[11px] leading-relaxed text-red-700/90 dark:text-red-300/80 mt-1.5">
+                                <i class="fas fa-info-circle mr-1" aria-hidden="true"></i>Rollover hanya diproses apabila seluruh workspace aktif memiliki arsip berstatus <strong>VERIFIED</strong>. Data institusi tetap dipertahankan.
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-end pt-2 border-t border-red-200/60 dark:border-red-900/30">
+                            <button type="submit" class="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-red-700 hover:bg-red-800 text-xs font-bold text-white transition-all shadow-sm hover:shadow cursor-pointer active:scale-[0.98]">
+                                <i class="fas fa-lock" aria-hidden="true"></i> Verifikasi Semua Arsip & Mulai Tahun Baru
+                            </button>
+                        </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div data-requires-feature="reset">
-                    <h4 class="font-bold text-sm text-red-600 dark:text-red-400 mb-3 border-b border-red-100 dark:border-red-900/30 pb-2"><i class="fas fa-power-off mr-2"></i>Reset Tahun Buku (Berbahaya)</h4>
-                    <form data-simni-action="startAnnualRollover" data-simni-trigger="submit" data-simni-argument="event" class="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800/50 dark:bg-red-900/10">
-                        <div><label for="rollover-next-year" class="mb-1 block text-[10px] font-bold uppercase text-red-700 dark:text-red-300">Tahun Pelajaran Baru</label><input id="rollover-next-year" required pattern="[0-9]{4}-[0-9]{4}" placeholder="2027-2028" class="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm dark:border-red-800 dark:bg-black"></div>
-                        <p class="text-[10px] leading-relaxed text-red-700 dark:text-red-300">Rollover hanya berjalan jika seluruh workspace aktif memiliki arsip VERIFIED. Guru tetap pada kelas/workspace assignment masing-masing; identitas institusi permanen dipertahankan.</p>
-                        <button type="submit" class="w-full rounded-lg bg-red-700 px-3 py-3 text-xs font-bold text-white hover:bg-red-800"><i class="fas fa-lock mr-1"></i> Verifikasi Semua Arsip dan Mulai Tahun Baru</button>
-                    </form>
-                </div>
-                
-                <div class="p-4 bg-slate-100 dark:bg-[#111111] rounded-xl border border-slate-200 dark:border-slate-800 text-center mt-4">
-                    <button type="button" data-simni-action="openLocalStorageManager" data-simni-trigger="click" class="px-3 py-2 mb-3 rounded-lg border text-sm font-bold">Penyimpanan perangkat</button>
-                    <button type="button" data-simni-action="openSubsystemRecoveryGuide" data-simni-trigger="click" class="px-3 py-2 mb-3 rounded-lg border text-sm font-bold">Panduan Pemulihan Subsistem</button>
-                    <button type="button" data-requires-feature="archive" data-simni-action="openAnnualArchiveManager" data-simni-trigger="click" class="px-3 py-2 mb-3 rounded-lg border text-sm font-bold">Pengelolaan Arsip</button>
-                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300">SIMNI Enterprise Edition</p>
-                    <button type="button" data-requires-feature="archive" data-simni-action="openGrantedAcademicArchives" data-simni-trigger="click" class="px-4 py-3 rounded-xl border font-bold">Arsip tahun sebelumnya</button>
-                    <p class="text-[11px] font-extrabold text-primary mt-0.5">Versi Build: v4.8.0-rc.1</p>
-                    <p class="text-[10px] text-slate-500 mt-1">Status sinkronisasi dan salinan offline mengikuti koneksi perangkat.</p>
-                </div>
+    <!-- PANEL 4: PEMELIHARAAN SISTEM (HALAMAN MANDIRI) -->
+    <div id="settings-panel-maintenance" class="hidden space-y-6">
+        <!-- CATEGORY NAVIGATION STRIP -->
+        <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+            <div class="inline-flex w-fit max-w-full items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-[#18181b] rounded-xl overflow-x-auto hide-scrollbar border border-slate-200/70 dark:border-slate-800 text-xs font-semibold shrink-0">
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["school"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Sekolah</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["profile"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Profil Guru</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["database"]' class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Database</button>
+                <button type="button" data-simni-action="setSettingsTab" data-simni-trigger="click" data-simni-args='["maintenance"]' class="px-3 py-1.5 rounded-lg bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-2xs font-bold">Pemeliharaan</button>
+            </div>
+        </div>
 
-                <button data-simni-action="logoutAuth" data-simni-trigger="click" class="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold flex justify-center items-center gap-2 mt-4 shadow-sm text-sm"><i class="fas fa-sign-out-alt"></i> Keluar Aplikasi</button>
+        <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 space-y-6">
+            <div>
+                <h4 class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-tools text-blue-600 dark:text-blue-400" aria-hidden="true"></i> Penyimpanan Perangkat & Diagnosis
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Pengelolaan memori lokal, cache service worker PWA, serta instrumen pemulihan modul subsistem.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button type="button" data-simni-action="openLocalStorageManager" data-simni-trigger="click" class="p-5 rounded-2xl border text-sm font-bold bg-slate-50/80 dark:bg-[#161618] border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 text-left flex items-start gap-3.5 transition-all shadow-2xs hover:shadow-sm cursor-pointer group active:scale-[0.98]">
+                    <div class="w-10 h-10 rounded-xl bg-slate-200/70 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-hdd text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs text-slate-900 dark:text-white">Penyimpanan Perangkat</div>
+                        <div class="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">Lihat kuota & status IndexedDB / LocalStorage browser</div>
+                    </div>
+                </button>
+
+                <button type="button" data-simni-action="clearAppCacheAndReload" data-simni-trigger="click" class="p-5 rounded-2xl border text-sm font-bold bg-amber-50/70 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all text-left flex items-start gap-3.5 shadow-2xs hover:shadow-sm cursor-pointer group active:scale-[0.98]">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-broom text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs text-amber-900 dark:text-amber-200">Bersihkan Cache & Reload</div>
+                        <div class="text-[11px] font-normal text-amber-700/80 dark:text-amber-300/80 mt-0.5">Perbarui aset PWA ke rilis terbaru secara instan</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button type="button" data-simni-action="openSubsystemRecoveryGuide" data-simni-trigger="click" class="p-5 rounded-2xl border text-sm font-bold bg-slate-50/80 dark:bg-[#161618] border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 text-left flex items-start gap-3.5 transition-all shadow-2xs hover:shadow-sm cursor-pointer group active:scale-[0.98]">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-book-medical text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs text-slate-900 dark:text-white">Panduan Pemulihan Subsistem</div>
+                        <div class="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">Prosedur troubleshooting kendala sinkronisasi data</div>
+                    </div>
+                </button>
+
+                <button type="button" data-requires-feature="archive" data-simni-action="openAnnualArchiveManager" data-simni-trigger="click" class="p-5 rounded-2xl border text-sm font-bold bg-slate-50/80 dark:bg-[#161618] border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 text-left flex items-start gap-3.5 transition-all shadow-2xs hover:shadow-sm cursor-pointer group active:scale-[0.98]">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-archive text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs text-slate-900 dark:text-white">Pengelolaan Arsip Tahunan</div>
+                        <div class="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">Kelola snapshot dan arsip riwayat tahun buku sebelumnya</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="p-5 bg-slate-50/80 dark:bg-[#161618] rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center space-y-2.5">
+                <button type="button" data-requires-feature="archive" data-simni-action="openGrantedAcademicArchives" data-simni-trigger="click" class="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-black font-bold text-xs text-slate-800 dark:text-slate-200 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer active:scale-[0.98]">
+                    <i class="fas fa-folder-open text-amber-500" aria-hidden="true"></i> Buka Arsip Tahun Sebelumnya
+                </button>
+                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">SIMNI Enterprise Edition</p>
+                <p class="text-[11px] font-extrabold text-primary">Versi Build: v4.8.2</p>
+                <p class="text-[10px] text-slate-400">Status sinkronisasi dan salinan offline mengikuti konektivitas perangkat.</p>
+            </div>
+        </div>
     </div>
 </div>
 </template>

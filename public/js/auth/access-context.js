@@ -76,12 +76,12 @@ function updateClassContext(role) {
     else state.activeKelas = currentContext?.classId || '';
 
     const visible = role === policy.ROLES.VIP;
-    for (const id of ['kelas-selector-container', 'kelas-selector-mobile-container']) {
+    for (const id of ['kelas-selector-container', 'kelas-selector-desktop-container', 'kelas-selector-mobile-container']) {
         const container = document.getElementById(id);
         container?.classList.toggle('hidden', !visible);
         container?.setAttribute('aria-hidden', String(!visible));
     }
-    for (const id of ['global-kelas-select', 'mobile-kelas-select']) {
+    for (const id of ['global-kelas-select', 'desktop-kelas-select', 'mobile-kelas-select']) {
         const select = document.getElementById(id);
         if (select && state.activeKelas) select.value = state.activeKelas;
     }

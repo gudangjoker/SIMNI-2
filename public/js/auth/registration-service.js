@@ -169,20 +169,82 @@ export async function accountCommand(action, payload = {}) {
     return { ok: true };
 }
 
-export function getRegistrationSlots() {
-    return Promise.resolve({ ok: true, slots: CLASSES });
+export async function getRegistrationSlots() {
+    const db = SIMNIFirebaseClient.database;
+    const snap = await get(ref(db, 'accessControl'));
+    const c = snap.exists() ? snap.val() : {};
+    const enabled = c.registration?.enabled === true;
+    const activeYear = c.activeYear || '2026-2027';
+    const slots = CLASSES.map(classId => ({
+        slotId: `kelas-${classId.toLowerCase()}`,
+        classId,
+        available: !c.slots?.[activeYear]?.[classId]?.assignedUid && classId !== '3A'
+    }));
+    return { ok: true, enabled, slots };
 }
 
-export function validateRegistrationInvite(payload) {
-    return Promise.resolve({ ok: true });
+export async function validateRegistrationInvite(payload) {
+    const { slotId, inviteCode } = payload || {};
+    if (!slotId) throw new Error('Pilih kelas penugasan terlebih dahulu.');
+    if (!inviteCode) throw new Error('Masukkan kode undangan.');
+    const classId = String(slotId || '').replace(/^kelas-/i, '').toUpperCase();
+    const db = SIMNIFirebaseClient.database;
+    const invSnap = await get(ref(db, `accessControl/invitations/${classId}`));
+    if (!invSnap.exists()) throw new Error(`Tidak ditemukan undangan aktif untuk Kelas ${classId}. Hubungi superuser.`);
+    const inv = invSnap.val();
+    if (inv.expiresAt && Date.now() > inv.expiresAt) throw new Error(`Undangan untuk Kelas ${classId} telah kedaluwarsa.`);
+    if (inv.tokenHash) {
+        const msgBuffer = new TextEncoder().encode(inviteCode);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        if (hashHex !== inv.tokenHash) throw new Error('Kode undangan tidak sesuai.');
+    }
+    return { ok: true, classId };
 }
 
-export function activateRegistration(payload) {
-    return Promise.resolve({ ok: true });
+export async function activateRegistration(payload) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Pengguna belum masuk.');
+    const { slotId, inviteCode, displayName } = payload || {};
+    const classId = String(slotId || '').replace(/^kelas-/i, '').toUpperCase();
+    const db = SIMNIFirebaseClient.database;
+    const now = Date.now();
+    const yearSnap = await get(ref(db, 'accessControl/activeYear'));
+    const activeYear = yearSnap.exists() ? yearSnap.val() : '2026-2027';
+
+    const updates = {};
+    updates[`accessControl/users/${user.uid}`] = {
+        uid: user.uid,
+        email: user.email,
+        displayName: displayName || user.displayName || user.email,
+        status: 'pending_approval',
+        classId,
+        requestedAt: now
+    };
+    updates[`accessControl/requests/${user.uid}`] = {
+        uid: user.uid,
+        email: user.email,
+        displayName: displayName || user.displayName || user.email,
+        classId,
+        status: 'pending_approval',
+        createdAt: now
+    };
+    await update(ref(db), updates);
+    return { ok: true, status: 'pending_approval' };
 }
 
-export function getRegistrationStatus(operationId) {
-    return Promise.resolve({ ok: true, status: 'active' });
+export async function getRegistrationStatus(operationId) {
+    const user = auth.currentUser;
+    if (!user) return { ok: true, status: 'unregistered' };
+    const db = SIMNIFirebaseClient.database;
+    const [userSnap, reqSnap] = await Promise.all([
+        get(ref(db, `accessControl/users/${user.uid}`)),
+        get(ref(db, `accessControl/requests/${user.uid}`))
+    ]);
+    const profile = userSnap.exists() ? userSnap.val() : null;
+    const request = reqSnap.exists() ? reqSnap.val() : null;
+    const status = profile?.status || request?.status || 'unregistered';
+    return { ok: true, status, profile, request };
 }
 
 export function readGrantedArchive(action, body) {

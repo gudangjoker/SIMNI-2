@@ -194,6 +194,44 @@
         return identity;
     }
 
+    function valueWithFallback(id, fallback = '') {
+        const el = element(id);
+        const val = el ? String(el.value || '').trim() : '';
+        return val || fallback;
+    }
+
+    function setSettingsTab(tab) {
+        const targetTab = tab || 'hub';
+        const panelNames = ['hub', 'school', 'profile', 'database', 'maintenance'];
+        panelNames.forEach((name) => {
+            const panel = document.getElementById(`settings-panel-${name}`);
+            if (panel) {
+                const isActive = name === targetTab;
+                panel.classList.toggle('hidden', !isActive);
+                if (isActive) {
+                    panel.classList.remove('fade-in');
+                    void panel.offsetWidth;
+                    panel.classList.add('fade-in');
+                }
+            }
+        });
+        const backBtn = document.getElementById('settings-header-back-btn');
+        if (backBtn) {
+            if (targetTab === 'hub') {
+                backBtn.setAttribute('data-simni-action', 'switchView');
+                backBtn.setAttribute('data-simni-args', '["dashboard"]');
+                backBtn.innerHTML = '<i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali ke Dashboard';
+            } else {
+                backBtn.setAttribute('data-simni-action', 'setSettingsTab');
+                backBtn.setAttribute('data-simni-args', '["hub"]');
+                backBtn.innerHTML = '<i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali ke Menu Pengaturan';
+            }
+        }
+        try {
+            sessionStorage.setItem('simni:settings-active-tab', targetTab);
+        } catch (_) {}
+    }
+
     function collectIdentitySettings() {
         const existing = currentIdentity();
         const access = assertSettingsAccess();
@@ -202,29 +240,43 @@
             access.activeAcademicYearId || '2026-2027'
         );
 
+        const namaKepalaSekolah = valueWithFallback(
+            'set-nama-kepala-sekolah',
+            existing.nama_kepala_sekolah || existing.nama_kamad || 'Kepala SDIT Bina Muda'
+        );
+        const nuksKepalaSekolah = valueWithFallback(
+            'set-nuks-kepala-sekolah',
+            existing.nuks_kepala_sekolah || existing.nuks_kamad || '-'
+        );
+
         return {
             ...existing,
             ...institution,
 
+            nama_kepala_sekolah: namaKepalaSekolah,
+            nama_kamad: namaKepalaSekolah,
+            nuks_kepala_sekolah: nuksKepalaSekolah,
+            nuks_kamad: nuksKepalaSekolah,
+
             nama_kelas:
-                requiredValue(
+                valueWithFallback(
                     'set-nama-kelas',
-                    'Nama Kelas'
+                    existing.nama_kelas || 'Kelas 3'
                 ),
 
             tahun_pelajaran:
                 academicYear,
 
             nama_wali_kelas:
-                requiredValue(
+                valueWithFallback(
                     'set-nama-wali-kelas',
-                    'Nama Wali Kelas'
+                    existing.nama_wali_kelas || ''
                 ),
 
             nuptk_wali_kelas:
-                requiredValue(
+                valueWithFallback(
                     'set-nuptk-wali-kelas',
-                    'NUPTK Wali Kelas'
+                    existing.nuptk_wali_kelas || '-'
                 ),
 
             // Logo kustom dihapus dari UI. Pertahankan logo standar SIMNI
@@ -301,38 +353,28 @@
         const uid = document.getElementById('firebase-uid-display');
         if (email) email.textContent = identity.email || access?.email || 'Identitas akun belum tersedia';
         if (uid) uid.textContent = `UID: ${identity.uid || access?.uid || 'Tidak tersedia'}`;
-        const saveButton =
-            element(
-                'btn-save-id'
-            );
+
+        try { window.renderIdentitas?.(); } catch (_) {}
 
         const busy =
             runtime.savingIdentity ||
             runtime.deletingLogo;
 
-        if (saveButton) {
-            saveButton.disabled =
-                busy;
-
-            setButtonContent(
-                saveButton,
-                {
-                    text:
-                        busy
-                            ? 'Menyimpan...'
-                            : 'Simpan Identitas',
-
-                    icon:
-                        busy
-                            ? 'fas fa-spinner'
-                            : 'fas fa-save mr-1',
-
-                    spinning:
-                        busy
-                }
-            );
-        }
-
+        ['btn-save-id', 'btn-save-id-school', 'btn-save-id-profile'].forEach((btnId) => {
+            const saveButton = element(btnId);
+            if (saveButton) {
+                saveButton.disabled = busy;
+                const defaultText = saveButton.getAttribute('data-default-text') || 'Simpan Identitas';
+                setButtonContent(
+                    saveButton,
+                    {
+                        text: busy ? 'Menyimpan...' : defaultText,
+                        icon: busy ? 'fas fa-spinner' : 'fas fa-save mr-1',
+                        spinning: busy
+                    }
+                );
+            }
+        });
     }
 
     function updateIdentityState(
@@ -853,6 +895,35 @@
         };
     }
 
+    async function clearAppCacheAndReload() {
+        if (!confirm('Bersihkan cache aset aplikasi dan muat ulang versi terbaru? Data akademik offline Anda tetap aman tersimpan.')) {
+            return;
+        }
+
+        window.showLoad?.('Membersihkan cache aplikasi...');
+        try {
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+            }
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    await reg.update().catch(() => {});
+                }
+            }
+            sessionStorage.clear();
+            window.toast?.('Cache berhasil dibersihkan. Memuat ulang...', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 700);
+        } catch (err) {
+            console.error('[SIMNI Settings] Gagal membersihkan cache:', err);
+            window.toast?.('Gagal membersihkan cache: ' + (err?.message || err), 'error');
+            window.hideLoad?.();
+        }
+    }
+
     Object.assign(
         window,
         {
@@ -861,6 +932,10 @@
             hapusLogo,
 
             ekstrakCSSOffline,
+
+            clearAppCacheAndReload,
+
+            setSettingsTab,
 
             renderSIMNISettingsActionState:
                 renderSettingsActionState
@@ -875,11 +950,25 @@
             deleteLogo:
                 hapusLogo,
 
+            clearAppCacheAndReload,
+
+            setSettingsTab,
+
+            sendProfilePasswordReset:
+                () => window.sendProfilePasswordReset?.(),
+
             normalizedAcademicYear,
 
             getRuntimeSnapshot:
                 getSettingsRuntimeSnapshot
         });
+
+    try {
+        const savedTab = sessionStorage.getItem('simni:settings-active-tab') || 'hub';
+        setSettingsTab(savedTab);
+    } catch (_) {
+        setSettingsTab('hub');
+    }
 
     renderSettingsActionState();
 }());
