@@ -1,0 +1,13 @@
+﻿{
+  "id": "/",
+  "name": "SIMNI Administrasi Kelas",
+  "short_name": "SIMNI",
+  "description": "PWA administrasi kelas, presensi, nilai, jurnal, LPS, BLP, dan GADM offline.",
+  "lang": "id",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#4f46e5",
+  "orientation": "any"
+}
