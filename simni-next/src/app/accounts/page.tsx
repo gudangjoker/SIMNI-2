@@ -7,15 +7,29 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
-import { ShieldCheck, UserCheck, KeyRound, Check, X, ShieldAlert, History } from 'lucide-react';
+import { ShieldCheck, UserCheck, KeyRound, Check, X, ShieldAlert, History, QrCode, Copy, ToggleLeft, ToggleRight } from 'lucide-react';
+import QRCode from 'qrcode';
 
 export default function AccountsPage() {
   const { toast } = useToast();
   const academicYear = useAppStore((state) => state.academicYear);
 
+  // Switch Buka / Tutup Pendaftaran Guru
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('simni_registration_open');
+      if (saved !== null) {
+        setIsRegistrationOpen(saved === 'true');
+      }
+    }
+  }, []);
+
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteClass, setInviteClass] = useState('1B');
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [inviteQrDataUrl, setInviteQrDataUrl] = useState<string | null>(null);
 
   // Mock initial account list
   const [accounts, setAccounts] = useState([
@@ -25,11 +39,32 @@ export default function AccountsPage() {
     { uid: 'USR_004', name: 'Dewi Lestari, S.Pd.', email: 'dewi.lestari@guru.sch.id', role: 'Teacher', classId: '2A', status: 'Pending Approval' },
   ]);
 
-  const handleGenerateInvite = () => {
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    setGeneratedCode(code);
-    toast(`Kode undangan untuk Kelas ${inviteClass} berhasil dibuat: ${code}`, 'success');
+  const toggleRegistrationSwitch = () => {
+    const next = !isRegistrationOpen;
+    setIsRegistrationOpen(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('simni_registration_open', String(next));
+    }
+    toast(next ? 'Portal pendaftaran guru sekarang DIBUKA.' : 'Portal pendaftaran guru sekarang DITUTUP secara manual.', next ? 'success' : 'warning');
   };
+
+  const handleGenerateInvite = async () => {
+    const code = 'INV-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-' + inviteClass;
+    setGeneratedCode(code);
+    try {
+      const url = await QRCode.toDataURL(code, { width: 300, margin: 1, color: { dark: '#1e1b4b', light: '#ffffff' } });
+      setInviteQrDataUrl(url);
+    } catch (err) {
+      console.warn('Gagal render QR token:', err);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (!generatedCode) return;
+    navigator.clipboard.writeText(generatedCode);
+    toast('Kode undangan berhasil disalin ke clipboard.', 'success');
+  };
+
 
   const handleApprove = (uid: string) => {
     setAccounts((prev) =>
@@ -59,9 +94,27 @@ export default function AccountsPage() {
             </p>
           </div>
 
-          <Button variant="primary" size="sm" onClick={() => setIsInviteOpen(true)}>
-            <KeyRound className="w-4 h-4 mr-1.5" /> Buat Token Undangan
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Switch Manual Buka / Tutup Pendaftaran */}
+            <div 
+              onClick={toggleRegistrationSwitch}
+              className={'flex items-center gap-2 px-3.5 py-1.5 rounded-2xl border cursor-pointer select-none transition-all ' + (
+                isRegistrationOpen
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500/40 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500/40 text-rose-700 dark:text-rose-400'
+              )}
+              title="Klik untuk membuka/menutup portal pendaftaran guru"
+            >
+              {isRegistrationOpen ? <ToggleRight className="w-5 h-5 text-emerald-600" /> : <ToggleLeft className="w-5 h-5 text-rose-600" />}
+              <span className="text-xs font-bold">
+                Pendaftaran: {isRegistrationOpen ? 'DIBUKA' : 'DITUTUP'}
+              </span>
+            </div>
+
+            <Button variant="primary" size="sm" onClick={() => setIsInviteOpen(true)}>
+              <KeyRound className="w-4 h-4 mr-1.5" /> Buat Token QR
+            </Button>
+          </div>
         </div>
 
         {/* Metrics Row */}
@@ -161,15 +214,20 @@ export default function AccountsPage() {
         </div>
       </div>
 
-      {/* Modal Buat Undangan */}
-      <Modal isOpen={isInviteOpen} onClose={() => { setIsInviteOpen(false); setGeneratedCode(null); }} title="Buat Token Undangan Guru">
+      {/* Modal Buat Undangan dengan QR Code */}
+      <Modal 
+        isOpen={isInviteOpen} 
+        onClose={() => { setIsInviteOpen(false); setGeneratedCode(null); setInviteQrDataUrl(null); }} 
+        title="Buat Token Undangan & QR Code"
+        description="Pendidik dapat memindai QR code ini di halaman pendaftaran untuk aktivasi otomatis."
+      >
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">Penugasan Rombel Kelas</label>
             <select
               value={inviteClass}
               onChange={(e) => setInviteClass(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl"
+              className="w-full px-3.5 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl font-bold"
             >
               {['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', 'PJOK'].map((c) => (
                 <option key={c} value={c}>Kelas {c}</option>
@@ -177,17 +235,29 @@ export default function AccountsPage() {
             </select>
           </div>
 
-          <Button variant="primary" className="w-full" size="sm" onClick={handleGenerateInvite}>
-            Generate Kode Undangan
+          <Button variant="primary" className="w-full" size="md" onClick={handleGenerateInvite}>
+            <QrCode className="w-4 h-4 mr-2" /> Generate Token & QR Code
           </Button>
 
-          {generatedCode && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 rounded-2xl text-center space-y-2">
-              <p className="text-xs text-slate-500">Berikan kode ini kepada pendidik yang bersangkutan:</p>
-              <p className="text-xl font-black font-mono tracking-widest text-emerald-600 dark:text-emerald-400">
-                {generatedCode}
-              </p>
-              <p className="text-[10px] text-slate-400">Kode ini berlaku satu kali untuk penugasan Kelas {inviteClass}.</p>
+          {generatedCode && inviteQrDataUrl && (
+            <div className="p-5 bg-gradient-to-br from-indigo-50 to-white dark:from-zinc-900 dark:to-zinc-950 border border-indigo-200 dark:border-zinc-800 rounded-3xl text-center space-y-3 shadow-inner">
+              <div className="p-3 bg-white rounded-2xl inline-block shadow-md border border-slate-100">
+                <img src={inviteQrDataUrl} alt="QR Undangan" className="w-44 h-44 mx-auto" />
+              </div>
+
+              <div>
+                <p className="text-[11px] text-slate-500 font-medium">Kode Undangan Mandiri:</p>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <span className="text-lg font-black font-mono tracking-wider text-indigo-700 dark:text-indigo-400">
+                    {generatedCode}
+                  </span>
+                  <button onClick={handleCopyCode} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100" title="Salin Kode">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400">Berlaku satu kali registrasi untuk Kelas {inviteClass}.</p>
             </div>
           )}
         </div>

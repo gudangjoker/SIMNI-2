@@ -12,8 +12,9 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { 
   UserPlus, Search, CheckSquare, Square, Trash2, 
-  Edit, Eye, User, Sparkles, AlertCircle 
+  Edit, Eye, User, Sparkles, AlertCircle, QrCode 
 } from 'lucide-react';
+import QRCode from 'qrcode';
 
 const CLASSES: ClassId[] = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', 'PJOK'];
 
@@ -32,6 +33,7 @@ export default function StudentsPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
@@ -80,8 +82,14 @@ export default function StudentsPage() {
     setIsAddEditOpen(true);
   };
 
-  const openDetailModal = (student: Student) => {
+  const openDetailModal = async (student: Student) => {
     setSelectedStudent(student);
+    try {
+      const url = await QRCode.toDataURL(student.NISN, { width: 250, margin: 1 });
+      setQrCodeUrl(url);
+    } catch (err) {
+      console.warn('Gagal render QR:', err);
+    }
     setIsDetailOpen(true);
   };
 
@@ -426,6 +434,21 @@ export default function StudentsPage() {
                 <span className="text-slate-400">ID Registrasi:</span>
                 <span className="font-mono text-slate-600 dark:text-zinc-400">{selectedStudent.ID_Siswa}</span>
               </div>
+            </div>
+
+            {/* Kartu QR Code Identitas Siswa */}
+            <div className="p-4 bg-gradient-to-r from-indigo-50 to-white dark:from-zinc-800 dark:to-zinc-900 border border-indigo-100 dark:border-zinc-700 rounded-2xl flex items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <QrCode className="w-4 h-4 text-indigo-600" /> QR Code Presensi Siswa
+                </h4>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1">Dicetak pada kartu siswa untuk presensi harian otomatis tanpa kontak fisik.</p>
+              </div>
+              {qrCodeUrl && (
+                <div className="shrink-0 p-1.5 bg-white border rounded-xl shadow-md">
+                  <img src={qrCodeUrl} alt="QR NISN" className="w-20 h-20" />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800">

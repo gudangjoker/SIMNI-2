@@ -1,10 +1,15 @@
-﻿'use client';
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
+import { QRScanner } from '@/components/ui/QRScanner';
+import { playSuccessBeep } from '@/lib/utils/audio';
+import { ArrowLeft, CheckCircle2, QrCode, AlertTriangle } from 'lucide-react';
+
+const AVAILABLE_CLASSES = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', 'PJOK'];
 
 export default function RegisterPage() {
   const [slot, setSlot] = useState('1A');
@@ -14,8 +19,45 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Status Switch Buka / Tutup Pendaftaran dari Superuser
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+
+  // QR Scanner Modal State
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('simni_registration_open');
+      if (saved !== null) {
+        setIsRegistrationOpen(saved === 'true');
+      }
+    }
+  }, []);
+
+  const handleScanSuccess = (decodedText: string) => {
+    const trimmed = decodedText.trim();
+    if (!trimmed) return;
+
+    playSuccessBeep();
+    setCode(trimmed);
+
+    // Auto-detect class slot from standard token format: INV-XXXXXX-CLASS
+    const parts = trimmed.split('-');
+    if (parts.length >= 3) {
+      const detectedClass = parts[2].toUpperCase();
+      if (AVAILABLE_CLASSES.includes(detectedClass)) {
+        setSlot(detectedClass);
+      }
+    }
+
+    setScanNotice(`QR Token terdeteksi: ${trimmed}`);
+    setIsScannerOpen(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isRegistrationOpen) return;
     setIsSuccess(true);
   };
 
@@ -26,9 +68,33 @@ export default function RegisterPage() {
           <Link href="/login" className="inline-flex items-center text-xs text-slate-400 hover:text-white gap-1 mb-4">
             <ArrowLeft className="w-3.5 h-3.5" /> Kembali ke Login
           </Link>
-          <h2 className="text-xl font-bold text-white tracking-tight">Pendaftaran Akun Guru</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white tracking-tight">Pendaftaran Akun Guru</h2>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                isRegistrationOpen
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+              }`}
+            >
+              {isRegistrationOpen ? 'PORTAL TERBUKA' : 'PORTAL DITUTUP'}
+            </span>
+          </div>
           <p className="text-xs text-slate-400 mt-1">Aktivasi akun menggunakan kode undangan dari Superuser.</p>
         </div>
+
+        {/* Banner Jika Pendaftaran Ditutup */}
+        {!isRegistrationOpen && (
+          <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-2.5 text-xs text-rose-300">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-rose-200">Pendaftaran Guru Sedang Ditutup</p>
+              <p className="text-[11px] text-rose-300/80 mt-0.5 leading-relaxed">
+                Superuser telah menonaktifkan sementara pembukaan akun baru. Silakan hubungi operator sekolah untuk informasi aktivasi.
+              </p>
+            </div>
+          </div>
+        )}
 
         {!isSuccess ? (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -36,10 +102,11 @@ export default function RegisterPage() {
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">Penugasan Kelas / Rombel</label>
               <select
                 value={slot}
+                disabled={!isRegistrationOpen}
                 onChange={(e) => setSlot(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm bg-slate-900 border border-slate-700 rounded-xl text-slate-100"
+                className="w-full px-3.5 py-2 text-sm bg-slate-900 border border-slate-700 rounded-xl text-slate-100 disabled:opacity-50"
               >
-                {['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', 'PJOK'].map((c) => (
+                {AVAILABLE_CLASSES.map((c) => (
                   <option key={c} value={c}>
                     Kelas {c}
                   </option>
@@ -51,6 +118,7 @@ export default function RegisterPage() {
               label="Nama Lengkap & Gelar"
               placeholder="Contoh: Budi Santoso, S.Pd."
               value={name}
+              disabled={!isRegistrationOpen}
               onChange={(e) => setName(e.target.value)}
               required
             />
@@ -60,29 +128,57 @@ export default function RegisterPage() {
               type="email"
               placeholder="guru@sditbm.sch.id"
               value={email}
+              disabled={!isRegistrationOpen}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
 
-            <Input
-              label="Kode Undangan (One-Time Token)"
-              placeholder="Masukkan 8-16 digit kode"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              required
-            />
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Kode Undangan (One-Time Token)
+                </label>
+                {isRegistrationOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setIsScannerOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 hover:bg-indigo-500/20 transition-all cursor-pointer"
+                  >
+                    <QrCode className="w-3 h-3" /> Scan QR Undangan
+                  </button>
+                )}
+              </div>
+              <Input
+                placeholder="Masukkan atau scan kode token"
+                value={code}
+                disabled={!isRegistrationOpen}
+                onChange={(e) => setCode(e.target.value)}
+                required
+              />
+              {scanNotice && (
+                <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-medium">
+                  <CheckCircle2 className="w-3 h-3" /> {scanNotice}
+                </p>
+              )}
+            </div>
 
             <Input
               label="Kata Sandi Akun"
               type="password"
               placeholder="Minimal 12 karakter"
               value={password}
+              disabled={!isRegistrationOpen}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
 
-            <Button type="submit" variant="primary" className="w-full">
-              Kirim Permohonan Akses
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              disabled={!isRegistrationOpen}
+            >
+              {isRegistrationOpen ? 'Kirim Permohonan Akses' : 'Pendaftaran Dinonaktifkan'}
             </Button>
           </form>
         ) : (
@@ -100,6 +196,27 @@ export default function RegisterPage() {
           </div>
         )}
       </div>
+
+      {/* Modal Scanner QR Undangan Guru */}
+      <Modal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        title="Pindai QR Token Undangan"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 dark:text-zinc-400">
+            Arahkan kamera ke QR Code undangan yang diberikan oleh Superuser sekolah. Kode token akan terisi secara otomatis disertai nada beep verifikasi.
+          </p>
+
+          <QRScanner onScanSuccess={handleScanSuccess} />
+
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" size="sm" onClick={() => setIsScannerOpen(false)}>
+              Batal
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

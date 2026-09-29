@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { getJakartaDateString } from '@/lib/utils/date';
-import { CalendarCheck, Save, CheckCircle2, UserCheck, BarChart3, AlertCircle } from 'lucide-react';
+import { CalendarCheck, Save, CheckCircle2, UserCheck, BarChart3, AlertCircle, QrCode, ScanLine, X } from 'lucide-react';
+import { QRScanner } from '@/components/ui/QRScanner';
+import { playSuccessBeep } from '@/lib/utils/audio';
 
 export default function AttendancePage() {
   const { toast } = useToast();
@@ -22,6 +24,9 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState<string>(getJakartaDateString());
   const [dailyStatus, setDailyStatus] = useState<Record<string, 'Hadir' | 'Sakit' | 'Izin' | 'Alpa'>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [lastScannedNisn, setLastScannedNisn] = useState<string | null>(null);
+  const [recentScannedList, setRecentScannedList] = useState<string[]>([]);
 
   // Filter students for active class
   const classStudents = useMemo(() => {
@@ -48,6 +53,39 @@ export default function AttendancePage() {
 
   const handleStatusChange = (nisn: string, status: 'Hadir' | 'Sakit' | 'Izin' | 'Alpa') => {
     setDailyStatus((prev) => ({ ...prev, [nisn]: status }));
+  };
+
+  
+  const handleContinuousScan = (decodedText: string) => {
+    const cleanNisn = decodedText.trim();
+    if (cleanNisn === lastScannedNisn) return;
+
+    const student = classStudents.find((s) => s.NISN === cleanNisn);
+    if (!student) {
+      toast('Siswa dengan NISN ' + cleanNisn + ' tidak terdaftar di Kelas ' + activeKelas, 'warning');
+      return;
+    }
+
+    setLastScannedNisn(cleanNisn);
+    setDailyStatus((prev) => ({ ...prev, [cleanNisn]: 'Hadir' }));
+    playSuccessBeep();
+
+    setRecentScannedList((prev) => [student['Nama Lengkap'], ...prev.slice(0, 4)]);
+    toast('✅ ' + student['Nama Lengkap'] + ' tercatat HADIR!', 'success');
+
+    void dbUpdate({
+      ['Presensi/' + selectedDate + '_' + cleanNisn]: {
+        Tanggal: selectedDate,
+        NISN: cleanNisn,
+        'Nama Lengkap': student['Nama Lengkap'],
+        Status: 'Hadir',
+        Kelas: activeKelas
+      }
+    }, activeKelas, academicYear);
+
+    setTimeout(() => {
+      setLastScannedNisn(null);
+    }, 2000);
   };
 
   const handleMarkAllHadir = () => {
@@ -160,7 +198,11 @@ export default function AttendancePage() {
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <Button variant="outline" size="sm" onClick={handleMarkAllHadir}>
+                <Button variant="primary" size="md" onClick={() => setIsScannerOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 px-4">
+                  <ScanLine className="w-4 h-4 mr-2 animate-pulse text-amber-300" />
+                  <span className="font-bold">Scan QR Kamera (Otomatis)</span>
+                </Button>
+                <Button variant="outline" size="md" onClick={handleMarkAllHadir}>
                   <UserCheck className="w-4 h-4" /> Hadir Semua
                 </Button>
                 <Button variant="primary" size="sm" onClick={handleSaveAttendance} isLoading={isSubmitting}>
@@ -278,6 +320,56 @@ export default function AttendancePage() {
           </div>
         )}
       </div>
+    
+      {/* Modern Continuous QR Attendance Scanner Dialog */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setIsScannerOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-2xl z-10 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                  <ScanLine className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Pemindai Presensi Kontinu</h3>
+                  <p className="text-[11px] text-emerald-500 font-semibold flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" /> Mode Pemindaian Aktif Tanpa Jeda
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsScannerOpen(false)} 
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Arahkan kamera ke QR Code pada kartu siswa. Kamera akan terus menyala untuk memindai siswa satu per satu dengan konfirmasi suara <em>beep</em> otomatis.
+            </p>
+
+            <QRScanner onScanSuccess={handleContinuousScan} />
+
+            {recentScannedList.length > 0 && (
+              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-500/30 rounded-2xl space-y-1.5">
+                <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Berhasil Diabsen Barusan:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {recentScannedList.map((name, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 text-[10px] font-bold rounded-lg border border-emerald-200 dark:border-emerald-800/40">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Shell>
+
   );
 }
