@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { DesktopHeader } from './DesktopHeader';
@@ -14,7 +14,7 @@ export const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   useFirebaseSync();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 flex flex-col font-sans" suppressHydrationWarning>
       <LoadingBar />
       <DesktopHeader onOpenDrawer={() => setDrawerOpen(true)} />
       <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />

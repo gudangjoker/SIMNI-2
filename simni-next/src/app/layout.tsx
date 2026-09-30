@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { ToastProvider } from '@/components/ui/Toast';
 import './globals.css';
 
@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className="h-full">
-      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-black font-sans antialiased">
+    <html lang="id" className="h-full" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-black font-sans antialiased" suppressHydrationWarning>
         <ToastProvider>
           {children}
         </ToastProvider>
