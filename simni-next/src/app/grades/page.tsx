@@ -36,6 +36,7 @@ import {
   parseTPExcelFile,
   ParsedTPRecord
 } from '@/lib/excel/tp-excel';
+import { exportGradeBookToExcel } from '@/lib/excel/reports-excel';
 
 export default function GradesPage() {
   const { toast } = useToast();
@@ -245,6 +246,35 @@ export default function GradesPage() {
     } catch (err) {
       console.error(err);
       toast('Gagal mengekspor TP.', 'error');
+    }
+  };
+
+  const [isExportingGradeBook, setIsExportingGradeBook] = useState(false);
+
+  const handleExportGradeBook = async () => {
+    try {
+      setIsExportingGradeBook(true);
+      const blob = await exportGradeBookToExcel({
+        students: classStudents,
+        grades: nilaiTPMap,
+        activeKelas,
+        academicYear,
+        mapelList: availableMapels
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Buku_Induk_Nilai_Kelas_${activeKelas}_${academicYear.replace('/', '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Buku Induk Nilai berhasil diekspor ke Excel profesional.', 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengekspor Buku Induk Nilai.', 'error');
+    } finally {
+      setIsExportingGradeBook(false);
     }
   };
 
@@ -551,13 +581,27 @@ export default function GradesPage() {
 
         {/* Tab 3: Rekap Buku Induk */}
         {activeTab === 'induk' && (
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm p-6">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-indigo-500" /> Buku Induk Siswa & Rekap Capaian
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-4">
-              Menampilkan rekapitulasi nilai rata-rata per mata pelajaran untuk seluruh siswa kelas {activeKelas}.
-            </p>
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-indigo-500" /> Buku Induk Siswa & Rekap Capaian
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Menampilkan rekapitulasi nilai rata-rata per mata pelajaran untuk seluruh siswa kelas {activeKelas}.
+                </p>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleExportGradeBook}
+                isLoading={isExportingGradeBook}
+                className="shrink-0"
+              >
+                <Download className="w-4 h-4 mr-1.5" /> Ekspor Buku Induk (Excel)
+              </Button>
+            </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden">

@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { getJakartaDateString } from '@/lib/utils/date';
 import { getSubjectsForClass } from '@/lib/constants/subjects';
-import { BookOpen, Calendar, Clock, Plus, Trash2, CalendarDays } from 'lucide-react';
+import { BookOpen, Calendar, Clock, Plus, Trash2, CalendarDays, Download } from 'lucide-react';
+import { exportJournalToExcel } from '@/lib/excel/reports-excel';
 
 const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as const;
 const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
@@ -84,6 +85,37 @@ export default function JournalPage() {
       toast('Jurnal berhasil dihapus.', 'success');
     } else {
       toast(res.error || 'Gagal menghapus jurnal.', 'error');
+    }
+  };
+
+  const [isExportingJournal, setIsExportingJournal] = useState(false);
+
+  const handleExportJournal = async () => {
+    if (classJournals.length === 0) {
+      toast('Belum ada riwayat jurnal yang dapat diekspor.', 'warning');
+      return;
+    }
+    try {
+      setIsExportingJournal(true);
+      const blob = await exportJournalToExcel({
+        journals: classJournals,
+        activeKelas,
+        academicYear
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Rekap_Jurnal_Mengajar_Kelas_${activeKelas}_${academicYear.replace('/', '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Rekap jurnal mengajar berhasil diekspor ke Excel.', 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengekspor rekap jurnal.', 'error');
+    } finally {
+      setIsExportingJournal(false);
     }
   };
 
@@ -292,10 +324,19 @@ export default function JournalPage() {
 
         {activeTab === 'rekap' && (
           <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-slate-100 dark:border-zinc-800">
+            <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-4">
               <h2 className="text-xs font-bold text-slate-900 dark:text-zinc-100">
                 Semua Riwayat Jurnal Mengajar ({classJournals.length} Entri)
               </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportJournal}
+                isLoading={isExportingJournal}
+                disabled={classJournals.length === 0}
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" /> Ekspor Jurnal (Excel)
+              </Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">

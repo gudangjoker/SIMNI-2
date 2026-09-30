@@ -9,7 +9,25 @@ import { QRScanner } from '@/components/ui/QRScanner';
 import { playSuccessBeep } from '@/lib/utils/audio';
 import { ArrowLeft, CheckCircle2, QrCode, AlertTriangle } from 'lucide-react';
 
-const AVAILABLE_CLASSES = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', 'PJOK'];
+const AVAILABLE_SLOTS = [
+  { id: '1A', label: 'Guru Kelas 1A' },
+  { id: '1B', label: 'Guru Kelas 1B' },
+  { id: '2A', label: 'Guru Kelas 2A' },
+  { id: '2B', label: 'Guru Kelas 2B' },
+  { id: '3A', label: 'Guru Kelas 3A' },
+  { id: '3B', label: 'Guru Kelas 3B' },
+  { id: '4A', label: 'Guru Kelas 4A' },
+  { id: '4B', label: 'Guru Kelas 4B' },
+  { id: '5A', label: 'Guru Kelas 5A' },
+  { id: '5B', label: 'Guru Kelas 5B' },
+  { id: '6A', label: 'Guru Kelas 6A' },
+  { id: '6B', label: 'Guru Kelas 6B' },
+  { id: 'PJOK', label: 'Guru Bidang Studi - PJOK' },
+  { id: 'PAI', label: 'Guru Bidang Studi - PAI (Pendidikan Agama Islam)' },
+  { id: 'Bahasa Inggris', label: 'Guru Bidang Studi - Bahasa Inggris' },
+  { id: 'Bahasa Arab', label: 'Guru Bidang Studi - Bahasa Arab' },
+  { id: 'Komputer', label: 'Guru Bidang Studi - Komputer / Informatika' }
+];
 
 export default function RegisterPage() {
   const [slot, setSlot] = useState('1A');
@@ -42,12 +60,15 @@ export default function RegisterPage() {
     playSuccessBeep();
     setCode(trimmed);
 
-    // Auto-detect class slot from standard token format: INV-XXXXXX-CLASS
+    // Auto-detect slot from token format: INV-XXXXXX-SLOT
     const parts = trimmed.split('-');
     if (parts.length >= 3) {
-      const detectedClass = parts[2].toUpperCase();
-      if (AVAILABLE_CLASSES.includes(detectedClass)) {
-        setSlot(detectedClass);
+      const detected = parts.slice(2).join('-').trim();
+      const match = AVAILABLE_SLOTS.find(
+        (s) => s.id.toUpperCase() === detected.toUpperCase() || detected.toUpperCase().includes(s.id.toUpperCase())
+      );
+      if (match) {
+        setSlot(match.id);
       }
     }
 
@@ -99,18 +120,27 @@ export default function RegisterPage() {
         {!isSuccess ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Penugasan Kelas / Rombel</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Penugasan Jabatan / Rombel</label>
               <select
                 value={slot}
                 disabled={!isRegistrationOpen}
                 onChange={(e) => setSlot(e.target.value)}
                 className="w-full px-3.5 py-2 text-sm bg-slate-900 border border-slate-700 rounded-xl text-slate-100 disabled:opacity-50"
               >
-                {AVAILABLE_CLASSES.map((c) => (
-                  <option key={c} value={c}>
-                    Kelas {c}
-                  </option>
-                ))}
+                <optgroup label="Guru Kelas (Wali Kelas)">
+                  {AVAILABLE_SLOTS.slice(0, 12).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Guru Bidang Studi (Spesialis)">
+                  {AVAILABLE_SLOTS.slice(12).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
@@ -186,7 +216,7 @@ export default function RegisterPage() {
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
             <h3 className="text-base font-bold text-white">Permohonan Terkirim</h3>
             <p className="text-xs text-slate-400">
-              Pendaftaran Anda untuk penugasan <strong>Kelas {slot}</strong> telah diteruskan ke antrean persetujuan Superuser. Anda akan menerima notifikasi email setelah akun disetujui.
+              Pendaftaran Anda untuk penugasan <strong>{AVAILABLE_SLOTS.find(s => s.id === slot)?.label || slot}</strong> telah diteruskan ke antrean persetujuan Superuser. Anda akan menerima notifikasi email setelah akun disetujui.
             </p>
             <Link href="/login" className="inline-block w-full">
               <Button variant="outline" className="w-full">

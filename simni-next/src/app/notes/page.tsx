@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { getJakartaDateString } from '@/lib/utils/date';
-import { FileText, Plus, Trash2, Calendar, User, Search, Filter } from 'lucide-react';
+import { FileText, Plus, Trash2, Calendar, User, Search, Filter, Download } from 'lucide-react';
+import { exportNotesToExcel } from '@/lib/excel/reports-excel';
 
 export default function NotesPage() {
   const { toast } = useToast();
@@ -95,16 +96,67 @@ export default function NotesPage() {
     }
   };
 
+  const [isExportingNotes, setIsExportingNotes] = useState(false);
+
+  const handleExportNotes = async () => {
+    if (classNotes.length === 0) {
+      toast('Belum ada catatan siswa yang dapat diekspor.', 'warning');
+      return;
+    }
+    try {
+      setIsExportingNotes(true);
+      const formattedNotes = classNotes.map((n) => ({
+        tanggal: n.Tanggal,
+        nisn: n.NISN,
+        nama_siswa: n['Nama Lengkap'],
+        kategori: 'Observasi Perilaku',
+        catatan: n.Catatan,
+        tindak_lanjut: '-'
+      }));
+      const blob = await exportNotesToExcel({
+        notes: formattedNotes,
+        activeKelas,
+        academicYear
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Catatan_Siswa_Kelas_${activeKelas}_${academicYear.replace('/', '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Buku Catatan Siswa berhasil diekspor ke Excel.', 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengekspor catatan siswa.', 'error');
+    } finally {
+      setIsExportingNotes(false);
+    }
+  };
+
   return (
     <Shell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-            Catatan Guru & Jurnal Observasi - Kelas {activeKelas}
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-            Dokumentasi kejadian anekdotal, perkembangan karakter, dan tindak lanjut siswa.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+              Catatan Guru & Jurnal Observasi - Kelas {activeKelas}
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              Dokumentasi kejadian anekdotal, perkembangan karakter, dan tindak lanjut siswa ({classNotes.length} Catatan).
+            </p>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportNotes}
+            isLoading={isExportingNotes}
+            disabled={classNotes.length === 0}
+          >
+            <Download className="w-4 h-4 mr-1.5" /> Ekspor Catatan (Excel)
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
