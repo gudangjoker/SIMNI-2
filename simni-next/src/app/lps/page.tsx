@@ -5,7 +5,8 @@ import { Shell } from '@/components/layout/Shell';
 import { useAppStore } from '@/stores/app-store';
 import { 
   GraduationCap, Download, Save, Settings, ChevronLeft, ChevronRight, 
-  Plus, Trash2, RotateCcw, Calendar, CheckCircle2, AlertCircle, ExternalLink
+  Plus, Trash2, RotateCcw, Calendar, CheckCircle2, AlertCircle, ExternalLink,
+  FileText, Sliders
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -15,6 +16,7 @@ import {
   DEFAULT_LPS_TEMPLATE, DEFAULT_BLP_TEMPLATE 
 } from '@/types/lps-blp-template';
 import { exportReportToExcel } from '@/lib/excel/lps-blp-excel';
+import { FullPageTemplateEditor } from '@/components/lps/FullPageTemplateEditor';
 import { ClassId } from '@/types/auth';
 import Link from 'next/link';
 
@@ -92,9 +94,8 @@ export default function LPSBLPPage() {
   const [evaluations, setEvaluations] = useState<Record<string, StudentEvaluationData>>({});
   const [isSaved, setIsSaved] = useState(true);
 
-  // Template Customization Modal
-  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<LPSBLPTemplate>(DEFAULT_LPS_TEMPLATE);
+  // View mode: 'evaluation' | 'template_editor' (Full Page)
+  const [viewMode, setViewMode] = useState<'evaluation' | 'template_editor'>('evaluation');
 
   // Export Modal
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -284,100 +285,9 @@ export default function LPSBLPPage() {
     }
   };
 
-  // Template Customization Handlers
+  // Template Customization Handlers (Switches to Full Page Mode)
   const handleOpenCustomize = () => {
-    setEditingTemplate(JSON.parse(JSON.stringify(activeTemplate)));
-    setIsCustomModalOpen(true);
-  };
-
-  const handleSaveCustomTemplate = () => {
-    if (reportType === 'LPS') {
-      setLpsTemplate(editingTemplate);
-      localStorage.setItem('simni_custom_template_lps', JSON.stringify(editingTemplate));
-    } else {
-      setBlpTemplate(editingTemplate);
-      localStorage.setItem('simni_custom_template_blp', JSON.stringify(editingTemplate));
-    }
-    setIsCustomModalOpen(false);
-    toast(`Kustomisasi struktur aspek & indikator ${reportType} berhasil disimpan.`, 'success');
-  };
-
-  const handleResetToDefaultTemplate = () => {
-    const def = reportType === 'LPS' ? DEFAULT_LPS_TEMPLATE : DEFAULT_BLP_TEMPLATE;
-    setEditingTemplate(JSON.parse(JSON.stringify(def)));
-    toast('Template dikembalikan ke format wajib resmi bawaan SDIT Bina Muda.', 'info');
-  };
-
-  // Add Aspect to Editing Template
-  const handleAddAspect = (sectionId: 'A' | 'B') => {
-    const sec = editingTemplate.sections.find((s) => s.id === sectionId);
-    if (!sec) return;
-    const newAspect: LPSAspect = {
-      id: `custom_asp_${Date.now()}`,
-      section: sectionId,
-      order: sec.aspects.length + 1,
-      title: 'Aspek Penilaian Baru',
-      evalType: 'grade_per_indicator',
-      criteriaOptions: ['A', 'B', 'C', 'D'],
-      indicators: [
-        { id: `ind_${Date.now()}_1`, code: 'a)', text: 'Indikator capaian baru' }
-      ],
-      defaultDescription: 'Alhamdulillah ananda menunjukkan perkembangan yang sangat baik.'
-    };
-    setEditingTemplate((prev) => ({
-      ...prev,
-      sections: prev.sections.map((s) => (s.id === sectionId ? { ...s, aspects: [...s.aspects, newAspect] } : s))
-    }));
-  };
-
-  // Add Indicator to Aspect
-  const handleAddIndicator = (aspectId: string) => {
-    setEditingTemplate((prev) => ({
-      ...prev,
-      sections: prev.sections.map((sec) => ({
-        ...sec,
-        aspects: sec.aspects.map((asp) => {
-          if (asp.id !== aspectId) return asp;
-          const nextIndex = asp.indicators.length + 1;
-          const code = asp.evalType === 'checklist' ? `${nextIndex})` : `${String.fromCharCode(96 + nextIndex)})`;
-          return {
-            ...asp,
-            indicators: [
-              ...asp.indicators,
-              { id: `ind_${Date.now()}`, code, text: 'Tuliskan butir indikator...' }
-            ]
-          };
-        })
-      }))
-    }));
-  };
-
-  // Delete Aspect
-  const handleDeleteAspect = (aspectId: string) => {
-    setEditingTemplate((prev) => ({
-      ...prev,
-      sections: prev.sections.map((sec) => ({
-        ...sec,
-        aspects: sec.aspects.filter((a) => a.id !== aspectId)
-      }))
-    }));
-  };
-
-  // Delete Indicator
-  const handleDeleteIndicator = (aspectId: string, indicatorId: string) => {
-    setEditingTemplate((prev) => ({
-      ...prev,
-      sections: prev.sections.map((sec) => ({
-        ...sec,
-        aspects: sec.aspects.map((asp) => {
-          if (asp.id !== aspectId) return asp;
-          return {
-            ...asp,
-            indicators: asp.indicators.filter((i) => i.id !== indicatorId)
-          };
-        })
-      }))
-    }));
+    setViewMode('template_editor');
   };
 
   // Handle Export to Excel (100% Identik Menggunakan Template Wajib)
@@ -418,9 +328,59 @@ export default function LPSBLPPage() {
     }
   };
 
+  if (viewMode === 'template_editor') {
+    return (
+      <Shell>
+        <FullPageTemplateEditor
+          initialReportType={reportType}
+          lpsTemplate={lpsTemplate}
+          blpTemplate={blpTemplate}
+          onApply={(type, updated) => {
+            if (type === 'LPS') {
+              setLpsTemplate(updated);
+              localStorage.setItem('simni_custom_template_lps', JSON.stringify(updated));
+            } else {
+              setBlpTemplate(updated);
+              localStorage.setItem('simni_custom_template_blp', JSON.stringify(updated));
+            }
+          }}
+          onReset={(type) => {
+            if (type === 'LPS') {
+              setLpsTemplate(DEFAULT_LPS_TEMPLATE);
+              localStorage.removeItem('simni_custom_template_lps');
+            } else {
+              setBlpTemplate(DEFAULT_BLP_TEMPLATE);
+              localStorage.removeItem('simni_custom_template_blp');
+            }
+          }}
+          onClose={() => setViewMode('evaluation')}
+        />
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <div className="space-y-6" suppressHydrationWarning>
+        {/* Top View Mode Switcher */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-zinc-800/80 rounded-2xl w-fit">
+          <button
+            type="button"
+            onClick={() => setViewMode('evaluation')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-sm cursor-pointer"
+          >
+            <FileText className="w-4 h-4" />
+            Input Penilaian Siswa ({reportType})
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('template_editor')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 transition-all cursor-pointer"
+          >
+            <Sliders className="w-4 h-4 text-indigo-500" />
+            Atur Template & Indikator (Full Page)
+          </button>
+        </div>
         {/* Top Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -968,197 +928,6 @@ export default function LPSBLPPage() {
             </div>
           </div>
         </div>
-
-        {/* Modal Kustomisasi Aspek & Indikator */}
-        <Modal
-          isOpen={isCustomModalOpen}
-          onClose={() => setIsCustomModalOpen(false)}
-          title={`Kustomisasi Struktur Aspek & Indikator (${reportType})`}
-        >
-          <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
-            <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-800 dark:text-amber-300">
-              <span>
-                Anda dapat menambah, menghapus, atau mengubah teks aspek dan butir indikator capaian kurikulum.
-              </span>
-              <button
-                type="button"
-                onClick={handleResetToDefaultTemplate}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs cursor-pointer shrink-0 ml-3"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Reset Template Wajib
-              </button>
-            </div>
-
-            {/* Editing Sections */}
-            {editingTemplate.sections.map((sec) => (
-              <div key={sec.id} className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-2xl border border-slate-200 dark:border-zinc-700 space-y-4">
-                <div className="flex items-center justify-between">
-                  <input
-                    type="text"
-                    value={sec.title}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEditingTemplate((prev) => ({
-                        ...prev,
-                        sections: prev.sections.map((s) => (s.id === sec.id ? { ...s, title: val } : s))
-                      }));
-                    }}
-                    className="text-xs font-bold px-3 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg w-full max-w-lg"
-                  />
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddAspect(sec.id)}
-                    className="gap-1 text-xs shrink-0 ml-2"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Tambah Aspek
-                  </Button>
-                </div>
-
-                {/* Aspect Cards inside section */}
-                <div className="space-y-3">
-                  {sec.aspects.map((asp) => (
-                    <div key={asp.id} className="p-3 bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-700 space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <input
-                          type="text"
-                          value={asp.title}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setEditingTemplate((prev) => ({
-                              ...prev,
-                              sections: prev.sections.map((s) => ({
-                                ...s,
-                                aspects: s.aspects.map((a) => (a.id === asp.id ? { ...a, title: val } : a))
-                              }))
-                            }));
-                          }}
-                          placeholder="Nama Aspek Penilaian"
-                          className="text-xs font-bold px-2.5 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg flex-1"
-                        />
-
-                        <select
-                          value={asp.evalType}
-                          onChange={(e) => {
-                            const val = e.target.value as any;
-                            let newOpts = ['A', 'B', 'C', 'D'];
-                            if (val === 'checklist') newOpts = ['Sudah Terbiasa', 'Belum Terbiasa'];
-                            else if (val === 'hafalan') newOpts = ['Hafal', 'Sebagian', 'Belum'];
-
-                            setEditingTemplate((prev) => ({
-                              ...prev,
-                              sections: prev.sections.map((s) => ({
-                                ...s,
-                                aspects: s.aspects.map((a) => (a.id === asp.id ? { ...a, evalType: val, criteriaOptions: newOpts } : a))
-                              }))
-                            }));
-                          }}
-                          className="text-[11px] font-semibold px-2 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg"
-                        >
-                          <option value="grade_per_indicator">Skor Huruf (A, B, C, D)</option>
-                          <option value="checklist">Checklist (Sudah / Belum)</option>
-                          <option value="hafalan">Hafalan (Hafal / Sebagian / Belum)</option>
-                          <option value="single_grade">Nilai Tunggal Aspek</option>
-                        </select>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAspect(asp.id)}
-                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg cursor-pointer"
-                          title="Hapus Aspek"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Indicators list inside Aspect */}
-                      <div className="pl-3 border-l-2 border-indigo-200 dark:border-indigo-900 space-y-1.5">
-                        {asp.indicators.map((ind) => (
-                          <div key={ind.id} className="flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              value={ind.code}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditingTemplate((prev) => ({
-                                  ...prev,
-                                  sections: prev.sections.map((s) => ({
-                                    ...s,
-                                    aspects: s.aspects.map((a) => {
-                                      if (a.id !== asp.id) return a;
-                                      return {
-                                        ...a,
-                                        indicators: a.indicators.map((i) => (i.id === ind.id ? { ...i, code: val } : i))
-                                      };
-                                    })
-                                  }))
-                                }));
-                              }}
-                              className="w-12 text-[11px] font-mono font-bold text-center px-1.5 py-0.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded"
-                            />
-                            <input
-                              type="text"
-                              value={ind.text}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setEditingTemplate((prev) => ({
-                                  ...prev,
-                                  sections: prev.sections.map((s) => ({
-                                    ...s,
-                                    aspects: s.aspects.map((a) => {
-                                      if (a.id !== asp.id) return a;
-                                      return {
-                                        ...a,
-                                        indicators: a.indicators.map((i) => (i.id === ind.id ? { ...i, text: val } : i))
-                                      };
-                                    })
-                                  }))
-                                }));
-                              }}
-                              placeholder="Teks indikator capaian..."
-                              className="flex-1 text-[11px] px-2 py-0.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteIndicator(asp.id, ind.id)}
-                              className="p-1 text-slate-400 hover:text-rose-500 cursor-pointer"
-                              title="Hapus Indikator"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-
-                        <button
-                          type="button"
-                          onClick={() => handleAddIndicator(asp.id)}
-                          className="inline-flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer pt-1"
-                        >
-                          <Plus className="w-3 h-3" /> Tambah Butir Indikator
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-zinc-800">
-              <Button variant="ghost" size="sm" onClick={() => setIsCustomModalOpen(false)}>
-                Batal
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSaveCustomTemplate}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                Terapkan & Simpan Kustomisasi
-              </Button>
-            </div>
-          </div>
-        </Modal>
 
         {/* Modal Ekspor Excel LPS / BLP */}
         <Modal

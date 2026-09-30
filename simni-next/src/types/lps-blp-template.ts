@@ -8,7 +8,7 @@ export type LPSEvalType = 'single_grade' | 'checklist' | 'grade_per_indicator' |
 
 export interface LPSAspect {
   id: string;
-  section: 'A' | 'B';
+  section: string;
   order: number;
   title: string;
   evalType: LPSEvalType;
@@ -18,7 +18,7 @@ export interface LPSAspect {
 }
 
 export interface LPSBLPSection {
-  id: 'A' | 'B';
+  id: string;
   title: string;
   aspects: LPSAspect[];
 }
