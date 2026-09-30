@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { Shell } from '@/components/layout/Shell';
@@ -28,7 +28,7 @@ export default function DashboardPage() {
 
   return (
     <Shell>
-      <div className="space-y-6">
+      <div className="space-y-6" suppressHydrationWarning>
         {/* Welcome Banner */}
         <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-950 text-white border border-indigo-800/40 shadow-xl relative overflow-hidden">
           <div className="relative z-10">

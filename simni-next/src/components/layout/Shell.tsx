@@ -20,7 +20,7 @@ export const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
       <NavigationDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-150">
+      <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-150" suppressHydrationWarning>
         {children}
       </main>
     </div>
