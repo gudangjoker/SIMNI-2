@@ -377,7 +377,6 @@ export default function BTQPage() {
                   <th className="py-3 px-3 w-12 text-center border-r border-slate-200 dark:border-zinc-700">NO</th>
                   <th className="py-3 px-4 w-60 border-r border-slate-200 dark:border-zinc-700">NAMA SISWA</th>
                   <th className="py-3 px-3 w-20 text-center border-r border-slate-200 dark:border-zinc-700">KELAS</th>
-                  <th className="py-3 px-3 w-32 text-center border-r border-slate-200 dark:border-zinc-700">KELOMPOK</th>
                   <th className="py-3 px-4 w-52 border-r border-slate-200 dark:border-zinc-700">HANCA TERAKHIR</th>
                   <th className="py-3 px-3 w-32 text-center border-r border-slate-200 dark:border-zinc-700">NILAI</th>
                   <th className="py-3 px-4 border-r border-slate-200 dark:border-zinc-700">
@@ -388,7 +387,7 @@ export default function BTQPage() {
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
                       Tidak ada data siswa ditemukan untuk {selectedKelompok === 'all' ? 'semua kelompok' : selectedKelompok}.
                     </td>
                   </tr>
@@ -420,13 +419,6 @@ export default function BTQPage() {
                         <td className="py-3 px-3 text-center border-r border-slate-100 dark:border-zinc-800">
                           <span className="px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-md text-[11px]">
                             {s.Kelas}
-                          </span>
-                        </td>
-
-                        {/* KELOMPOK BTQ */}
-                        <td className="py-3 px-3 text-center border-r border-slate-100 dark:border-zinc-800">
-                          <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold rounded-md text-[10px]">
-                            {s.Kelompok || 'Umum'}
                           </span>
                         </td>
 

@@ -55,17 +55,16 @@ function populateLPSSheet(
   if (params.masehiDate) ws.getCell('X96').value = params.masehiDate;
   if (params.hijriDate) ws.getCell('X97').value = params.hijriDate;
 
-  // 3. Tanda Tangan LPS (HANYA DUA CLASS MASTER: Wali Kelas & Guru Pendamping. TIDAK ADA KEPALA SEKOLAH & TIDAK ADA ORANG TUA)
-  if (params.waliKelas) ws.getCell('C105').value = params.waliKelas;
-  if (params.nuptkWali) {
-    const n = params.nuptkWali.trim();
-    ws.getCell('C106').value = n.startsWith('NUPTK') ? n : `    NUPTK. ${n}`;
-  }
+  // 3. Tanda Tangan LPS (Hanya Wali Kelas saja yang menandatangani di bawah titimangsa)
+  ws.getCell('C100').value = '';
+  ws.getCell('C105').value = '';
+  ws.getCell('C106').value = '';
 
-  if (params.guruPendamping) ws.getCell('R105').value = params.guruPendamping;
-  if (params.nuptkPendamping) {
-    const np = params.nuptkPendamping.trim();
-    ws.getCell('R106').value = np.startsWith('NUPTK') ? np : `NUPTK. ${np}`;
+  ws.getCell('R100').value = 'Class Master';
+  if (params.waliKelas) ws.getCell('R105').value = params.waliKelas;
+  if (params.nuptkWali) {
+    const nw = params.nuptkWali.trim();
+    ws.getCell('R106').value = nw.startsWith('NUPTK') ? nw : `NUPTK. ${nw}`;
   }
 
   // 4. Aspek & Indikator Section A
@@ -270,19 +269,37 @@ function populateBLPSheet(
   if (params.masehiDate) ws.getCell('X72').value = params.masehiDate;
   if (params.hijriDate) ws.getCell('X73').value = params.hijriDate;
 
-  // 3. Tanda Tangan BLP (Catatan 1 + Wali Kelas, Catatan 2 + Kepala Sekolah, Catatan Orang Tua)
+  // 3. Tanda Tangan BLP (Kepala Sekolah di atas dengan teks "Mengetahui,", Wali Kelas di bawah, Catatan Orang Tua)
+  // Posisi Atas: Mengetahui, Kepala Sekolah
+  ws.getCell('R75').value = 'Mengetahui,';
+  ws.getCell('R75').font = { name: 'Calibri', size: 11 };
+  ws.getCell('R75').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  ws.getCell('R76').value = 'Kepala Sekolah';
+  ws.getCell('R76').font = { name: 'Calibri', size: 11 };
+  ws.getCell('R76').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  const ksName = params.kepalaSekolah || 'Kepala Sekolah, S.Pd., Gr.';
+  ws.getCell('R81').value = ksName;
+  const nuksVal = params.nuks || '332353523532535';
+  ws.getCell('R82').value = nuksVal.startsWith('NUKS') ? nuksVal : (nuksVal.startsWith('NUPTK') ? nuksVal : `NUKS. ${nuksVal}`);
+
+  // Catatan 1
   if (params.catatan1) ws.getCell('A76').value = params.catatan1;
-  if (params.waliKelas) ws.getCell('R81').value = params.waliKelas;
+
+  // Posisi Bawah: Wali Kelas
+  ws.getCell('R84').value = 'Wali Kelas';
+  ws.getCell('R84').font = { name: 'Calibri', size: 11 };
+  ws.getCell('R84').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  if (params.waliKelas) ws.getCell('R89').value = params.waliKelas;
   if (params.nuptkWali) {
     const nw = params.nuptkWali.trim();
-    ws.getCell('R82').value = nw.startsWith('NUPTK') ? nw : `NUPTK. ${nw}`;
+    ws.getCell('R90').value = nw.startsWith('NUPTK') ? nw : `NUPTK. ${nw}`;
   }
 
+  // Catatan 2
   if (params.catatan2) ws.getCell('A84').value = params.catatan2;
-  const ksName = params.kepalaSekolah || params.guruPendamping || 'Kepala Sekolah, S.Pd., Gr.';
-  ws.getCell('R89').value = ksName;
-  const nuksVal = params.nuks || params.nuptkPendamping || '332353523532535';
-  ws.getCell('R90').value = nuksVal.startsWith('NUKS') ? nuksVal : (nuksVal.startsWith('NUPTK') ? nuksVal : `NUKS. ${nuksVal}`);
 
   // Catatan Orang Tua
   ws.getCell('R97').value = '( _______________________ )';
@@ -429,21 +446,38 @@ export async function exportReportToExcel(params: ReportExportParams): Promise<v
   }
 
   const masterSheet = wb.worksheets[0];
+  const usedSheetNames = new Set<string>();
 
   studentsToExport.forEach((student, index) => {
-    const rawSheetName = student.Panggilan || student['Nama Lengkap'].split(' ')[0] || student.NISN;
-    const safeSheetName = rawSheetName.replace(/[\\/?*[\]]/g, '').substring(0, 30);
+    // Nama sheet wajib mengikuti nama siswa, disanitasi dari karakter terlarang Excel (maks 31 karakter)
+    let cleanName = (student['Nama Lengkap'] || student.Panggilan || `Siswa_${index + 1}`)
+      .replace(/[\\/?*[\]:]/g, '')
+      .trim();
+
+    if (!cleanName) cleanName = `Siswa_${index + 1}`;
+
+    let safeSheetName = cleanName.substring(0, 31).trim();
+
+    // Pastikan nama sheet unik di dalam workbook
+    let uniqueName = safeSheetName;
+    let counter = 1;
+    while (usedSheetNames.has(uniqueName.toLowerCase())) {
+      const suffix = ` (${counter})`;
+      uniqueName = `${safeSheetName.substring(0, 31 - suffix.length).trim()}${suffix}`;
+      counter++;
+    }
+    usedSheetNames.add(uniqueName.toLowerCase());
 
     let ws: ExcelJS.Worksheet;
 
     if (index === 0) {
       ws = masterSheet;
-      ws.name = safeSheetName;
+      ws.name = uniqueName;
     } else {
       // Clone exact model and images from masterSheet to ensure 100% border & style fidelity
-      ws = wb.addWorksheet(safeSheetName);
+      ws = wb.addWorksheet(uniqueName);
       const clonedModel = JSON.parse(JSON.stringify(masterSheet.model));
-      clonedModel.name = safeSheetName;
+      clonedModel.name = uniqueName;
       ws.model = clonedModel;
 
       if (masterSheet.getImages) {

@@ -832,71 +832,45 @@ export default function LPSBLPPage() {
 
             {/* Signatures Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800">
-              {/* Wali Kelas / Class Master 1 */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                  Wali Kelas (Class Master) {!settings.wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
-                </label>
-                <input
-                  type="text"
-                  value={settings.wali_kelas || currentEval.classMaster || ''}
-                  onChange={(e) => handleMetaChange('classMaster', e.target.value)}
-                  placeholder="Nama Guru, S.Pd."
-                  className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium ${
-                    !settings.wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
-                  }`}
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                  NUPTK Wali Kelas {!settings.nuptk_wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
-                </label>
-                <input
-                  type="text"
-                  value={settings.nuptk_wali_kelas || currentEval.nuptkMaster || ''}
-                  onChange={(e) => handleMetaChange('nuptkMaster', e.target.value)}
-                  placeholder="112231231231231"
-                  className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono ${
-                    !settings.nuptk_wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
-                  }`}
-                />
-              </div>
-
-              {/* Second Signer: In LPS it's Class Master 2 (Guru Pendamping). In BLP it's Kepala Sekolah */}
               {reportType === 'LPS' ? (
                 <>
+                  {/* LPS: Hanya Wali Kelas yang Menandatangani */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                      Guru Pendamping (Class Master 2)
+                      Wali Kelas (Class Master) {!settings.wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
                     </label>
                     <input
                       type="text"
-                      value={currentEval.headMaster || 'Guru Pendamping, S.Pd.'}
-                      onChange={(e) => handleMetaChange('headMaster', e.target.value)}
-                      placeholder="Nama Guru Pendamping, S.Pd."
-                      className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium"
+                      value={settings.wali_kelas || currentEval.classMaster || ''}
+                      onChange={(e) => handleMetaChange('classMaster', e.target.value)}
+                      placeholder="Nama Guru, S.Pd."
+                      className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium ${
+                        !settings.wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                      }`}
                     />
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                      NUPTK Guru Pendamping
+                      NUPTK Wali Kelas {!settings.nuptk_wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
                     </label>
                     <input
                       type="text"
-                      value={currentEval.nuptkHead || '525252524242341'}
-                      onChange={(e) => handleMetaChange('nuptkHead', e.target.value)}
-                      placeholder="525252524242341"
-                      className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
+                      value={settings.nuptk_wali_kelas || currentEval.nuptkMaster || ''}
+                      onChange={(e) => handleMetaChange('nuptkMaster', e.target.value)}
+                      placeholder="112231231231231"
+                      className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono ${
+                        !settings.nuptk_wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                      }`}
                     />
                   </div>
                 </>
               ) : (
                 <>
+                  {/* BLP: Mengetahui, Kepala Sekolah di atas/kiri, lalu Wali Kelas */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                      Kepala Sekolah {!settings.kepala_sekolah && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
+                      Mengetahui, Kepala Sekolah {!settings.kepala_sekolah && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
                     </label>
                     <input
                       type="text"
@@ -920,6 +894,36 @@ export default function LPSBLPPage() {
                       placeholder="332353523532535"
                       className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono ${
                         !settings.nuks_kepala_sekolah ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                      Wali Kelas (Class Master) {!settings.wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.wali_kelas || currentEval.classMaster || ''}
+                      onChange={(e) => handleMetaChange('classMaster', e.target.value)}
+                      placeholder="Nama Guru, S.Pd."
+                      className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium ${
+                        !settings.wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                      NUPTK Wali Kelas {!settings.nuptk_wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.nuptk_wali_kelas || currentEval.nuptkMaster || ''}
+                      onChange={(e) => handleMetaChange('nuptkMaster', e.target.value)}
+                      placeholder="112231231231231"
+                      className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono ${
+                        !settings.nuptk_wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
                       }`}
                     />
                   </div>
