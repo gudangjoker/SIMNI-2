@@ -4,8 +4,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Shell } from '@/components/layout/Shell';
 import { useAppStore } from '@/stores/app-store';
 import { 
-  Sparkles, Download, Save, BookOpen, User, Check, Search, 
-  HelpCircle, RefreshCw, Layers, Award
+  Sparkles, Download, Save, BookOpen, Users, Search, 
+  Layers, Award
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -30,8 +30,6 @@ const DEFAULT_DESCRIPTIONS = {
 
 export default function BTQPage() {
   const { toast } = useToast();
-  const activeKelas = useAppStore((state) => state.activeKelas);
-  const setActiveKelas = useAppStore((state) => state.setActiveKelas);
   const academicYear = useAppStore((state) => state.academicYear);
   const studentsMap = useAppStore((state) => state.students);
 
@@ -40,7 +38,11 @@ export default function BTQPage() {
   const [tahunPelajaran, setTahunPelajaran] = useState('2025-2026');
   const [namaPengajar, setNamaPengajar] = useState('Unggaran');
 
-  // Search & Filter
+  // Kelompok BTQ Filter (Siswa dipanggil berdasarkan Kelompok BTQ)
+  const [selectedKelompok, setSelectedKelompok] = useState<string>('all');
+  const [filterKelas, setFilterKelas] = useState<string>('all');
+
+  // Search
   const [searchQuery, setSearchQuery] = useState('');
 
   // Records state: key = nisn
@@ -49,18 +51,40 @@ export default function BTQPage() {
 
   // Export Modal
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [exportScope, setExportScope] = useState<'single' | 'all'>('single');
+  const [exportScope, setExportScope] = useState<'kelompok' | 'all'>('kelompok');
   const [isExporting, setIsExporting] = useState(false);
 
-  // Students in active class
-  const classStudents = useMemo(() => {
-    return Object.values(studentsMap)
-      .filter((s) => s.Kelas === activeKelas)
-      .sort((a, b) => a['Nama Lengkap'].localeCompare(b['Nama Lengkap']));
-  }, [studentsMap, activeKelas]);
+  // Extract all available Kelompok BTQ from students
+  const availableKelompok = useMemo(() => {
+    const groups = new Set<string>();
+    Object.values(studentsMap).forEach((s) => {
+      if (s.Kelompok && s.Kelompok.trim() !== '') {
+        groups.add(s.Kelompok.trim());
+      }
+    });
+    return Array.from(groups).sort();
+  }, [studentsMap]);
 
-  // Load saved BTQ records from localStorage
-  const storageKey = `simni_btq_records_${activeKelas}_${academicYear}`;
+  // Set default selected kelompok if not set
+  useEffect(() => {
+    if (selectedKelompok === 'all' && availableKelompok.length > 0) {
+      setSelectedKelompok(availableKelompok[0]);
+    }
+  }, [availableKelompok, selectedKelompok]);
+
+  // Students filtered primarily by Kelompok BTQ
+  const btqStudents = useMemo(() => {
+    return Object.values(studentsMap)
+      .filter((s) => {
+        const matchKelompok = selectedKelompok === 'all' || s.Kelompok === selectedKelompok;
+        const matchKelas = filterKelas === 'all' || s.Kelas === filterKelas;
+        return matchKelompok && matchKelas;
+      })
+      .sort((a, b) => a['Nama Lengkap'].localeCompare(b['Nama Lengkap']));
+  }, [studentsMap, selectedKelompok, filterKelas]);
+
+  // Storage key based on Kelompok and Academic Year
+  const storageKey = `simni_btq_records_${academicYear}_${selectedKelompok.replace(/\s+/g, '_')}`;
 
   useEffect(() => {
     try {
@@ -68,13 +92,12 @@ export default function BTQPage() {
       if (saved) {
         setRecords(JSON.parse(saved));
       } else {
-        // Initialize records from students list if not exists
         const initial: Record<string, BTQRecord> = {};
-        classStudents.forEach((s) => {
+        btqStudents.forEach((s) => {
           initial[s.NISN] = {
             nisn: s.NISN,
             nama: s['Nama Lengkap'],
-            kelas: s.Kelas || activeKelas,
+            kelas: s.Kelas,
             hancaTerakhir: '',
             nilai: 'B',
             gambaranKemampuan: DEFAULT_DESCRIPTIONS.B
@@ -86,7 +109,7 @@ export default function BTQPage() {
     } catch {
       // ignore
     }
-  }, [storageKey, activeKelas, academicYear, classStudents]);
+  }, [storageKey, selectedKelompok, academicYear, btqStudents]);
 
   // Handle cell edits
   const handleUpdateRecord = (nisn: string, field: keyof BTQRecord, value: any) => {
@@ -94,7 +117,7 @@ export default function BTQPage() {
       const current = prev[nisn] || {
         nisn,
         nama: studentsMap[nisn]?.['Nama Lengkap'] || '',
-        kelas: activeKelas,
+        kelas: studentsMap[nisn]?.Kelas || '-',
         hancaTerakhir: '',
         nilai: 'B',
         gambaranKemampuan: ''
@@ -102,7 +125,6 @@ export default function BTQPage() {
 
       const updated = { ...current, [field]: value };
 
-      // If user changed grade and description is empty or default, optionally offer matching template
       if (field === 'nilai' && (value === 'A' || value === 'B' || value === 'C' || value === 'D')) {
         if (!current.gambaranKemampuan || Object.values(DEFAULT_DESCRIPTIONS).includes(current.gambaranKemampuan)) {
           updated.gambaranKemampuan = DEFAULT_DESCRIPTIONS[value as keyof typeof DEFAULT_DESCRIPTIONS];
@@ -127,23 +149,24 @@ export default function BTQPage() {
     try {
       localStorage.setItem(storageKey, JSON.stringify(records));
       setIsSaved(true);
-      toast(`Data Laporan BTQ Kelas ${activeKelas} berhasil disimpan.`, 'success');
+      toast(`Data Laporan BTQ untuk ${selectedKelompok} berhasil disimpan.`, 'success');
     } catch {
       toast('Gagal menyimpan ke penyimpanan lokal.', 'error');
     }
   };
 
-  // Filtered students
+  // Filtered by Search Query
   const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) return classStudents;
+    if (!searchQuery.trim()) return btqStudents;
     const q = searchQuery.toLowerCase();
-    return classStudents.filter(
+    return btqStudents.filter(
       (s) =>
         s['Nama Lengkap'].toLowerCase().includes(q) ||
         s.NISN.toLowerCase().includes(q) ||
+        (s.Kelompok || '').toLowerCase().includes(q) ||
         (records[s.NISN]?.hancaTerakhir || '').toLowerCase().includes(q)
     );
-  }, [classStudents, searchQuery, records]);
+  }, [btqStudents, searchQuery, records]);
 
   // Handle Export
   const handleTriggerExport = async () => {
@@ -151,20 +174,20 @@ export default function BTQPage() {
     try {
       let exportRecords: BTQRecord[] = [];
 
-      if (exportScope === 'single') {
-        exportRecords = classStudents.map((s, idx) => {
+      if (exportScope === 'kelompok') {
+        exportRecords = btqStudents.map((s) => {
           const rec = records[s.NISN];
           return {
             nisn: s.NISN,
             nama: s['Nama Lengkap'],
-            kelas: activeKelas,
+            kelas: s.Kelas,
             hancaTerakhir: rec?.hancaTerakhir || '-',
             nilai: rec?.nilai || 'B',
             gambaranKemampuan: rec?.gambaranKemampuan || DEFAULT_DESCRIPTIONS.B
           };
         });
       } else {
-        // All students across all rombels
+        // All students across all kelompok
         exportRecords = Object.values(studentsMap).map((s) => {
           const rec = records[s.NISN];
           return {
@@ -179,7 +202,7 @@ export default function BTQPage() {
       }
 
       await exportBTQToExcel({
-        sheetTitle: `Kelas ${activeKelas}`,
+        sheetTitle: selectedKelompok !== 'all' ? selectedKelompok : 'Laporan BTQ',
         periode,
         tahunPelajaran,
         namaPengajar,
@@ -211,7 +234,7 @@ export default function BTQPage() {
               </h1>
             </div>
             <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-              Formulir isian evaluasi tilawah Al-Qur'an & Iqro sesuai format resmi SDIT Bina Muda Cicalengka.
+              Pencatatan evaluasi tilawah Al-Qur'an per Kelompok BTQ sesuai format resmi SDIT Bina Muda Cicalengka.
             </p>
           </div>
 
@@ -239,24 +262,30 @@ export default function BTQPage() {
         </div>
 
         {/* Configuration Bar */}
-        <div className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-              Rombel / Kelas Aktif
+        <div className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Kelompok BTQ Selector */}
+          <div className="lg:col-span-2">
+            <label className="block text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" /> Pilih Kelompok BTQ Siswa
             </label>
             <select
-              value={activeKelas}
-              onChange={(e) => setActiveKelas(e.target.value as ClassId)}
-              className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500"
+              value={selectedKelompok}
+              onChange={(e) => {
+                setSelectedKelompok(e.target.value);
+                setIsSaved(true);
+              }}
+              className="w-full text-xs font-bold px-3 py-2 bg-emerald-50/60 dark:bg-emerald-950/20 border-2 border-emerald-300 dark:border-emerald-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-emerald-900 dark:text-emerald-200"
             >
-              {(['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B'] as ClassId[]).map((k) => (
-                <option key={k} value={k}>
-                  Kelas {k}
+              <option value="all">Semua Kelompok BTQ</option>
+              {availableKelompok.map((grp) => (
+                <option key={grp} value={grp}>
+                  {grp}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Periode */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
               Periode Laporan
@@ -277,6 +306,7 @@ export default function BTQPage() {
             </select>
           </div>
 
+          {/* Tahun Pelajaran */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
               Tahun Pelajaran
@@ -293,6 +323,7 @@ export default function BTQPage() {
             />
           </div>
 
+          {/* Nama Pengajar BTQ */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
               Nama Pengajar BTQ
@@ -323,10 +354,17 @@ export default function BTQPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400 font-medium">
-            <span>Total Siswa: <strong className="text-slate-800 dark:text-zinc-200">{filteredStudents.length}</strong></span>
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-zinc-400 font-medium">
+            <span>
+              Kelompok:{' '}
+              <strong className="text-emerald-700 dark:text-emerald-400">
+                {selectedKelompok === 'all' ? 'Semua Kelompok' : selectedKelompok}
+              </strong>
+            </span>
             <span>•</span>
-            <span>Kelas Aktif: <strong className="text-emerald-600 dark:text-emerald-400">{activeKelas}</strong></span>
+            <span>
+              Siswa Terdaftar: <strong className="text-slate-800 dark:text-zinc-200">{filteredStudents.length}</strong>
+            </span>
           </div>
         </div>
 
@@ -339,6 +377,7 @@ export default function BTQPage() {
                   <th className="py-3 px-3 w-12 text-center border-r border-slate-200 dark:border-zinc-700">NO</th>
                   <th className="py-3 px-4 w-60 border-r border-slate-200 dark:border-zinc-700">NAMA SISWA</th>
                   <th className="py-3 px-3 w-20 text-center border-r border-slate-200 dark:border-zinc-700">KELAS</th>
+                  <th className="py-3 px-3 w-32 text-center border-r border-slate-200 dark:border-zinc-700">KELOMPOK</th>
                   <th className="py-3 px-4 w-52 border-r border-slate-200 dark:border-zinc-700">HANCA TERAKHIR</th>
                   <th className="py-3 px-3 w-32 text-center border-r border-slate-200 dark:border-zinc-700">NILAI</th>
                   <th className="py-3 px-4 border-r border-slate-200 dark:border-zinc-700">
@@ -349,8 +388,8 @@ export default function BTQPage() {
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
-                      Tidak ada data siswa ditemukan untuk kelas {activeKelas}.
+                    <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                      Tidak ada data siswa ditemukan untuk {selectedKelompok === 'all' ? 'semua kelompok' : selectedKelompok}.
                     </td>
                   </tr>
                 ) : (
@@ -358,7 +397,7 @@ export default function BTQPage() {
                     const rec = records[s.NISN] || {
                       nisn: s.NISN,
                       nama: s['Nama Lengkap'],
-                      kelas: activeKelas,
+                      kelas: s.Kelas,
                       hancaTerakhir: '',
                       nilai: 'B',
                       gambaranKemampuan: DEFAULT_DESCRIPTIONS.B
@@ -380,31 +419,26 @@ export default function BTQPage() {
                         {/* KELAS */}
                         <td className="py-3 px-3 text-center border-r border-slate-100 dark:border-zinc-800">
                           <span className="px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-md text-[11px]">
-                            {activeKelas}
+                            {s.Kelas}
                           </span>
                         </td>
 
-                        {/* HANCA TERAKHIR */}
+                        {/* KELOMPOK BTQ */}
+                        <td className="py-3 px-3 text-center border-r border-slate-100 dark:border-zinc-800">
+                          <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold rounded-md text-[10px]">
+                            {s.Kelompok || 'Umum'}
+                          </span>
+                        </td>
+
+                        {/* HANCA TERAKHIR (Input Teks Murni - Tanpa Dropdown Permanen) */}
                         <td className="py-3 px-4 border-r border-slate-100 dark:border-zinc-800">
                           <input
                             type="text"
-                            list={`hanca-suggestions-${s.NISN}`}
                             value={rec.hancaTerakhir}
                             onChange={(e) => handleUpdateRecord(s.NISN, 'hancaTerakhir', e.target.value)}
-                            placeholder="Iqro 6 hal 28 / Al-Baqarah 112"
+                            placeholder="Contoh: Iqro 6 hal 28 / Al-Baqarah 112"
                             className="w-full text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium"
                           />
-                          <datalist id={`hanca-suggestions-${s.NISN}`}>
-                            <option value="Iqro 1 hal 15" />
-                            <option value="Iqro 2 hal 20" />
-                            <option value="Iqro 3 hal 18" />
-                            <option value="Iqro 4 hal 11" />
-                            <option value="Iqro 5 hal 25" />
-                            <option value="Iqro 6 hal 28" />
-                            <option value="Al-Baqoroh ayat 112" />
-                            <option value="Al-Baqoroh ayat 121" />
-                            <option value="Juz 30 An-Naba ayat 1-20" />
-                          </datalist>
                         </td>
 
                         {/* NILAI */}
@@ -500,18 +534,18 @@ export default function BTQPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div
-                  onClick={() => setExportScope('single')}
+                  onClick={() => setExportScope('kelompok')}
                   className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                    exportScope === 'single'
+                    exportScope === 'kelompok'
                       ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm'
                       : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300'
                   }`}
                 >
                   <div className="font-bold text-xs text-slate-900 dark:text-zinc-100">
-                    Kelas Aktif (Kelas {activeKelas})
+                    {selectedKelompok === 'all' ? 'Semua Kelompok' : selectedKelompok}
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">
-                    Mengekspor {classStudents.length} siswa pada rombel {activeKelas}.
+                    Mengekspor {btqStudents.length} siswa dalam kelompok ini.
                   </div>
                 </div>
 
@@ -524,7 +558,7 @@ export default function BTQPage() {
                   }`}
                 >
                   <div className="font-bold text-xs text-slate-900 dark:text-zinc-100">
-                    Seluruh Rombel (1A - 6B)
+                    Seluruh Siswa Sekolah
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">
                     Sheet master KELAS1-6 dan lembar terpisah per rombel.

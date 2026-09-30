@@ -5,18 +5,46 @@ import { Shell } from '@/components/layout/Shell';
 import { useAppStore } from '@/stores/app-store';
 import { 
   GraduationCap, Download, Save, Settings, ChevronLeft, ChevronRight, 
-  Check, Plus, Trash2, RotateCcw, Sparkles, BookOpen, User, Calendar,
-  FileSpreadsheet, ShieldCheck, CheckCircle2
+  Plus, Trash2, RotateCcw, Calendar, CheckCircle2, AlertCircle, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { 
-  LPSBLPTemplate, LPSAspect, LPSIndicator, StudentEvaluationData,
+  LPSBLPTemplate, LPSAspect, StudentEvaluationData,
   DEFAULT_LPS_TEMPLATE, DEFAULT_BLP_TEMPLATE 
 } from '@/types/lps-blp-template';
 import { exportReportToExcel } from '@/lib/excel/lps-blp-excel';
 import { ClassId } from '@/types/auth';
+import Link from 'next/link';
+
+function formatMasehi(isoDate: string): string {
+  if (!isoDate) return '';
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return isoDate;
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function gregorianToHijri(isoDate: string): string {
+  if (!isoDate) return '';
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return '';
+  try {
+    const formatter = new Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const formatted = formatter.format(d).replace(/AH|H\b/, '').trim();
+    return `${formatted} H`;
+  } catch {
+    return '';
+  }
+}
 
 export default function LPSBLPPage() {
   const { toast } = useToast();
@@ -24,6 +52,7 @@ export default function LPSBLPPage() {
   const setActiveKelas = useAppStore((state) => state.setActiveKelas);
   const academicYear = useAppStore((state) => state.academicYear);
   const studentsMap = useAppStore((state) => state.students);
+  const settings = useAppStore((state) => state.pengaturan);
 
   // Active Report Type: LPS (Tengah Semester) or BLP (Akhir Semester)
   const [reportType, setReportType] = useState<'LPS' | 'BLP'>('LPS');
@@ -37,6 +66,11 @@ export default function LPSBLPPage() {
 
   // Active Student
   const [selectedNisn, setSelectedNisn] = useState<string>('');
+
+  // Date Picker State
+  const [masehiPickerDate, setMasehiPickerDate] = useState<string>(
+    reportType === 'LPS' ? '2025-05-03' : '2025-12-22'
+  );
 
   // Class Students
   const classStudents = useMemo(() => {
@@ -66,6 +100,9 @@ export default function LPSBLPPage() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportScope, setExportScope] = useState<'single' | 'class'>('single');
   const [isExporting, setIsExporting] = useState(false);
+
+  // Check if profile / settings is complete
+  const isProfileIncomplete = !settings.wali_kelas || !settings.nuptk_wali_kelas || !settings.kepala_sekolah || !settings.nuks_kepala_sekolah;
 
   // Load Custom Templates from localStorage
   useEffect(() => {
@@ -111,7 +148,6 @@ export default function LPSBLPPage() {
     const existing = evaluations[activeStudent.NISN];
     if (existing) return existing;
 
-    // Return initialized default evaluation for active template
     const defaultGrades: Record<string, string> = {};
     const defaultChecks: Record<string, string> = {};
     const defaultDescs: Record<string, string> = {};
@@ -129,19 +165,22 @@ export default function LPSBLPPage() {
       });
     });
 
+    const initMasehi = formatMasehi(masehiPickerDate) || (reportType === 'LPS' ? '03 Mei 2025' : '22 Desember 2025');
+    const initHijri = gregorianToHijri(masehiPickerDate) || (reportType === 'LPS' ? '05 Dzulqaidah 1446 H' : '3 Rajab 1447 H');
+
     return {
       studentNisn: activeStudent.NISN,
       aspectGrades: defaultGrades,
       indicatorChecks: defaultChecks,
       descriptions: defaultDescs,
-      masehiDate: reportType === 'LPS' ? '03 Mei 2025' : '22 Desember 2025',
-      hijriDate: reportType === 'LPS' ? '05 Dzulqaidah 1446 H' : '3 Rajab 1447 H',
-      classMaster: 'Wali Kelas, S.Pd.',
-      nuptkMaster: '112231231231231',
-      headMaster: 'Kepala Sekolah, S.Pd., Gr.',
+      masehiDate: initMasehi,
+      hijriDate: initHijri,
+      classMaster: settings.wali_kelas || 'Wali Kelas, S.Pd.',
+      nuptkMaster: settings.nuptk_wali_kelas || '112231231231231',
+      headMaster: 'Guru Pendamping, S.Pd.',
       nuptkHead: '525252524242341'
     };
-  }, [activeStudent, evaluations, activeTemplate, reportType]);
+  }, [activeStudent, evaluations, activeTemplate, reportType, masehiPickerDate, settings]);
 
   // Update active student evaluation
   const updateCurrentEval = (updater: (prev: StudentEvaluationData) => StudentEvaluationData) => {
@@ -191,6 +230,18 @@ export default function LPSBLPPage() {
     updateCurrentEval((prev) => ({
       ...prev,
       [field]: val
+    }));
+  };
+
+  // Date picker handler: converts to formatted Masehi and updates Hijri date automatically
+  const handleDatePickerChange = (newIsoDate: string) => {
+    setMasehiPickerDate(newIsoDate);
+    const mStr = formatMasehi(newIsoDate);
+    const hStr = gregorianToHijri(newIsoDate);
+    updateCurrentEval((prev) => ({
+      ...prev,
+      masehiDate: mStr,
+      hijriDate: hStr
     }));
   };
 
@@ -329,7 +380,7 @@ export default function LPSBLPPage() {
     }));
   };
 
-  // Handle Export to Excel
+  // Handle Export to Excel (100% Identik Menggunakan Template Wajib)
   const handleTriggerExport = async () => {
     if (!activeStudent && exportScope === 'single') return;
     setIsExporting(true);
@@ -346,14 +397,18 @@ export default function LPSBLPPage() {
         targetNisn: activeStudent?.NISN,
         masehiDate: currentEval.masehiDate,
         hijriDate: currentEval.hijriDate,
-        classMaster: currentEval.classMaster,
-        nuptkMaster: currentEval.nuptkMaster,
-        headMaster: currentEval.headMaster,
-        nuptkHead: currentEval.nuptkHead
+        waliKelas: settings.wali_kelas || currentEval.classMaster || 'Wali Kelas, S.Pd.',
+        nuptkWali: settings.nuptk_wali_kelas || currentEval.nuptkMaster || '112231231231231',
+        guruPendamping: currentEval.headMaster || 'Guru Pendamping, S.Pd.',
+        nuptkPendamping: currentEval.nuptkHead || '525252524242341',
+        kepalaSekolah: settings.kepala_sekolah || 'Kepala Sekolah, S.Pd., Gr.',
+        nuks: settings.nuks_kepala_sekolah || '332353523532535',
+        catatan1: currentEval.generalNotes || 'Jaga tetap murojaah dan tambah lagi hafalannya ya.',
+        catatan2: 'Semester 1 sudah terlewati. Terimakasih. Mari persiapan lebih baik di semester 2. Barakallah anak-anak hebat.'
       });
       setIsExportModalOpen(false);
       toast(
-        `File Excel ${reportType} (${exportScope === 'single' ? activeStudent['Nama Lengkap'] : `Kelas ${activeKelas}`}) identik dengan template berhasil diunduh.`,
+        `File Excel ${reportType} (${exportScope === 'single' ? activeStudent['Nama Lengkap'] : `Kelas ${activeKelas}`}) 100% identik dengan template berhasil diunduh.`,
         'success'
       );
     } catch (err: any) {
@@ -365,7 +420,7 @@ export default function LPSBLPPage() {
 
   return (
     <Shell>
-      <div className="space-y-6">
+      <div className="space-y-6" suppressHydrationWarning>
         {/* Top Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -378,12 +433,11 @@ export default function LPSBLPPage() {
               </h1>
             </div>
             <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-              Formulir evaluasi karakter, adab, prestasi akademik & hafalan Al-Qur'an terhubung ke format Excel resmi SDIT Bina Muda.
+              Formulir evaluasi karakter, adab, prestasi akademik & hafalan Al-Qur'an terhubung langsung ke format Excel resmi SDIT Bina Muda.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Customization Button */}
             <Button
               variant="outline"
               size="sm"
@@ -394,7 +448,6 @@ export default function LPSBLPPage() {
               Kustomisasi Aspek & Indikator
             </Button>
 
-            {/* Save Button */}
             <Button
               variant={isSaved ? 'outline' : 'primary'}
               size="sm"
@@ -405,7 +458,6 @@ export default function LPSBLPPage() {
               {isSaved ? 'Tersimpan' : 'Simpan Evaluasi'}
             </Button>
 
-            {/* Export Button */}
             <Button
               variant="primary"
               size="sm"
@@ -413,10 +465,33 @@ export default function LPSBLPPage() {
               className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <Download className="w-4 h-4" />
-              Ekspor Excel (Identik Template)
+              Ekspor Excel (Identik Template 100%)
             </Button>
           </div>
         </div>
+
+        {/* Incomplete Profile Alert if settings missing */}
+        {isProfileIncomplete && (
+          <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/50 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div>
+                <strong>Data identitas guru & sekolah belum lengkap di pengaturan.</strong>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                  Lengkapi data Wali Kelas, NUPTK, Kepala Sekolah, dan NUKS agar otomatis tercetak resmi pada hasil ekspor Excel rapor.
+                </p>
+              </div>
+            </div>
+            <Link href="/settings">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shrink-0 cursor-pointer shadow-sm"
+              >
+                Buka Pengaturan <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </Link>
+          </div>
+        )}
 
         {/* Tab & Filter Bar */}
         <div className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-4">
@@ -549,7 +624,7 @@ export default function LPSBLPPage() {
 
             <div className="flex items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 font-semibold rounded-xl">
-                <CheckCircle2 className="w-4 h-4" /> Siap Diekspor Identik Template
+                <CheckCircle2 className="w-4 h-4" /> Ekspor Menggunakan File Template Resmi 100% Identik
               </span>
             </div>
           </div>
@@ -722,15 +797,43 @@ export default function LPSBLPPage() {
 
           {/* Signatures & Dates Settings Card */}
           <div className="p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-indigo-500" />
-              Titimangsa & Pengesahan Tanda Tangan Laporan ({reportType})
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800 pb-3">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-indigo-500" />
+                  Titimangsa & Pengesahan Tanda Tangan ({reportType})
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {reportType === 'LPS'
+                    ? 'Sesuai format wajib LPS: disahkan oleh 2 Class Master (Wali Kelas & Guru Pendamping). Tidak ada kolom Kepala Sekolah dan Orang Tua.'
+                    : 'Sesuai format wajib BLP: disahkan oleh Wali Kelas, Kepala Sekolah, dan ditandatangani Orang Tua.'}
+                </p>
+              </div>
 
+              {isProfileIncomplete && (
+                <span className="text-[11px] font-bold text-rose-500 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> Harap lengkapi data di pengaturan
+                </span>
+              )}
+            </div>
+
+            {/* Date Picker Row with Auto Hijri */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                  Tanggal Masehi
+                  Picker Tanggal Masehi
+                </label>
+                <input
+                  type="date"
+                  value={masehiPickerDate}
+                  onChange={(e) => handleDatePickerChange(e.target.value)}
+                  className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                  Teks Tanggal Masehi Tercetak
                 </label>
                 <input
                   type="text"
@@ -743,42 +846,125 @@ export default function LPSBLPPage() {
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                  Tanggal Hijriyah
+                  Tanggal Hijriyah (Otomatis)
                 </label>
                 <input
                   type="text"
                   value={currentEval.hijriDate || ''}
                   onChange={(e) => handleMetaChange('hijriDate', e.target.value)}
                   placeholder="05 Dzulqaidah 1446 H"
-                  className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-xs px-3 py-2 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800 rounded-xl focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                  Wali Kelas / Class Master
+                  Kota Titimangsa
                 </label>
                 <input
                   type="text"
-                  value={currentEval.classMaster || ''}
+                  disabled
+                  value="Cicalengka"
+                  className="w-full text-xs px-3 py-2 bg-slate-100 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700 rounded-xl text-slate-500 font-medium cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Signatures Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800">
+              {/* Wali Kelas / Class Master 1 */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                  Wali Kelas (Class Master) {!settings.wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
+                </label>
+                <input
+                  type="text"
+                  value={settings.wali_kelas || currentEval.classMaster || ''}
                   onChange={(e) => handleMetaChange('classMaster', e.target.value)}
                   placeholder="Nama Guru, S.Pd."
-                  className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium ${
+                    !settings.wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                  }`}
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
-                  NUPTK Wali Kelas
+                  NUPTK Wali Kelas {!settings.nuptk_wali_kelas && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
                 </label>
                 <input
                   type="text"
-                  value={currentEval.nuptkMaster || ''}
+                  value={settings.nuptk_wali_kelas || currentEval.nuptkMaster || ''}
                   onChange={(e) => handleMetaChange('nuptkMaster', e.target.value)}
                   placeholder="112231231231231"
-                  className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
+                  className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono ${
+                    !settings.nuptk_wali_kelas ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                  }`}
                 />
               </div>
+
+              {/* Second Signer: In LPS it's Class Master 2 (Guru Pendamping). In BLP it's Kepala Sekolah */}
+              {reportType === 'LPS' ? (
+                <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                      Guru Pendamping (Class Master 2)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentEval.headMaster || 'Guru Pendamping, S.Pd.'}
+                      onChange={(e) => handleMetaChange('headMaster', e.target.value)}
+                      placeholder="Nama Guru Pendamping, S.Pd."
+                      className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                      NUPTK Guru Pendamping
+                    </label>
+                    <input
+                      type="text"
+                      value={currentEval.nuptkHead || '525252524242341'}
+                      onChange={(e) => handleMetaChange('nuptkHead', e.target.value)}
+                      placeholder="525252524242341"
+                      className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                      Kepala Sekolah {!settings.kepala_sekolah && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.kepala_sekolah || currentEval.headMaster || ''}
+                      onChange={(e) => handleMetaChange('headMaster', e.target.value)}
+                      placeholder="Kepala Sekolah, S.Pd., Gr."
+                      className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium ${
+                        !settings.kepala_sekolah ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-zinc-400 mb-1">
+                      NUKS Kepala Sekolah {!settings.nuks_kepala_sekolah && <span className="text-rose-500 font-semibold">(Harap lengkapi di pengaturan)</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.nuks_kepala_sekolah || currentEval.nuptkHead || ''}
+                      onChange={(e) => handleMetaChange('nuptkHead', e.target.value)}
+                      placeholder="332353523532535"
+                      className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-zinc-800 border rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono ${
+                        !settings.nuks_kepala_sekolah ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-zinc-700'
+                      }`}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -984,7 +1170,7 @@ export default function LPSBLPPage() {
             <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
               Format ekspor akan dihasilkan <strong>100% identik</strong> dengan file{' '}
               <code className="text-indigo-600 font-mono font-bold">{reportType} - Template wajib.xlsx</code>:
-              logo sekolah resmi SDIT Bina Muda, font kop (Britannic Bold, Cooper Black, Cambria), border tabel tipis, dan centang ({reportType === 'LPS' ? 'ü' : '✓'}).
+              seluruh border garis tabel, logo sekolah resmi, kop font, dan penandatanganan sesuai ketentuan resmi SDIT Bina Muda.
             </p>
 
             <div className="space-y-3">
@@ -1041,8 +1227,8 @@ export default function LPSBLPPage() {
                 <span className="font-bold text-slate-800 dark:text-zinc-200">Semester {semester}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Logo & Kop Sekolah:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">100% Identik Aktif</span>
+                <span className="text-slate-500">Garis Tabel & Logo:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">100% Identik Template Wajib</span>
               </div>
             </div>
 
