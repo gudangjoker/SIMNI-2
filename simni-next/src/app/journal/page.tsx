@@ -9,25 +9,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { getJakartaDateString } from '@/lib/utils/date';
+import { getSubjectsForClass } from '@/lib/constants/subjects';
 import { BookOpen, Calendar, Clock, Plus, Trash2, CalendarDays } from 'lucide-react';
 
 const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as const;
 const HOURS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-
-const MAPEL_OPTIONS = [
-  'Pendidikan Agama Islam',
-  'Pendidikan Pancasila',
-  'Bahasa Indonesia',
-  'Matematika',
-  'IPAS',
-  'PJOK',
-  'Seni Rupa',
-  'Seni Musik',
-  'Bahasa Inggris',
-  'Bahasa Sunda',
-  'Istirahat',
-  '-Kosong-'
-];
 
 export default function JournalPage() {
   const { toast } = useToast();
@@ -36,12 +22,16 @@ export default function JournalPage() {
   const journalMap = useAppStore((state) => state.jurnal);
   const scheduleMap = useAppStore((state) => state.jadwal);
 
+  const mapelOptions = useMemo(() => {
+    return [...getSubjectsForClass(activeKelas), 'Istirahat', '-Kosong-'];
+  }, [activeKelas]);
+
   const [activeTab, setActiveTab] = useState<'harian' | 'jadwal' | 'rekap'>('harian');
 
   // Form Jurnal Harian
   const [tanggal, setTanggal] = useState(getJakartaDateString());
   const [jamKe, setJamKe] = useState('1');
-  const [mapel, setMapel] = useState(MAPEL_OPTIONS[0]);
+  const [mapel, setMapel] = useState('Pendidikan Agama Islam');
   const [materi, setMateri] = useState('');
   const [keterangan, setKeterangan] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -184,7 +174,7 @@ export default function JournalPage() {
                       onChange={(e) => setMapel(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl"
                     >
-                      {MAPEL_OPTIONS.map((m) => (
+                      {mapelOptions.map((m) => (
                         <option key={m} value={m}>
                           {m}
                         </option>
@@ -286,7 +276,7 @@ export default function JournalPage() {
                       {DAYS.map((d) => (
                         <td key={d} className="p-1 border-r border-slate-200 dark:border-zinc-800 last:border-0">
                           <select className="w-full px-2 py-1 text-[11px] bg-transparent rounded border-0 focus:ring-1 focus:ring-indigo-500">
-                            {MAPEL_OPTIONS.map((m) => (
+                            {mapelOptions.map((m) => (
                               <option key={m} value={m}>{m}</option>
                             ))}
                           </select>

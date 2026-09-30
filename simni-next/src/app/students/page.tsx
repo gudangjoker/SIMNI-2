@@ -12,9 +12,15 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { 
   UserPlus, Search, CheckSquare, Square, Trash2, 
-  Edit, Eye, User, Sparkles, AlertCircle, QrCode 
+  Edit, Eye, User, Sparkles, AlertCircle, QrCode,
+  FileDown, Upload, Download, CheckCircle, AlertTriangle, Layers
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import {
+  generateStudentTemplate,
+  exportStudentsToExcel,
+  parseStudentExcelFile
+} from '@/lib/excel/student-excel';
 
 const CLASSES: ClassId[] = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B', 'PJOK'];
 
@@ -35,6 +41,21 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Excel Features State
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [templateMode, setTemplateMode] = useState<'single' | 'all'>('single');
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
+
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isParsingExcel, setIsParsingExcel] = useState(false);
+  const [parsedStudents, setParsedStudents] = useState<Student[]>([]);
+  const [importErrors, setImportErrors] = useState<{ row: number; sheet: string; message: string }[]>([]);
+  const [isSavingImport, setIsSavingImport] = useState(false);
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportMode, setExportMode] = useState<'single' | 'all'>('single');
+  const [isExporting, setIsExporting] = useState(false);
 
   // Form State
   const [formNisn, setFormNisn] = useState('');
@@ -84,27 +105,27 @@ export default function StudentsPage() {
 
   const openDetailModal = async (student: Student) => {
     setSelectedStudent(student);
+    setIsDetailOpen(true);
     try {
       const url = await QRCode.toDataURL(student.NISN, { width: 250, margin: 1 });
       setQrCodeUrl(url);
-    } catch (err) {
-      console.warn('Gagal render QR:', err);
+    } catch {
+      setQrCodeUrl(null);
     }
-    setIsDetailOpen(true);
   };
 
-  const handleSaveStudent = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
     const cleanNisn = formNisn.trim();
     if (!/^\d{10}$/.test(cleanNisn)) {
-      setFormError('NISN wajib terdiri dari tepat 10 digit angka numerik.');
+      setFormError('NISN wajib terdiri tepat dari 10 digit angka numerik.');
       return;
     }
 
     if (!formNama.trim()) {
-      setFormError('Nama lengkap siswa wajib diisi.');
+      setFormError('Nama lengkap siswa tidak boleh kosong.');
       return;
     }
 
@@ -176,6 +197,113 @@ export default function StudentsPage() {
     }
   };
 
+  // 1. Download Template Excel Siswa
+  const handleDownloadTemplate = async () => {
+    try {
+      setIsGeneratingTemplate(true);
+      const blob = await generateStudentTemplate({
+        mode: templateMode,
+        classId: activeKelas,
+        academicYear
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = templateMode === 'single'
+        ? `Template_Siswa_Kelas_${activeKelas}.xlsx`
+        : `Template_Siswa_Semua_Kelas_${academicYear.replace('/', '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setIsTemplateModalOpen(false);
+      toast('Template Excel data siswa berhasil diunduh.', 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengunduh template Excel siswa.', 'error');
+    } finally {
+      setIsGeneratingTemplate(false);
+    }
+  };
+
+  // 2. Ekspor Siswa ke Excel
+  const handleExportStudents = async () => {
+    try {
+      setIsExporting(true);
+      const allStudents = Object.values(studentsMap);
+      const blob = await exportStudentsToExcel({
+        students: allStudents,
+        classId: activeKelas,
+        academicYear,
+        mode: exportMode
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = exportMode === 'single'
+        ? `Daftar_Siswa_Kelas_${activeKelas}.xlsx`
+        : `Daftar_Siswa_Semua_Kelas_${academicYear.replace('/', '-')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setIsExportModalOpen(false);
+      toast('Daftar siswa berhasil diekspor ke file Excel profesional.', 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Gagal mengekspor data siswa ke Excel.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // 3. Impor File Excel Siswa
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsParsingExcel(true);
+      const result = await parseStudentExcelFile(file, activeKelas);
+      setParsedStudents(result.validStudents);
+      setImportErrors(result.errors);
+      if (result.validStudents.length === 0 && result.errors.length > 0) {
+        toast(`Ditemukan ${result.errors.length} masalah format pada file Excel.`, 'warning');
+      } else {
+        toast(`${result.validStudents.length} siswa berhasil dibaca dari file Excel.`, 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Gagal membaca file Excel. Pastikan file berformat .xlsx yang valid.', 'error');
+    } finally {
+      setIsParsingExcel(false);
+      e.target.value = '';
+    }
+  };
+
+  // 4. Konfirmasi Simpan Siswa Hasil Impor
+  const handleSaveImportedStudents = async () => {
+    if (parsedStudents.length === 0) return;
+    setIsSavingImport(true);
+
+    try {
+      let savedCount = 0;
+      for (const st of parsedStudents) {
+        await dbSet<Student>(`Siswa/${st.NISN}`, st, st.Kelas, academicYear);
+        savedCount++;
+      }
+      toast(`Berhasil mengimpor ${savedCount} data siswa ke database.`, 'success');
+      setIsImportModalOpen(false);
+      setParsedStudents([]);
+      setImportErrors([]);
+    } catch (err) {
+      console.error(err);
+      toast('Terjadi kendala saat menyimpan data siswa yang diimpor.', 'error');
+    } finally {
+      setIsSavingImport(false);
+    }
+  };
+
   return (
     <Shell>
       <div className="space-y-6">
@@ -190,7 +318,34 @@ export default function StudentsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsTemplateModalOpen(true)}
+              title="Unduh template Excel bergaris tabel & header rapi"
+            >
+              <FileDown className="w-3.5 h-3.5 mr-1" /> Template Excel
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportModalOpen(true)}
+              title="Impor data siswa dari file spreadsheet Excel"
+            >
+              <Upload className="w-3.5 h-3.5 mr-1" /> Impor Siswa
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExportModalOpen(true)}
+              title="Ekspor daftar siswa ke file Excel profesional"
+            >
+              <Download className="w-3.5 h-3.5 mr-1" /> Ekspor Siswa
+            </Button>
+
             <Button
               variant={isBatchMode ? 'secondary' : 'outline'}
               size="sm"
@@ -199,11 +354,12 @@ export default function StudentsPage() {
                 setSelectedNisns([]);
               }}
             >
-              <CheckSquare className="w-4 h-4" />
+              <CheckSquare className="w-3.5 h-3.5 mr-1" />
               {isBatchMode ? 'Batal Pilih' : 'Pilih Massal'}
             </Button>
+
             <Button variant="primary" size="sm" onClick={openAddModal}>
-              <UserPlus className="w-4 h-4" /> Tambah Siswa
+              <UserPlus className="w-3.5 h-3.5 mr-1" /> Tambah Siswa
             </Button>
           </div>
         </div>
@@ -224,7 +380,7 @@ export default function StudentsPage() {
         {isBatchMode && (
           <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-xl flex items-center justify-between animate-in slide-in-from-bottom duration-150">
             <div className="flex items-center gap-3">
-              <button onClick={toggleSelectAll} className="flex items-center gap-1.5 text-xs font-semibold">
+              <button onClick={toggleSelectAll} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
                 {selectedNisns.length === classStudents.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                 Pilih Semua ({selectedNisns.length}/{classStudents.length})
               </button>
@@ -239,90 +395,357 @@ export default function StudentsPage() {
 
         {/* Student Cards Grid */}
         {classStudents.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {classStudents.map((student) => {
               const isSelected = selectedNisns.includes(student.NISN);
               return (
                 <div
                   key={student.NISN}
-                  className={`relative p-4 bg-white dark:bg-zinc-900 border rounded-2xl shadow-sm transition-all duration-150 ${
-                    isSelected ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200/80 dark:border-zinc-800 hover:border-slate-300'
+                  className={`p-4 bg-white dark:bg-zinc-900 border rounded-2xl transition-all shadow-sm flex flex-col justify-between ${
+                    isSelected 
+                      ? 'border-indigo-500 ring-2 ring-indigo-500/20' 
+                      : 'border-slate-200/80 dark:border-zinc-800 hover:border-slate-300'
                   }`}
                 >
-                  {isBatchMode && (
-                    <button
-                      onClick={() => toggleSelectStudent(student.NISN)}
-                      className="absolute top-3 right-3 text-slate-400 hover:text-indigo-600"
-                    >
-                      {isSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
-                    </button>
-                  )}
+                  <div className="flex items-start gap-3">
+                    {isBatchMode && (
+                      <button
+                        onClick={() => toggleSelectStudent(student.NISN)}
+                        className="mt-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
+                      >
+                        {isSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    )}
 
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200/60 dark:border-zinc-700">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-zinc-800 overflow-hidden flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-zinc-700">
                       {student.foto ? (
-                        <img src={student.foto} alt={student['Nama Lengkap']} className="w-full h-full object-cover" />
+                        <img src={student.foto} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <User className="w-6 h-6 text-slate-400" />
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0 pr-6">
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-mono text-slate-400 font-semibold">{student.NISN}</span>
+                        {student.Kelompok && (
+                          <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 text-[9px] font-bold rounded">
+                            BTQ: {student.Kelompok}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate mt-0.5">
                         {student['Nama Lengkap']}
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">NISN: {student.NISN}</p>
-                      {student.Kelompok && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded mt-1">
-                          <Sparkles className="w-2.5 h-2.5" /> {student.Kelompok}
-                        </span>
+                      {student.Panggilan && (
+                        <p className="text-[11px] text-slate-400 truncate">({student.Panggilan})</p>
                       )}
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
-                    <button
-                      onClick={() => openDetailModal(student)}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-                      title="Lihat Profil"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => openEditModal(student)}
-                      className="p-1.5 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-                      title="Ubah Data"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => openDetailModal(student)} title="Kartu Pelajar & QR Presensi">
+                      <QrCode className="w-3.5 h-3.5 mr-1 text-indigo-500" /> Kartu QR
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEditModal(student)}>
                       <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSingle(student)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-                      title="Hapus"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteSingle(student)}>
+                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    </Button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="p-8 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl text-center">
-            <p className="text-xs text-slate-400 font-medium">Tidak ada data siswa yang cocok dengan filter aktif.</p>
+          <div className="text-center py-16 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-8">
+            <User className="w-10 h-10 text-slate-300 dark:text-zinc-600 mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Belum Ada Data Siswa</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+              Tidak ditemukan data siswa untuk kelas {activeKelas}. Tambahkan siswa secara manual atau gunakan tombol <strong>Impor Siswa</strong> via Excel.
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(true)}>
+                <Upload className="w-4 h-4 mr-1.5" /> Impor Excel
+              </Button>
+              <Button variant="primary" size="sm" onClick={openAddModal}>
+                <UserPlus className="w-4 h-4 mr-1.5" /> Tambah Siswa Baru
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Add / Edit Student Modal */}
+      {/* Modal 1: Unduh Template Excel Siswa */}
+      <Modal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        title="Unduh Template Excel Data Siswa"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
+            Pilih cakupan template Excel yang Anda butuhkan. File Excel diformat profesional lengkap dengan garis kisi tabel, header warna indigo resmi, dan baris contoh isian.
+          </p>
+
+          <div className="space-y-2.5">
+            <label
+              onClick={() => setTemplateMode('single')}
+              className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                templateMode === 'single'
+                  ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 text-indigo-900 dark:text-indigo-200'
+                  : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="studentTemplateMode"
+                checked={templateMode === 'single'}
+                onChange={() => setTemplateMode('single')}
+                className="mt-1 text-indigo-600"
+              />
+              <div>
+                <p className="text-xs font-bold">Template 1 Kelas Saja (Kelas {activeKelas})</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Berisi 1 sheet khusus untuk pengisian siswa rombel {activeKelas}.
+                </p>
+              </div>
+            </label>
+
+            <label
+              onClick={() => setTemplateMode('all')}
+              className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                templateMode === 'all'
+                  ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 text-indigo-900 dark:text-indigo-200'
+                  : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="studentTemplateMode"
+                checked={templateMode === 'all'}
+                onChange={() => setTemplateMode('all')}
+                className="mt-1 text-indigo-600"
+              />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold">Template Banyak Kelas (12 Sheet Rombel)</p>
+                  <span className="text-[9px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded font-bold">
+                    Multi-Sheet
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Berisi 12 sheet terpisah per kelas (1A, 1B s/d 6B) untuk pendataan satu sekolah sekaligus.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800">
+            <Button variant="ghost" size="sm" onClick={() => setIsTemplateModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleDownloadTemplate}
+              isLoading={isGeneratingTemplate}
+            >
+              <FileDown className="w-4 h-4 mr-1.5" /> Unduh Template .xlsx
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal 2: Ekspor Daftar Siswa ke Excel */}
+      <Modal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        title="Ekspor Daftar Siswa ke Excel"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
+            Pilih cakupan data siswa yang ingin diekspor ke dalam file spreadsheet Excel resmi dengan tata letak profesional.
+          </p>
+
+          <div className="space-y-2.5">
+            <label
+              onClick={() => setExportMode('single')}
+              className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                exportMode === 'single'
+                  ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 text-indigo-900 dark:text-indigo-200'
+                  : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="studentExportMode"
+                checked={exportMode === 'single'}
+                onChange={() => setExportMode('single')}
+                className="mt-1 text-indigo-600"
+              />
+              <div>
+                <p className="text-xs font-bold">Ekspor Siswa Kelas {activeKelas} Saja</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Mengekspor {classStudents.length} siswa pada rombel kelas yang sedang aktif.
+                </p>
+              </div>
+            </label>
+
+            <label
+              onClick={() => setExportMode('all')}
+              className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                exportMode === 'all'
+                  ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 text-indigo-900 dark:text-indigo-200'
+                  : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="studentExportMode"
+                checked={exportMode === 'all'}
+                onChange={() => setExportMode('all')}
+                className="mt-1 text-indigo-600"
+              />
+              <div>
+                <p className="text-xs font-bold">Ekspor Semua Siswa (Per Rombel Per Sheet)</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Mengekspor seluruh data siswa sekolah yang dipisah ke masing-masing sheet per rombel.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800">
+            <Button variant="ghost" size="sm" onClick={() => setIsExportModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleExportStudents}
+              isLoading={isExporting}
+            >
+              <Download className="w-4 h-4 mr-1.5" /> Ekspor ke Excel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal 3: Impor Siswa dari File Excel */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setParsedStudents([]);
+          setImportErrors([]);
+        }}
+        title="Impor Data Siswa dari File Excel"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
+            Unggah file Excel (.xlsx) yang telah diisi. Sistem akan membaca seluruh baris siswa, memvalidasi NISN 10 digit, dan memetakan rombel kelas (termasuk file dengan banyak sheet).
+          </p>
+
+          {/* Area Unggah File */}
+          <div className="p-5 border-2 border-dashed border-slate-300 dark:border-zinc-700 rounded-2xl bg-slate-50/50 dark:bg-zinc-900/50 text-center">
+            <Upload className="w-8 h-8 text-indigo-500 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Pilih file spreadsheet siswa (.xlsx)</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Bisa berupa template 1 kelas atau template multi-sheet</p>
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={handleFileChange}
+              disabled={isParsingExcel}
+              className="mt-3 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+            />
+          </div>
+
+          {/* Error List jika ada baris tidak valid */}
+          {importErrors.length > 0 && (
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl text-xs text-rose-700 dark:text-rose-300 space-y-1 max-h-32 overflow-y-auto">
+              <p className="font-bold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> Ditemukan {importErrors.length} baris tidak lengkap/salah:
+              </p>
+              {importErrors.map((err, idx) => (
+                <p key={idx} className="text-[11px] pl-5">
+                  • [Sheet {err.sheet}] Baris {err.row}: {err.message}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Tabel Pratinjau Profesional */}
+          {parsedStudents.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-zinc-300">
+                <span>Pratinjau Data Siswa Valid ({parsedStudents.length} siswa):</span>
+              </div>
+              <div className="border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-semibold sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 border-r border-slate-200 dark:border-zinc-700">No</th>
+                      <th className="px-3 py-2 border-r border-slate-200 dark:border-zinc-700">NISN</th>
+                      <th className="px-3 py-2 border-r border-slate-200 dark:border-zinc-700">Nama Lengkap</th>
+                      <th className="px-3 py-2 border-r border-slate-200 dark:border-zinc-700">Panggilan</th>
+                      <th className="px-3 py-2 border-r border-slate-200 dark:border-zinc-700 text-center">Kelas</th>
+                      <th className="px-3 py-2">BTQ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                    {parsedStudents.map((st, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-zinc-800/40">
+                        <td className="px-3 py-1.5 font-mono text-slate-400 border-r border-slate-200 dark:border-zinc-800">{idx + 1}</td>
+                        <td className="px-3 py-1.5 font-mono font-bold text-indigo-600 border-r border-slate-200 dark:border-zinc-800">{st.NISN}</td>
+                        <td className="px-3 py-1.5 font-semibold border-r border-slate-200 dark:border-zinc-800">{st['Nama Lengkap']}</td>
+                        <td className="px-3 py-1.5 text-slate-500 border-r border-slate-200 dark:border-zinc-800">{st.Panggilan || '-'}</td>
+                        <td className="px-3 py-1.5 text-center font-bold border-r border-slate-200 dark:border-zinc-800">
+                          <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 text-[10px] rounded">
+                            {st.Kelas}
+                          </span>
+                        </td>
+                        <td className="px-3 py-1.5 text-slate-500">{st.Kelompok || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsImportModalOpen(false);
+                setParsedStudents([]);
+                setImportErrors([]);
+              }}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSaveImportedStudents}
+              disabled={parsedStudents.length === 0}
+              isLoading={isSavingImport}
+            >
+              <CheckCircle className="w-4 h-4 mr-1.5" /> Konfirmasi Simpan {parsedStudents.length} Siswa
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal 4: Tambah/Edit Siswa Manual */}
       <Modal
         isOpen={isAddEditOpen}
         onClose={() => setIsAddEditOpen(false)}
-        title={editingStudent ? 'Perbarui Data Siswa' : 'Tambah Siswa Baru'}
-        description={`Pendaftaran pada Kelas ${formKelas}`}
+        title={editingStudent ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
       >
-        <form onSubmit={handleSaveStudent} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           {formError && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-500 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -331,8 +754,8 @@ export default function StudentsPage() {
           )}
 
           <Input
-            label="Nomor Induk Siswa Nasional (NISN)"
-            placeholder="Tepat 10 digit angka (cth: 0123456789)"
+            label="NISN (Nomor Induk Siswa Nasional)"
+            placeholder="10 digit angka (cth: 0081234567)"
             value={formNisn}
             onChange={(e) => setFormNisn(e.target.value)}
             disabled={!!editingStudent}
@@ -341,7 +764,7 @@ export default function StudentsPage() {
 
           <Input
             label="Nama Lengkap Siswa"
-            placeholder="Sesuai akta kelahiran"
+            placeholder="Cth: Muhammad Bilal Al-Farisi"
             value={formNama}
             onChange={(e) => setFormNama(e.target.value)}
             required
@@ -350,17 +773,17 @@ export default function StudentsPage() {
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Nama Panggilan"
-              placeholder="Panggilan akrab"
+              placeholder="Cth: Bilal"
               value={formPanggilan}
               onChange={(e) => setFormPanggilan(e.target.value)}
             />
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">Kelas</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">Penugasan Kelas</label>
               <select
                 value={formKelas}
                 onChange={(e) => setFormKelas(e.target.value as ClassId)}
-                className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500"
               >
                 {CLASSES.map((c) => (
                   <option key={c} value={c}>
@@ -371,21 +794,23 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          <Input
-            label="Kelompok Rombel BTQ (Opsional)"
-            placeholder="Cth: Kelompok Abu Bakar"
-            value={formKelompok}
-            onChange={(e) => setFormKelompok(e.target.value)}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Rombel / Kelompok BTQ"
+              placeholder="Cth: Tahsin A / Tilawati 2"
+              value={formKelompok}
+              onChange={(e) => setFormKelompok(e.target.value)}
+            />
 
-          <Input
-            label="URL Foto Siswa (Cloudinary HTTPS)"
-            placeholder="https://res.cloudinary.com/..."
-            value={formFotoUrl}
-            onChange={(e) => setFormFotoUrl(e.target.value)}
-          />
+            <Input
+              label="Foto Profil Siswa (URL)"
+              placeholder="https://..."
+              value={formFotoUrl}
+              onChange={(e) => setFormFotoUrl(e.target.value)}
+            />
+          </div>
 
-          <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800">
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddEditOpen(false)}>
               Batal
             </Button>
@@ -396,7 +821,7 @@ export default function StudentsPage() {
         </form>
       </Modal>
 
-      {/* Detail Profile Modal */}
+      {/* Modal 5: Detail Profile & QR Siswa */}
       <Modal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
