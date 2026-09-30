@@ -18,6 +18,14 @@ const MOCK_STUDENTS: Record<string, Student> = {
   '0123456783': { ID_Siswa: 'SISWA_03', NISN: '0123456783', 'Nama Lengkap': 'Bilal Al-Ghifari', Panggilan: 'Bilal', Kelas: '1A', Kelompok: 'Kelompok Abu Bakar' },
   '0123456784': { ID_Siswa: 'SISWA_04', NISN: '0123456784', 'Nama Lengkap': 'Fathimah Nurul Izzah', Panggilan: 'Izzah', Kelas: '1A', Kelompok: 'Kelompok Khadijah' },
   '0123456785': { ID_Siswa: 'SISWA_05', NISN: '0123456785', 'Nama Lengkap': 'Muhammad Rayhan Pratama', Panggilan: 'Rayhan', Kelas: '1A', Kelompok: 'Kelompok Umar' },
+  // Siswa Kelas 3A dari Template Wajib BTQ & LPS
+  '0133456701': { ID_Siswa: 'SISWA_3A_01', NISN: '0133456701', 'Nama Lengkap': 'Athallah Hafiz Ramdani', Panggilan: 'Athallah', Kelas: '3A', Kelompok: 'Kelompok Shiddiq' },
+  '0133456702': { ID_Siswa: 'SISWA_3A_02', NISN: '0133456702', 'Nama Lengkap': 'Ayken Rayhan Razzad', Panggilan: 'Ayken', Kelas: '3A', Kelompok: 'Kelompok Amanah' },
+  '0133456703': { ID_Siswa: 'SISWA_3A_03', NISN: '0133456703', 'Nama Lengkap': 'Danu Sena Adji', Panggilan: 'Danu', Kelas: '3A', Kelompok: 'Kelompok Fathonah' },
+  '0133456704': { ID_Siswa: 'SISWA_3A_04', NISN: '0133456704', 'Nama Lengkap': 'Hakam Irhab Munib', Panggilan: 'Hakam', Kelas: '3A', Kelompok: 'Kelompok Tabligh' },
+  '0133456705': { ID_Siswa: 'SISWA_3A_05', NISN: '0133456705', 'Nama Lengkap': 'Mouri Glazy Atreya', Panggilan: 'Mouri', Kelas: '3A', Kelompok: 'Kelompok Shiddiq' },
+  '0133456706': { ID_Siswa: 'SISWA_3A_06', NISN: '0133456706', 'Nama Lengkap': 'Raden Anaking Muhammad Jaluna Firmansyah', Panggilan: 'Jaluna', Kelas: '3A', Kelompok: 'Kelompok Amanah' },
+  '0133456707': { ID_Siswa: 'SISWA_3A_07', NISN: '0133456707', 'Nama Lengkap': 'Shakila Karaputri Prabowo', Panggilan: 'Shakila', Kelas: '3A', Kelompok: 'Kelompok Khadijah' },
 };
 
 const MOCK_TP: Record<string, LearningObjective> = {
